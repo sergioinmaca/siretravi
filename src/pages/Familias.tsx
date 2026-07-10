@@ -1,0 +1,128 @@
+import { useState, useMemo } from 'react';
+import { Users, Search, ChevronRight, ShieldOff } from 'lucide-react';
+import { useCampamento } from '../context/CampamentoContext';
+import { useAuth } from '../context/AuthContext';
+import DetalleFamiliaModal from '../components/familias/DetalleFamiliaModal';
+import type { Familia } from '../types';
+
+export default function Familias() {
+  const { campamentoSeleccionado, familias = [], refugiados = [] } = useCampamento();
+  const { tienePermisoPorCampamento } = useAuth();
+
+  const tieneAcceso = campamentoSeleccionado
+    ? tienePermisoPorCampamento('Familias', campamentoSeleccionado.id, 'Ver')
+    : true;
+
+  if (!tieneAcceso) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-gray-400">
+        <ShieldOff size={64} className="mb-4 opacity-40" />
+        <p className="text-lg font-medium text-gray-500">Sin acceso a este campamento</p>
+        <p className="text-sm text-gray-400 mt-1">No tienes permisos para ver las familias de {campamentoSeleccionado?.nombre}</p>
+      </div>
+    );
+  }
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedFamilia, setSelectedFamilia] = useState<Familia | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const familiasDelCampamento = useMemo(() => {
+    if (!campamentoSeleccionado) return [];
+    const term = searchTerm.toUpperCase();
+    return familias
+      .filter(f => f.campamento_id === campamentoSeleccionado.id)
+      .filter(f => f.nombre.includes(term))
+      .map(f => {
+        const integrantes = refugiados.filter(r => r.familia_id === f.id);
+        return { ...f, integrantes: integrantes.length };
+      });
+  }, [searchTerm, familias, refugiados, campamentoSeleccionado]);
+
+  const openModal = (familia: Familia) => {
+    setSelectedFamilia(familia);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedFamilia(null);
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Cabecera */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-800">Módulo de Familias</h2>
+          <p className="text-gray-500">
+            Gestionando familias del <span className="font-semibold text-caracas-red">{campamentoSeleccionado?.nombre || 'Ninguno'}</span>
+          </p>
+        </div>
+      </div>
+
+      {/* Barra de búsqueda */}
+      <div className="relative w-full max-w-md">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <Search size={18} className="text-gray-400" />
+        </div>
+        <input
+          type="text"
+          placeholder="Buscar familia..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
+          className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all text-sm uppercase"
+        />
+      </div>
+
+      {/* Grid de Cards */}
+      {familiasDelCampamento.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {familiasDelCampamento.map((fam) => (
+            <div
+              key={fam.id}
+              onClick={() => openModal(fam)}
+              className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg hover:border-caracas-red/30 cursor-pointer transition-all duration-300 group"
+            >
+              <div className="bg-gradient-to-r from-caracas-blue to-blue-700 p-5 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -translate-y-8 translate-x-8" />
+                <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/5 rounded-full translate-y-6 -translate-x-6" />
+                <div className="flex items-center gap-3 relative z-10">
+                  <div className="p-2 bg-white/20 rounded-xl">
+                    <Users size={24} className="text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-lg font-bold text-white truncate">{fam.nombre}</h3>
+                    <p className="text-sm text-white/70">{fam.integrantes} integrante{fam.integrantes !== 1 ? 's' : ''}</p>
+                  </div>
+                  <ChevronRight size={20} className="text-white/50 group-hover:text-white transition-colors shrink-0" />
+                </div>
+              </div>
+              <div className="p-5 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <Users size={16} className="text-caracas-blue" />
+                  <span className="font-medium">{fam.integrantes} miembro{fam.integrantes !== 1 ? 's' : ''}</span>
+                </div>
+                <span className="text-xs text-caracas-blue font-medium group-hover:underline">Ver detalle</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-16 flex flex-col items-center justify-center text-gray-400">
+          <Users size={64} className="mb-4 opacity-40" />
+          <p className="text-lg font-medium text-gray-500">No hay familias registradas</p>
+          <p className="text-sm text-gray-400 mt-1">
+            Las familias se crean automáticamente al registrar un refugiado como Jefe de Familia
+          </p>
+        </div>
+      )}
+
+      {/* Modal de Detalle */}
+      <DetalleFamiliaModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        familia={selectedFamilia}
+      />
+    </div>
+  );
+}
