@@ -294,10 +294,10 @@ export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 
         ctx.fillStyle = '#FFFFFF';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.font = 'bold 13px Inter, sans-serif';
+        ctx.font = 'bold 15px Inter, sans-serif';
 
         if (tipoContabilizacionRef.current === 'cama') {
-          if (obj.bedType === 'individual') {
+          if (obj.bedType === 'individual' || obj.bedType === 'duplex') {
             objectCounter++;
             ctx.fillText(String(objectCounter).padStart(2, '0'), 0, 0);
           } else {
@@ -550,9 +550,9 @@ export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 
       if (offCtx) {
         offCtx.beginPath();
         offCtx.moveTo(pos.x, pos.y);
-        }
       }
-    };
+    }
+  };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const pos = getPos(e);
@@ -923,8 +923,8 @@ export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 
             onClick={() => setTool(t.id)}
             title={t.label}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${tool === t.id
-                ? 'bg-gray-800 text-white shadow-sm'
-                : 'text-gray-600 hover:bg-gray-200'
+              ? 'bg-gray-800 text-white shadow-sm'
+              : 'text-gray-600 hover:bg-gray-200'
               }`}
           >
             <span style={t.color && tool !== t.id ? { color: t.color } : {}}>{t.icon}</span>
@@ -951,8 +951,8 @@ export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 
           onClick={() => setShowGrid(prev => !prev)}
           title={showGrid ? 'Ocultar Grid' : 'Mostrar Grid'}
           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${showGrid
-              ? 'bg-gray-200 text-gray-700'
-              : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+            ? 'bg-gray-200 text-gray-700'
+            : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
             }`}
         >
           <Grid3x3 size={16} />
@@ -1060,8 +1060,8 @@ export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 
         onMouseLeave={handleMouseUp}
         onDoubleClick={handleDoubleClick}
         className={`w-full block bg-gray-50/50 ${tool === 'select' ? 'cursor-default' :
-            tool === 'litera' || tool === 'individual' || tool === 'duplex' || tool === 'text' ? 'cursor-crosshair' :
-              tool === 'eraser' ? 'cursor-cell' : 'cursor-crosshair'
+          tool === 'litera' || tool === 'individual' || tool === 'duplex' || tool === 'text' ? 'cursor-crosshair' :
+            tool === 'eraser' ? 'cursor-cell' : 'cursor-crosshair'
           }`}
         style={{ imageRendering: 'auto' }}
       />

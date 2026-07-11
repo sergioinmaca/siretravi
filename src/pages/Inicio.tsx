@@ -330,7 +330,7 @@ export default function Inicio() {
           <div className="flex items-center gap-4 text-sm text-gray-500 mb-6 pb-4 border-b border-gray-100">
             <span className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded bg-[#3B82F6]" />
-              <span className="font-medium">{totalesCroquis.literas}</span> Literas ({totalesCroquis.literas * 2} camas)
+              <span className="font-medium">{totalesCroquis.literas}</span> Literas
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded bg-[#10B981]" />
@@ -338,10 +338,7 @@ export default function Inicio() {
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded bg-[#F59E0B]" />
-              <span className="font-medium">{totalesCroquis.duplex}</span> Duplex ({totalesCroquis.duplex * 2} camas)
-            </span>
-            <span className="text-gray-400 font-semibold ml-2">
-              Total: {totalesCroquis.literas * 2 + totalesCroquis.individuales + totalesCroquis.duplex} camas
+              <span className="font-medium">{totalesCroquis.duplex}</span> Duplex
             </span>
           </div>
         )}

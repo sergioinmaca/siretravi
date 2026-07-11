@@ -287,7 +287,7 @@ function drawBedsWithNumbers(
     let actualNumbers: string[] = [];
 
     if (modo === 'cama') {
-      if (bed.type === 'individual') {
+      if (bed.type === 'individual' || bed.type === 'duplex') {
         elementCounter++;
         actualNumbers = [String(elementCounter).padStart(3, '0')];
       } else {
@@ -377,7 +377,7 @@ function drawBedsWithNumbers(
     // Desrotar para dibujar textos siempre legibles
     ctx.rotate(-(bed.rotation * Math.PI) / 180);
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'bold 10px Inter, sans-serif';
+    ctx.font = 'normal 14px Inter, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
@@ -385,7 +385,7 @@ function drawBedsWithNumbers(
 
     if (modo === 'cama') {
       const num1 = actualNumbers[0];
-      if (bed.type === 'individual') {
+      if (bed.type === 'individual' || bed.type === 'duplex') {
         ctx.fillText(num1, 0, 0);
       } else {
         const num2 = actualNumbers[1];
@@ -428,7 +428,7 @@ export function countElements(croquisData: string, modo: 'cama' | 'elemento' = '
       }));
     if (modo === 'cama') {
       return beds.reduce((sum, bed) => {
-        return sum + (bed.type === 'individual' ? 1 : 2);
+        return sum + (bed.type === 'litera' ? 2 : 1);
       }, 0);
     }
     return beds.length;
