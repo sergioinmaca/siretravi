@@ -10,8 +10,12 @@ CREATE TABLE IF NOT EXISTS campamentos (
   ubicacion   TEXT NOT NULL,
   capacidad_maxima INTEGER NOT NULL DEFAULT 0,
   estado      TEXT NOT NULL DEFAULT 'activo' CHECK (estado IN ('activo', 'inactivo')),
+  tipo_contabilizacion TEXT NOT NULL DEFAULT 'elemento' CHECK (tipo_contabilizacion IN ('cama', 'elemento')),
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Migración para bases de datos existentes (si la columna no existe)
+ALTER TABLE campamentos ADD COLUMN IF NOT EXISTS tipo_contabilizacion TEXT NOT NULL DEFAULT 'elemento' CHECK (tipo_contabilizacion IN ('cama', 'elemento'));
 
 -- Tabla: carpas (relacionada con campamentos)
 CREATE TABLE IF NOT EXISTS carpas (

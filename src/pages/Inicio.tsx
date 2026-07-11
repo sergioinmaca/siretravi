@@ -97,6 +97,40 @@ export default function Inicio() {
     return { carpa, offset };
   });
 
+  // Contar tipos de cama reales desde el croquis de cada carpa
+  const contarTiposDesdeCroquis = (croquisData: string) => {
+    try {
+      const parsed = JSON.parse(croquisData || '{}');
+      const rawObjects: Record<string, unknown>[] = parsed.objects || parsed.beds || [];
+      const literas = rawObjects.filter(o => {
+        const bt = (o as any).bedType || (o as any).type;
+        return ((o as any).kind === 'bed' || !(o as any).kind) && bt === 'litera';
+      }).length;
+      const individuales = rawObjects.filter(o => {
+        const bt = (o as any).bedType || (o as any).type;
+        return ((o as any).kind === 'bed' || !(o as any).kind) && bt === 'individual';
+      }).length;
+      const duplex = rawObjects.filter(o => {
+        const bt = (o as any).bedType || (o as any).type;
+        return ((o as any).kind === 'bed' || !(o as any).kind) && bt === 'duplex';
+      }).length;
+      return { literas, individuales, duplex };
+    } catch {
+      return { literas: 0, individuales: 0, duplex: 0 };
+    }
+  };
+
+  const totalesCroquis = carpas.reduce(
+    (acc, carpa) => {
+      const c = contarTiposDesdeCroquis(carpa.croquis_data || '');
+      acc.literas += c.literas;
+      acc.individuales += c.individuales;
+      acc.duplex += c.duplex;
+      return acc;
+    },
+    { literas: 0, individuales: 0, duplex: 0 }
+  );
+
   return (
     <div className="space-y-6">
       <div className="mb-8">
@@ -271,9 +305,29 @@ export default function Inicio() {
 
       {/* Distribución del Campamento — Croquis por Carpa */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h2 className="text-lg font-semibold text-gray-800 mb-6">
+        <h2 className="text-lg font-semibold text-gray-800 mb-2">
           Distribución del Campamento ({campamentoSeleccionado?.nombre || 'Ninguno'})
         </h2>
+        {/* Resumen real desde croquis */}
+        {(totalesCroquis.literas > 0 || totalesCroquis.individuales > 0 || totalesCroquis.duplex > 0) && (
+          <div className="flex items-center gap-4 text-sm text-gray-500 mb-6 pb-4 border-b border-gray-100">
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded bg-[#3B82F6]" />
+              <span className="font-medium">{totalesCroquis.literas}</span> Literas ({totalesCroquis.literas * 2} camas)
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded bg-[#10B981]" />
+              <span className="font-medium">{totalesCroquis.individuales}</span> Individuales
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded bg-[#F59E0B]" />
+              <span className="font-medium">{totalesCroquis.duplex}</span> Duplex ({totalesCroquis.duplex * 2} camas)
+            </span>
+            <span className="text-gray-400 font-semibold ml-2">
+              Total: {totalesCroquis.literas * 2 + totalesCroquis.individuales + totalesCroquis.duplex} camas
+            </span>
+          </div>
+        )}
 
         {carpasConOffset.length > 0 ? (
           <div className="space-y-8">

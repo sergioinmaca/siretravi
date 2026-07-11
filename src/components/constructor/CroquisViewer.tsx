@@ -8,6 +8,16 @@ interface PlacedBed {
   id: string;
 }
 
+interface PlacedRectangle {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  rotation: number;
+  color: string;
+  id: string;
+}
+
 interface CroquisViewerProps {
   croquisData: string; // JSON serializado del editor
   carpaNombre: string;
@@ -31,17 +41,39 @@ export default function CroquisViewer({ croquisData, carpaNombre, width = 700, h
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     let beds: PlacedBed[] = [];
+    let rectangles: PlacedRectangle[] = [];
 
     try {
       const parsed = JSON.parse(croquisData);
-      beds = parsed.beds || [];
+      const rawObjects: Record<string, unknown>[] = parsed.objects || parsed.beds || [];
+      beds = rawObjects
+        .filter(o => o.kind === 'bed' || !o.kind)
+        .map(o => ({
+          type: (o.bedType as PlacedBed['type']) || (o.type as PlacedBed['type']) || 'individual',
+          x: o.x as number,
+          y: o.y as number,
+          rotation: o.rotation as number,
+          id: o.id as string,
+        }));
+      rectangles = rawObjects
+        .filter(o => o.kind === 'rectangle')
+        .map(o => ({
+          x: o.x as number,
+          y: o.y as number,
+          width: o.width as number,
+          height: o.height as number,
+          rotation: o.rotation as number,
+          color: o.color as string,
+          id: o.id as string,
+        }));
 
       // Restaurar el fondo (paredes dibujadas)
       if (parsed.drawingBase64) {
         const img = new Image();
         img.onload = () => {
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          // Dibujar camas encima del fondo
+          drawRectangles(ctx, rectangles);
+          // Dibujar camas encima de rectángulos
           drawBedsWithNumbers(ctx, beds, elementNumberOffset, tipoContabilizacion);
         };
         img.src = parsed.drawingBase64;
@@ -51,7 +83,8 @@ export default function CroquisViewer({ croquisData, carpaNombre, width = 700, h
       // Si el JSON no parsea, dejamos canvas en blanco
     }
 
-    // Si no hay drawingBase64, dibujar camas directamente
+    // Si no hay drawingBase64, dibujar rectángulos y camas directamente
+    drawRectangles(ctx, rectangles);
     drawBedsWithNumbers(ctx, beds, elementNumberOffset, tipoContabilizacion);
   }, [croquisData, elementNumberOffset, tipoContabilizacion]);
 
@@ -84,6 +117,25 @@ export default function CroquisViewer({ croquisData, carpaNombre, width = 700, h
       </div>
     </div>
   );
+}
+
+function drawRectangles(ctx: CanvasRenderingContext2D, rects: PlacedRectangle[]) {
+  rects.forEach(rect => {
+    ctx.save();
+    ctx.translate(rect.x, rect.y);
+    ctx.rotate((rect.rotation * Math.PI) / 180);
+
+    ctx.fillStyle = 'rgba(0,0,0,0.05)';
+    ctx.beginPath();
+    ctx.roundRect(-rect.width / 2, -rect.height / 2, rect.width, rect.height, 4);
+    ctx.fill();
+
+    ctx.strokeStyle = rect.color;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.restore();
+  });
 }
 
 function drawBedsWithNumbers(ctx: CanvasRenderingContext2D, beds: PlacedBed[], offset: number, modo: 'cama' | 'elemento' = 'elemento') {
@@ -179,7 +231,12 @@ function drawBedsWithNumbers(ctx: CanvasRenderingContext2D, beds: PlacedBed[], o
 export function countElements(croquisData: string, modo: 'cama' | 'elemento' = 'elemento'): number {
   try {
     const parsed = JSON.parse(croquisData);
-    const beds: PlacedBed[] = parsed.beds || [];
+    const rawObjects: Record<string, unknown>[] = parsed.objects || parsed.beds || [];
+    const beds = rawObjects
+      .filter(o => o.kind === 'bed' || !o.kind)
+      .map(o => ({
+        type: (o.bedType as PlacedBed['type']) || (o.type as PlacedBed['type']) || 'individual',
+      }));
     if (modo === 'cama') {
       return beds.reduce((sum, bed) => {
         return sum + (bed.type === 'individual' ? 1 : 2);
