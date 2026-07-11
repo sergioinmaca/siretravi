@@ -516,7 +516,7 @@ export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 
         const newObj: CanvasObject = {
           kind: 'text',
           text: texto.trim(),
-          fontSize: 12,
+          fontSize: 14,
           color: color,
           x: pos.x,
           y: pos.y,

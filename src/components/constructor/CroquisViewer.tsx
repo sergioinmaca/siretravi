@@ -217,21 +217,6 @@ export default function CroquisViewer({ croquisData, carpaNombre, width = 700, h
           )}
         </div>
       </div>
-      {/* Leyenda */}
-      <div className="flex items-center gap-6 text-xs text-gray-500 px-1">
-        <div className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded bg-[#3B82F6] inline-block" /> Litera (2 camas)
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded bg-[#10B981] inline-block" /> Individual
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded bg-[#F59E0B] inline-block" /> Duplex (2 camas)
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="text-[10px] font-bold text-gray-500">T</span> Texto
-        </div>
-      </div>
     </div>
   );
 }
