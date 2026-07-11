@@ -204,7 +204,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
 
     if (campError || !campData) {
       console.error('Error al crear campamento:', campError);
-      return;
+      throw new Error(campError?.message || 'Error al crear campamento');
     }
 
     // 2. Insertar las carpas asociadas
@@ -225,6 +225,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
 
       if (carpasError) {
         console.error('Error al crear carpas:', carpasError);
+        throw new Error(carpasError.message || 'Error al crear carpas');
       }
 
       const carpasGuardadas: Carpa[] = (carpasData || []).map((c: Record<string, unknown>) => ({
@@ -277,7 +278,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
 
     if (campError) {
       console.error('Error al actualizar campamento:', campError);
-      return;
+      throw new Error(campError.message || 'Error al actualizar campamento');
     }
 
     // 2. Borrar carpas antiguas y reinsertar (upsert completo)
@@ -301,6 +302,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
 
       if (carpasError) {
         console.error('Error al actualizar carpas:', carpasError);
+        throw new Error(carpasError.message || 'Error al actualizar carpas');
       }
 
       carpasGuardadas = (carpasData || []).map((c: Record<string, unknown>) => ({

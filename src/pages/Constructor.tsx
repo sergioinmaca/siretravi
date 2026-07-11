@@ -117,6 +117,7 @@ export default function Constructor() {
 
       {/* Modal de Creación / Edición */}
       <CrearRefugioModal
+        key={editingCamp?.id || 'create'}
         isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);

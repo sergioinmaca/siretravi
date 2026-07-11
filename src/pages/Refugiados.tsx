@@ -4,6 +4,7 @@ import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
 import type { Refugiado } from '../types';
 import RegistroModal from '../components/refugiados/RegistroModal';
+import { formatAge } from '../lib/formatAge';
 
 export default function Refugiados() {
   const { campamentoSeleccionado, refugiados = [], familias = [], eliminarRefugiado } = useCampamento();
@@ -51,14 +52,6 @@ export default function Refugiados() {
         (r.cedula?.toString() || '').includes(term)
       )
       .map(r => {
-        const birthDate = new Date(r.fecha_nacimiento);
-        const today = new Date();
-        let age = today.getFullYear() - birthDate.getFullYear();
-        const m = today.getMonth() - birthDate.getMonth();
-        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-          age--;
-        }
-
         let jerarquiaStr = 'Jefe de Familia';
         if (!r.es_jefe_familia && r.familia_id) {
           const familia = familias.find(f => f.id === r.familia_id);
@@ -70,7 +63,7 @@ export default function Refugiados() {
           cedula: r.cedula?.toString() || 'S/N',
           nombres: r.nombres,
           apellidos: r.apellidos,
-          edad: age,
+          edad: formatAge(r.fecha_nacimiento),
           jerarquia: jerarquiaStr,
           cama: r.nro_cama,
           refugiado: r
@@ -174,7 +167,7 @@ export default function Refugiados() {
                       <div className="text-sm font-bold text-gray-800">{refugiado.apellidos}</div>
                       <div className="text-xs text-gray-500">{refugiado.nombres}</div>
                     </td>
-                    <td className="py-3 px-6 text-sm text-gray-600">{refugiado.edad} años</td>
+                    <td className="py-3 px-6 text-sm text-gray-600">{refugiado.edad}</td>
                     <td className="py-3 px-6">
                       <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
                         refugiado.jerarquia === 'Jefe de Familia' 

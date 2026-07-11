@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useCampamento } from '../../context/CampamentoContext';
 import { User, Users, MapPin, Save, AlertCircle, CheckCircle2, X, Accessibility } from 'lucide-react';
 import type { Refugiado } from '../../types';
+import { formatAge } from '../../lib/formatAge';
 
 interface RegistroModalProps {
   isOpen: boolean;
@@ -88,14 +89,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
 
   useEffect(() => {
     if (formData.fechaNacimiento) {
-      const birthDate = new Date(formData.fechaNacimiento);
-      const today = new Date();
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const m = today.getMonth() - birthDate.getMonth();
-      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-      }
-      setFormData(prev => ({ ...prev, edad: age >= 0 ? age.toString() : '' }));
+      setFormData(prev => ({ ...prev, edad: formatAge(new Date(formData.fechaNacimiento)) }));
     }
   }, [formData.fechaNacimiento]);
 
@@ -249,7 +243,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Edad</label>
-                  <input type="number" name="edad" value={formData.edad} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl bg-gray-100 text-gray-600 outline-none" placeholder="Calculada auto" readOnly />
+                  <input type="text" name="edad" value={formData.edad} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl bg-gray-100 text-gray-600 outline-none" placeholder="Calculada auto" readOnly />
                 </div>
               </div>
             </div>

@@ -3,6 +3,7 @@ import { X, Save, ChevronDown, ChevronUp, Tent, MapPin, Trash2 } from 'lucide-re
 import { useCampamento } from '../../context/CampamentoContext';
 import type { Carpa, Campamento } from '../../types';
 import CroquisEditor from './CroquisEditor';
+import { countElements } from './CroquisViewer';
 
 interface CarpaDraft {
   nombre: string;
@@ -27,6 +28,7 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
   const [cantidadCarpas, setCantidadCarpas] = useState(0);
   const [carpas, setCarpas] = useState<CarpaDraft[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Pre-cargar datos si estamos en modo edición
   useEffect(() => {
@@ -90,45 +92,56 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
     }, 0);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
-    const carpasFinales: Carpa[] = carpas.map((c, i) => ({
-      id: campamentoToEdit?.carpas[i]?.id || `carpa-${Date.now()}-${i}`,
-      nombre: c.nombre,
-      literas: c.literas,
-      camas_individuales: c.camas_individuales,
-      camas_duplex: c.camas_duplex,
-      croquis_data: c.croquis_data
-    }));
+    try {
+      const carpasFinales: Carpa[] = carpas.map((c, i) => ({
+        id: campamentoToEdit?.carpas[i]?.id || `carpa-${Date.now()}-${i}`,
+        nombre: c.nombre,
+        literas: c.literas,
+        camas_individuales: c.camas_individuales,
+        camas_duplex: c.camas_duplex,
+        croquis_data: c.croquis_data
+      }));
 
-    if (campamentoToEdit) {
-      if (!window.confirm(`¿Estás seguro que deseas sobreescribir los datos del refugio "${nombre.toUpperCase()}"?`)) return;
-      actualizarCampamento(campamentoToEdit.id, {
-        ...campamentoToEdit,
-        nombre: nombre.toUpperCase(),
-        ubicacion: ubicacion.toUpperCase(),
-        capacidad_maxima: calcularCapacidadTotal(),
-        tipo_contabilizacion: tipoContabilizacion,
-        carpas: carpasFinales
-      });
-    } else {
-      agregarCampamento({
-        id: `camp-${Date.now()}`,
-        nombre: nombre.toUpperCase(),
-        ubicacion: ubicacion.toUpperCase(),
-        capacidad_maxima: calcularCapacidadTotal(),
-        estado: 'activo',
-        tipo_contabilizacion: tipoContabilizacion,
-        carpas: carpasFinales
-      });
+      if (campamentoToEdit) {
+        if (!window.confirm(`¿Estás seguro que deseas sobreescribir los datos del refugio "${nombre.toUpperCase()}"?`)) {
+          setIsSubmitting(false);
+          return;
+        }
+        await actualizarCampamento(campamentoToEdit.id, {
+          ...campamentoToEdit,
+          nombre: nombre.toUpperCase(),
+          ubicacion: ubicacion.toUpperCase(),
+          capacidad_maxima: calcularCapacidadTotal(),
+          tipo_contabilizacion: tipoContabilizacion,
+          carpas: carpasFinales
+        });
+      } else {
+        await agregarCampamento({
+          id: `camp-${Date.now()}`,
+          nombre: nombre.toUpperCase(),
+          ubicacion: ubicacion.toUpperCase(),
+          capacidad_maxima: calcularCapacidadTotal(),
+          estado: 'activo',
+          tipo_contabilizacion: tipoContabilizacion,
+          carpas: carpasFinales
+        });
+      }
+
+      setShowSuccess(true);
+      setTimeout(() => {
+        setShowSuccess(false);
+        onClose();
+      }, 1000);
+    } catch (err) {
+      console.error('Error al guardar el refugio:', err);
+      alert('Ocurrió un error al guardar los cambios. Intenta de nuevo.');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setShowSuccess(true);
-    setTimeout(() => {
-      setShowSuccess(false);
-      onClose();
-    }, 1500);
   };
 
   const handleDelete = () => {
@@ -351,6 +364,13 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
                         tipoContabilizacion={tipoContabilizacion}
                         initialData={campamentoToEdit ? carpa.croquis_data : undefined}
                         onChange={(data) => updateCarpa(index, 'croquis_data', data)}
+                        elementNumberOffset={(() => {
+                          let offset = 0;
+                          for (let i = 0; i < index; i++) {
+                            offset += countElements(carpas[i].croquis_data || '', tipoContabilizacion);
+                          }
+                          return offset;
+                        })()}
                       />
                     </div>
                   </div>
@@ -394,11 +414,11 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
             <button
               form="crear-refugio-form"
               type="submit"
-              disabled={cantidadCarpas === 0}
+              disabled={cantidadCarpas === 0 || isSubmitting}
               className="flex items-center gap-2 bg-caracas-red hover:bg-red-800 text-white px-8 py-2.5 rounded-xl font-medium transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save size={18} />
-              {campamentoToEdit ? 'Guardar Cambios' : 'Crear Refugio'}
+              {isSubmitting ? 'Guardando...' : campamentoToEdit ? 'Guardar Cambios' : 'Crear Refugio'}
             </button>
           </div>
         </div>

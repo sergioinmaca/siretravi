@@ -50,9 +50,10 @@ interface CroquisEditorProps {
   tipoContabilizacion?: 'cama' | 'elemento';
   initialData?: string;
   onChange?: (data: string) => void;
+  elementNumberOffset?: number;
 }
 
-export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 0, maxIndividuales = 0, maxDuplex = 0, tipoContabilizacion = 'elemento', initialData, onChange }: CroquisEditorProps) {
+export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 0, maxIndividuales = 0, maxDuplex = 0, tipoContabilizacion = 'elemento', initialData, onChange, elementNumberOffset = 0 }: CroquisEditorProps) {
   // Bandera: el canvas está listo para ser renderizado
   const isInitialized = useRef(false);
   // Capturamos initialData en un ref al momento del montaje.
@@ -246,7 +247,7 @@ export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 
     ctx.drawImage(offscreen, 0, 0);
     drawGrid(ctx, canvas.width, canvas.height);
 
-    let objectCounter = 0;
+    let objectCounter = elementNumberOffset;
 
     objects.forEach(obj => {
       ctx.save();
