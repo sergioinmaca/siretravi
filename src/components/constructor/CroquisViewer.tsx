@@ -390,11 +390,11 @@ function drawBedsWithNumbers(
       } else {
         const num2 = actualNumbers[1];
         if (isHorizontal) {
-          ctx.fillText(num1, -10, 0);
-          ctx.fillText(num2, 10, 0);
+          ctx.fillText(num1, -13, 0);
+          ctx.fillText(num2, 14, 0);
         } else {
-          ctx.fillText(num1, 0, -10);
-          ctx.fillText(num2, 0, 10);
+          ctx.fillText(num1, 0, -12);
+          ctx.fillText(num2, 0, 12);
         }
       }
     } else {

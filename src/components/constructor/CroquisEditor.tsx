@@ -294,7 +294,7 @@ export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 
         ctx.fillStyle = '#FFFFFF';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.font = 'bold 15px Inter, sans-serif';
+        ctx.font = 'normal 17px Inter, sans-serif';
 
         if (tipoContabilizacionRef.current === 'cama') {
           if (obj.bedType === 'individual' || obj.bedType === 'duplex') {
@@ -306,11 +306,11 @@ export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 
             objectCounter += 2;
             const isHorizontal = obj.rotation === 90 || obj.rotation === 270;
             if (isHorizontal) {
-              ctx.fillText(String(num1).padStart(2, '0'), -10, 0);
-              ctx.fillText(String(num2).padStart(2, '0'), 10, 0);
+              ctx.fillText(String(num1).padStart(2, '0'), -14, 0);
+              ctx.fillText(String(num2).padStart(2, '0'), 14, 0);
             } else {
-              ctx.fillText(String(num1).padStart(2, '0'), 0, -10);
-              ctx.fillText(String(num2).padStart(2, '0'), 0, 10);
+              ctx.fillText(String(num1).padStart(2, '0'), 0, -14);
+              ctx.fillText(String(num2).padStart(2, '0'), 0, 14);
             }
           }
         } else {
@@ -319,11 +319,11 @@ export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 
           if (obj.bedType === 'litera') {
             const isHorizontal = obj.rotation === 90 || obj.rotation === 270;
             if (isHorizontal) {
-              ctx.fillText(String(objNumber).padStart(2, '0'), -10, 0);
-              ctx.fillText(String(objNumber).padStart(2, '0'), 10, 0);
+              ctx.fillText(String(objNumber).padStart(2, '0'), -14, 0);
+              ctx.fillText(String(objNumber).padStart(2, '0'), 14, 0);
             } else {
-              ctx.fillText(String(objNumber).padStart(2, '0'), 0, -10);
-              ctx.fillText(String(objNumber).padStart(2, '0'), 0, 10);
+              ctx.fillText(String(objNumber).padStart(2, '0'), 0, -14);
+              ctx.fillText(String(objNumber).padStart(2, '0'), 0, 14);
             }
           } else {
             ctx.fillText(String(objNumber).padStart(2, '0'), 0, 0);
