@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { Pencil, Square, Eraser, Undo2, BedDouble, BedSingle, MousePointer2, RotateCw, Trash2, XCircle, Copy, Clipboard, Link, Unlink } from 'lucide-react';
+import { Pencil, Square, Eraser, Undo2, BedDouble, BedSingle, MousePointer2, RotateCw, Trash2, XCircle, Copy, Clipboard, Link, Unlink, Type, Grid3x3 } from 'lucide-react';
 
-type Tool = 'select' | 'pencil' | 'rectangle' | 'eraser' | 'litera' | 'individual' | 'duplex';
+type Tool = 'select' | 'pencil' | 'rectangle' | 'eraser' | 'litera' | 'individual' | 'duplex' | 'text';
 
 type CanvasObject = {
   kind: 'bed';
@@ -20,6 +20,16 @@ type CanvasObject = {
   groupId?: string;
   width: number;
   height: number;
+  color: string;
+} | {
+  kind: 'text';
+  id: string;
+  x: number;
+  y: number;
+  rotation: number;
+  groupId?: string;
+  text: string;
+  fontSize: number;
   color: string;
 };
 
@@ -74,6 +84,9 @@ export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 
   // Clipboard state
   const [clipboard, setClipboard] = useState<CanvasObject[]>([]);
   const [pasteOffset, setPasteOffset] = useState(0);
+
+  // Grid
+  const [showGrid, setShowGrid] = useState(true);
 
   // Interaction state
   const [selectionBox, setSelectionBox] = useState<SelectionBox>({ startX: 0, startY: 0, endX: 0, endY: 0, active: false });
@@ -172,6 +185,10 @@ export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 
       const h = obj.bedType === 'litera' ? 52 : 36;
       return { w, h };
     }
+    if (obj.kind === 'text') {
+      const approxW = obj.text.length * obj.fontSize * 0.55;
+      return { w: approxW, h: obj.fontSize * 1.4 };
+    }
     return { w: obj.width, h: obj.height };
   };
 
@@ -189,6 +206,32 @@ export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 
     return obj.x >= minX && obj.x <= maxX && obj.y >= minY && obj.y <= maxY;
   };
 
+  // Dibujar grid de referencia
+  const drawGrid = useCallback((ctx: CanvasRenderingContext2D, w: number, h: number) => {
+    if (!showGrid) return;
+    const step = 25;
+    ctx.save();
+    for (let x = 0; x <= w; x += step) {
+      const isMajor = x % 100 === 0;
+      ctx.strokeStyle = isMajor ? 'rgba(0,0,0,0.12)' : 'rgba(0,0,0,0.06)';
+      ctx.lineWidth = isMajor ? 1 : 0.5;
+      ctx.beginPath();
+      ctx.moveTo(x, 0);
+      ctx.lineTo(x, h);
+      ctx.stroke();
+    }
+    for (let y = 0; y <= h; y += step) {
+      const isMajor = y % 100 === 0;
+      ctx.strokeStyle = isMajor ? 'rgba(0,0,0,0.12)' : 'rgba(0,0,0,0.06)';
+      ctx.lineWidth = isMajor ? 1 : 0.5;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(w, y);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }, [showGrid]);
+
   // Renderizar
   const renderCanvas = useCallback(() => {
     const canvas = canvasRef.current;
@@ -201,6 +244,7 @@ export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 
     // Restaurar la capa de dibujo desde el offscreen canvas (SIN camas)
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(offscreen, 0, 0);
+    drawGrid(ctx, canvas.width, canvas.height);
 
     let objectCounter = 0;
 
@@ -285,6 +329,23 @@ export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 
             ctx.fillText(String(objNumber).padStart(2, '0'), 0, 0);
           }
         }
+      } else if (obj.kind === 'text') {
+        ctx.rotate(-(obj.rotation * Math.PI) / 180);
+        ctx.fillStyle = obj.color;
+        ctx.font = `bold ${obj.fontSize}px Inter, sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(obj.text, 0, 0);
+
+        if (isSelected && !obj.groupId) {
+          const tw = ctx.measureText(obj.text).width;
+          const th = obj.fontSize * 1.4;
+          ctx.strokeStyle = '#FACC15';
+          ctx.lineWidth = 2.5;
+          ctx.setLineDash([4, 4]);
+          ctx.strokeRect(-tw / 2 - 6, -th / 2 - 4, tw + 12, th + 8);
+          ctx.setLineDash([]);
+        }
       } else {
         ctx.fillStyle = 'rgba(0,0,0,0.05)';
         ctx.beginPath();
@@ -363,7 +424,7 @@ export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 
       ctx.restore();
     }
 
-  }, [objects, history, selectedIds, selectionBox]);
+  }, [objects, history, selectedIds, selectionBox, drawGrid]);
 
   useEffect(() => {
     // No renderizar hasta que la inicialización (sync o async) haya terminado
@@ -446,6 +507,25 @@ export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 
       };
       setObjects(prev => [...prev, newObj]);
       setSelectedIds([newObj.id]);
+      return;
+    }
+
+    if (tool === 'text') {
+      const texto = window.prompt('Ingresa el texto:');
+      if (texto && texto.trim()) {
+        const newObj: CanvasObject = {
+          kind: 'text',
+          text: texto.trim(),
+          fontSize: 12,
+          color: color,
+          x: pos.x,
+          y: pos.y,
+          rotation: 0,
+          id: `text-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+        };
+        setObjects(prev => [...prev, newObj]);
+        setSelectedIds([newObj.id]);
+      }
       return;
     }
 
@@ -546,6 +626,7 @@ export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.drawImage(offscreen, 0, 0);
       }
+      drawGrid(ctx, canvas.width, canvas.height);
       objects.forEach(obj => {
         ctx.save();
         const { w, h } = getObjectDimensions(obj);
@@ -572,6 +653,13 @@ export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 
             ctx.lineTo(w / 2 - 4, 0);
             ctx.stroke();
           }
+        } else if (obj.kind === 'text') {
+          ctx.rotate(-(obj.rotation * Math.PI) / 180);
+          ctx.fillStyle = obj.color;
+          ctx.font = `bold ${obj.fontSize}px Inter, sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(obj.text, 0, 0);
         } else {
           ctx.fillStyle = 'rgba(0,0,0,0.05)';
           ctx.beginPath();
@@ -636,6 +724,21 @@ export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 
           setObjects(prev => [...prev, newObj]);
           setSelectedIds([newObj.id]);
         }
+      }
+    }
+  };
+
+  const handleDoubleClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const pos = getPos(e);
+    const clickedObj = [...objects].reverse().find(o => isPointInObject(pos.x, pos.y, o));
+    if (clickedObj && clickedObj.kind === 'text') {
+      const nuevoTexto = window.prompt('Editar texto:', clickedObj.text);
+      if (nuevoTexto !== null) {
+        setObjects(prev => prev.map(o =>
+          o.id === clickedObj.id && o.kind === 'text'
+            ? { ...o, text: nuevoTexto.trim() || o.text }
+            : o
+        ));
       }
     }
   };
@@ -806,6 +909,7 @@ export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 
     { id: 'litera', icon: <BedDouble size={16} />, label: `Litera (${objects.filter(o => o.kind === 'bed' && o.bedType === 'litera').length}/${maxLiteras})`, color: '#3B82F6' },
     { id: 'individual', icon: <BedSingle size={16} />, label: `Individual (${objects.filter(o => o.kind === 'bed' && o.bedType === 'individual').length}/${maxIndividuales})`, color: '#10B981' },
     { id: 'duplex', icon: <BedDouble size={16} />, label: `Duplex (${objects.filter(o => o.kind === 'bed' && o.bedType === 'duplex').length}/${maxDuplex})`, color: '#F59E0B' },
+    { id: 'text', icon: <Type size={16} />, label: 'Texto', color: '#6B7280' },
   ];
 
   return (
@@ -839,6 +943,21 @@ export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 
             className="w-6 h-6 border border-gray-300 rounded cursor-pointer"
           />
         </label>
+
+        <div className="w-px h-6 bg-gray-200 mx-1" />
+
+        <button
+          type="button"
+          onClick={() => setShowGrid(prev => !prev)}
+          title={showGrid ? 'Ocultar Grid' : 'Mostrar Grid'}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${showGrid
+              ? 'bg-gray-200 text-gray-700'
+              : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+            }`}
+        >
+          <Grid3x3 size={16} />
+          Grid
+        </button>
       </div>
 
       {/* Barra de Acciones y Selección */}
@@ -939,8 +1058,9 @@ export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
+        onDoubleClick={handleDoubleClick}
         className={`w-full block bg-gray-50/50 ${tool === 'select' ? 'cursor-default' :
-            tool === 'litera' || tool === 'individual' || tool === 'duplex' ? 'cursor-crosshair' :
+            tool === 'litera' || tool === 'individual' || tool === 'duplex' || tool === 'text' ? 'cursor-crosshair' :
               tool === 'eraser' ? 'cursor-cell' : 'cursor-crosshair'
           }`}
         style={{ imageRendering: 'auto' }}

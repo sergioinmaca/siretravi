@@ -18,6 +18,16 @@ interface PlacedRectangle {
   id: string;
 }
 
+interface PlacedText {
+  text: string;
+  x: number;
+  y: number;
+  rotation: number;
+  fontSize: number;
+  color: string;
+  id: string;
+}
+
 interface CroquisViewerProps {
   croquisData: string; // JSON serializado del editor
   carpaNombre: string;
@@ -42,6 +52,7 @@ export default function CroquisViewer({ croquisData, carpaNombre, width = 700, h
 
     let beds: PlacedBed[] = [];
     let rectangles: PlacedRectangle[] = [];
+    let texts: PlacedText[] = [];
 
     try {
       const parsed = JSON.parse(croquisData);
@@ -66,6 +77,17 @@ export default function CroquisViewer({ croquisData, carpaNombre, width = 700, h
           color: o.color as string,
           id: o.id as string,
         }));
+      texts = rawObjects
+        .filter(o => o.kind === 'text')
+        .map(o => ({
+          text: o.text as string,
+          x: o.x as number,
+          y: o.y as number,
+          rotation: o.rotation as number,
+          fontSize: o.fontSize as number,
+          color: o.color as string,
+          id: o.id as string,
+        }));
 
       // Restaurar el fondo (paredes dibujadas)
       if (parsed.drawingBase64) {
@@ -73,7 +95,8 @@ export default function CroquisViewer({ croquisData, carpaNombre, width = 700, h
         img.onload = () => {
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
           drawRectangles(ctx, rectangles);
-          // Dibujar camas encima de rectángulos
+          drawTexts(ctx, texts);
+          // Dibujar camas encima de textos y rectángulos
           drawBedsWithNumbers(ctx, beds, elementNumberOffset, tipoContabilizacion);
         };
         img.src = parsed.drawingBase64;
@@ -83,8 +106,9 @@ export default function CroquisViewer({ croquisData, carpaNombre, width = 700, h
       // Si el JSON no parsea, dejamos canvas en blanco
     }
 
-    // Si no hay drawingBase64, dibujar rectángulos y camas directamente
+    // Si no hay drawingBase64, dibujar rectángulos, textos y camas directamente
     drawRectangles(ctx, rectangles);
+    drawTexts(ctx, texts);
     drawBedsWithNumbers(ctx, beds, elementNumberOffset, tipoContabilizacion);
   }, [croquisData, elementNumberOffset, tipoContabilizacion]);
 
@@ -114,6 +138,9 @@ export default function CroquisViewer({ croquisData, carpaNombre, width = 700, h
         <div className="flex items-center gap-1.5">
           <span className="w-3 h-3 rounded bg-[#F59E0B] inline-block" /> Duplex (2 camas)
         </div>
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] font-bold text-gray-500">T</span> Texto
+        </div>
       </div>
     </div>
   );
@@ -134,6 +161,20 @@ function drawRectangles(ctx: CanvasRenderingContext2D, rects: PlacedRectangle[])
     ctx.lineWidth = 2;
     ctx.stroke();
 
+    ctx.restore();
+  });
+}
+
+function drawTexts(ctx: CanvasRenderingContext2D, texts: PlacedText[]) {
+  texts.forEach(t => {
+    ctx.save();
+    ctx.translate(t.x, t.y);
+    ctx.rotate((t.rotation * Math.PI) / 180);
+    ctx.fillStyle = t.color;
+    ctx.font = `bold ${t.fontSize}px Inter, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(t.text, 0, 0);
     ctx.restore();
   });
 }
