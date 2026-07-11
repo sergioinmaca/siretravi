@@ -26,6 +26,23 @@ export default function Inicio() {
     ? refugiados.filter(r => r.campamento_id === campamentoSeleccionado.id)
     : [];
   
+  const occupiedBeds = useMemo(() => {
+    return refugiadosDelCampamento
+      .map(r => r.nro_cama)
+      .filter((cama): cama is string => !!cama);
+  }, [refugiadosDelCampamento]);
+
+  const bedOccupants = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    refugiadosDelCampamento.forEach(r => {
+      if (r.nro_cama) {
+        if (!map[r.nro_cama]) map[r.nro_cama] = [];
+        map[r.nro_cama].push(`${r.nombres} ${r.apellidos}`);
+      }
+    });
+    return map;
+  }, [refugiadosDelCampamento]);
+
   const totalRefugiados = refugiadosDelCampamento.length;
   const totalHombres = refugiadosDelCampamento.filter(r => r.genero === true).length;
   const totalMujeres = refugiadosDelCampamento.filter(r => r.genero === false).length;
@@ -340,6 +357,8 @@ export default function Inicio() {
                 width={1100}
                 height={500}
                 tipoContabilizacion={tipoContabilizacion}
+                occupiedBeds={occupiedBeds}
+                bedOccupants={bedOccupants}
               />
             ))}
           </div>

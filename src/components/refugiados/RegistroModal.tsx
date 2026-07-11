@@ -10,7 +10,7 @@ interface RegistroModalProps {
 }
 
 export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: RegistroModalProps) {
-  const { campamentoSeleccionado, familias = [], agregarFamilia, agregarRefugiado, actualizarRefugiado } = useCampamento();
+  const { campamentoSeleccionado, familias = [], refugiados = [], agregarFamilia, agregarRefugiado, actualizarRefugiado } = useCampamento();
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditing = !!refugiadoToEdit;
@@ -301,6 +301,14 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Nro de Cama</label>
                   <input type="text" name="nroCama" value={formData.nroCama} onChange={handleChange} maxLength={3} pattern="[0-9]{0,3}" className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all" placeholder="EJ. 042" />
+                  {formData.nroCama && refugiados.some(
+                    r => r.campamento_id === campamentoSeleccionado?.id && r.nro_cama === formData.nroCama && r.id !== refugiadoToEdit?.id
+                  ) && (
+                    <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                      <AlertCircle size={12} />
+                      Esta cama ya tiene ocupantes
+                    </p>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Procedencia <span className="text-caracas-red">*</span></label>

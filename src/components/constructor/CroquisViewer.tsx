@@ -1,4 +1,4 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 
 interface PlacedBed {
   type: 'litera' | 'individual' | 'duplex';
@@ -28,17 +28,38 @@ interface PlacedText {
   id: string;
 }
 
+interface BedRenderInfo {
+  numbers: string[];
+  occupiedNumbers: string[];
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  rotation: number;
+}
+
+interface HoveredBed {
+  numbers: string[];
+  occupiedNumbers: string[];
+  x: number;
+  y: number;
+}
+
 interface CroquisViewerProps {
-  croquisData: string; // JSON serializado del editor
+  croquisData: string;
   carpaNombre: string;
   width?: number;
   height?: number;
-  elementNumberOffset?: number; // Para numerar elementos de forma continua entre carpas
+  elementNumberOffset?: number;
   tipoContabilizacion?: 'cama' | 'elemento';
+  occupiedBeds?: string[];
+  bedOccupants?: Record<string, string[]>;
 }
 
-export default function CroquisViewer({ croquisData, carpaNombre, width = 700, height = 400, elementNumberOffset = 0, tipoContabilizacion = 'elemento' }: CroquisViewerProps) {
+export default function CroquisViewer({ croquisData, carpaNombre, width = 700, height = 400, elementNumberOffset = 0, tipoContabilizacion = 'elemento', occupiedBeds = [], bedOccupants = {} }: CroquisViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const bedsRenderRef = useRef<BedRenderInfo[]>([]);
+  const [hoveredBed, setHoveredBed] = useState<HoveredBed | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -46,7 +67,6 @@ export default function CroquisViewer({ croquisData, carpaNombre, width = 700, h
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // Limpiar
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
@@ -89,28 +109,70 @@ export default function CroquisViewer({ croquisData, carpaNombre, width = 700, h
           id: o.id as string,
         }));
 
-      // Restaurar el fondo (paredes dibujadas)
+      const occupiedSet = new Set(occupiedBeds);
+      const accumulator: BedRenderInfo[] = [];
+
       if (parsed.drawingBase64) {
         const img = new Image();
         img.onload = () => {
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
           drawRectangles(ctx, rectangles);
           drawTexts(ctx, texts);
-          // Dibujar camas encima de textos y rectángulos
-          drawBedsWithNumbers(ctx, beds, elementNumberOffset, tipoContabilizacion);
+          drawBedsWithNumbers(ctx, beds, elementNumberOffset, tipoContabilizacion, occupiedSet, accumulator);
+          bedsRenderRef.current = accumulator;
         };
         img.src = parsed.drawingBase64;
-        return; // onload se encargará de renderizar
+        return;
       }
     } catch {
       // Si el JSON no parsea, dejamos canvas en blanco
     }
 
-    // Si no hay drawingBase64, dibujar rectángulos, textos y camas directamente
+    const occupiedSet = new Set(occupiedBeds);
+    const accumulator: BedRenderInfo[] = [];
     drawRectangles(ctx, rectangles);
     drawTexts(ctx, texts);
-    drawBedsWithNumbers(ctx, beds, elementNumberOffset, tipoContabilizacion);
-  }, [croquisData, elementNumberOffset, tipoContabilizacion]);
+    drawBedsWithNumbers(ctx, beds, elementNumberOffset, tipoContabilizacion, occupiedSet, accumulator);
+    bedsRenderRef.current = accumulator;
+  }, [croquisData, elementNumberOffset, tipoContabilizacion, occupiedBeds]);
+
+  const handleCanvasMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const mouseX = (e.clientX - rect.left) * scaleX;
+    const mouseY = (e.clientY - rect.top) * scaleY;
+
+    let found: HoveredBed | null = null;
+    for (const bed of bedsRenderRef.current) {
+      const dx = mouseX - bed.x;
+      const dy = mouseY - bed.y;
+      const angle = (bed.rotation * Math.PI) / 180;
+      const cos = Math.cos(-angle);
+      const sin = Math.sin(-angle);
+      const localX = dx * cos - dy * sin;
+      const localY = dx * sin + dy * cos;
+
+      if (Math.abs(localX) <= bed.w / 2 && Math.abs(localY) <= bed.h / 2) {
+        if (bed.occupiedNumbers.length > 0) {
+          found = {
+            numbers: bed.numbers,
+            occupiedNumbers: bed.occupiedNumbers,
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top,
+          };
+        }
+        break;
+      }
+    }
+    setHoveredBed(found);
+  }, []);
+
+  const handleCanvasMouseLeave = useCallback(() => {
+    setHoveredBed(null);
+  }, []);
 
   return (
     <div className="space-y-3">
@@ -119,13 +181,41 @@ export default function CroquisViewer({ croquisData, carpaNombre, width = 700, h
         <h4 className="font-semibold text-gray-800">{carpaNombre}</h4>
       </div>
       <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
-        <canvas
-          ref={canvasRef}
-          width={width}
-          height={height}
-          className="w-full block"
-          style={{ imageRendering: 'auto' }}
-        />
+        <div className="relative">
+          <canvas
+            ref={canvasRef}
+            width={width}
+            height={height}
+            className="w-full block"
+            style={{ imageRendering: 'auto' }}
+            onMouseMove={handleCanvasMouseMove}
+            onMouseLeave={handleCanvasMouseLeave}
+          />
+          {hoveredBed && (
+            <div
+              className="absolute z-50 bg-gray-900 text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-lg pointer-events-none whitespace-nowrap"
+              style={{
+                left: hoveredBed.x + 12,
+                top: hoveredBed.y,
+                transform: 'translateX(-50%) translateY(calc(-100% - 5px))',
+              }}
+            >
+              {hoveredBed.numbers.map(num => {
+                const occupants = hoveredBed.occupiedNumbers.includes(num) ? (bedOccupants[num] || []) : [];
+                return (
+                  <div key={num} className="border-b border-gray-700 last:border-0 py-0.5">
+                    <div className="font-semibold text-white/80">Cama {num}</div>
+                    {occupants.length > 0 ? occupants.map((name, i) => (
+                      <div key={i} className="pl-2 text-white">{name}</div>
+                    )) : (
+                      <div className="pl-2 text-gray-400">Libre</div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
       {/* Leyenda */}
       <div className="flex items-center gap-6 text-xs text-gray-500 px-1">
@@ -179,13 +269,50 @@ function drawTexts(ctx: CanvasRenderingContext2D, texts: PlacedText[]) {
   });
 }
 
-function drawBedsWithNumbers(ctx: CanvasRenderingContext2D, beds: PlacedBed[], offset: number, modo: 'cama' | 'elemento' = 'elemento') {
+function drawBedsWithNumbers(
+  ctx: CanvasRenderingContext2D,
+  beds: PlacedBed[],
+  offset: number,
+  modo: 'cama' | 'elemento' = 'elemento',
+  occupiedBedsSet: Set<string> = new Set(),
+  bedsRenderAccumulator: BedRenderInfo[] = []
+) {
   let elementCounter = offset;
 
   beds.forEach(bed => {
     const w = bed.type === 'duplex' ? 50 : bed.type === 'litera' ? 36 : 28;
     const h = bed.type === 'litera' ? 52 : 36;
     const bgColor = bed.type === 'litera' ? '#3B82F6' : bed.type === 'individual' ? '#10B981' : '#F59E0B';
+
+    let actualNumbers: string[] = [];
+
+    if (modo === 'cama') {
+      if (bed.type === 'individual') {
+        elementCounter++;
+        actualNumbers = [String(elementCounter).padStart(3, '0')];
+      } else {
+        actualNumbers = [
+          String(elementCounter + 1).padStart(3, '0'),
+          String(elementCounter + 2).padStart(3, '0'),
+        ];
+        elementCounter += 2;
+      }
+    } else {
+      elementCounter++;
+      actualNumbers = [String(elementCounter).padStart(3, '0')];
+    }
+
+    const occupiedNumbers = actualNumbers.filter(n => occupiedBedsSet.has(n));
+
+    bedsRenderAccumulator.push({
+      numbers: actualNumbers,
+      occupiedNumbers,
+      x: bed.x,
+      y: bed.y,
+      w,
+      h,
+      rotation: bed.rotation,
+    });
 
     ctx.save();
     ctx.translate(bed.x, bed.y);
@@ -197,14 +324,43 @@ function drawBedsWithNumbers(ctx: CanvasRenderingContext2D, beds: PlacedBed[], o
     ctx.shadowOffsetX = 1;
     ctx.shadowOffsetY = 2;
 
-    // Cuerpo
+    // Fondo base (color tipo)
     ctx.fillStyle = bgColor;
     ctx.beginPath();
     ctx.roundRect(-w / 2, -h / 2, w, h, 4);
     ctx.fill();
     ctx.shadowColor = 'transparent';
 
-    // Borde blanco
+    // Para litera en modo cama: pintar cada mitad independientemente
+    if (modo === 'cama' && bed.type === 'litera') {
+      const topOcc = occupiedNumbers.includes(actualNumbers[0]);
+      const bottomOcc = occupiedNumbers.includes(actualNumbers[1]);
+
+      if (topOcc || bottomOcc) {
+        ctx.beginPath();
+        ctx.roundRect(-w / 2, -h / 2, w, h, 4);
+        ctx.save();
+        ctx.clip();
+
+        if (topOcc) {
+          ctx.fillStyle = '#EF4444';
+          ctx.fillRect(-w / 2, -h / 2, w, h / 2);
+        }
+        if (bottomOcc) {
+          ctx.fillStyle = '#EF4444';
+          ctx.fillRect(-w / 2, 0, w, h / 2);
+        }
+
+        ctx.restore();
+      }
+    } else if (occupiedNumbers.length > 0) {
+      ctx.fillStyle = '#EF4444';
+      ctx.beginPath();
+      ctx.roundRect(-w / 2, -h / 2, w, h, 4);
+      ctx.fill();
+    }
+
+    // Borde: blanco siempre
     ctx.strokeStyle = '#FFFFFF';
     ctx.lineWidth = 1.5;
     ctx.stroke();
@@ -228,29 +384,22 @@ function drawBedsWithNumbers(ctx: CanvasRenderingContext2D, beds: PlacedBed[], o
     const isHorizontal = bed.rotation === 90 || bed.rotation === 270;
 
     if (modo === 'cama') {
-      // Por cama: litera/duplex suman 2 números
+      const num1 = actualNumbers[0];
       if (bed.type === 'individual') {
-        elementCounter++;
-        ctx.fillText(String(elementCounter).padStart(3, '0'), 0, 0);
+        ctx.fillText(num1, 0, 0);
       } else {
-        const num1 = elementCounter + 1;
-        const num2 = elementCounter + 2;
-        elementCounter += 2;
+        const num2 = actualNumbers[1];
         if (isHorizontal) {
-          ctx.fillText(String(num1).padStart(3, '0'), -10, 0);
-          ctx.fillText(String(num2).padStart(3, '0'), 10, 0);
+          ctx.fillText(num1, -10, 0);
+          ctx.fillText(num2, 10, 0);
         } else {
-          ctx.fillText(String(num1).padStart(3, '0'), 0, -10);
-          ctx.fillText(String(num2).padStart(3, '0'), 0, 10);
+          ctx.fillText(num1, 0, -10);
+          ctx.fillText(num2, 0, 10);
         }
       }
     } else {
-      // Por elemento (actual): 1 número por mueble
-      elementCounter++;
-      const num = String(elementCounter).padStart(3, '0');
-
+      const num = actualNumbers[0];
       if (bed.type === 'litera') {
-        // Litera: Colocamos el mismo número en ambas mitades
         if (isHorizontal) {
           ctx.fillText(num, -10, 0);
           ctx.fillText(num, 10, 0);
@@ -259,7 +408,6 @@ function drawBedsWithNumbers(ctx: CanvasRenderingContext2D, beds: PlacedBed[], o
           ctx.fillText(num, 0, 10);
         }
       } else {
-        // Individual y Duplex: Un solo número en el centro
         ctx.fillText(num, 0, 0);
       }
     }
@@ -283,7 +431,7 @@ export function countElements(croquisData: string, modo: 'cama' | 'elemento' = '
         return sum + (bed.type === 'individual' ? 1 : 2);
       }, 0);
     }
-    return beds.length; // Cada mueble cuenta como 1 elemento
+    return beds.length;
   } catch {
     return 0;
   }
