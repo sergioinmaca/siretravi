@@ -14,6 +14,7 @@ interface CampamentoContextType {
   actualizarCampamento: (id: string, actualizado: Campamento) => Promise<void>;
   eliminarCampamento: (id: string) => Promise<void>;
   agregarFamilia: (nueva: Familia) => Promise<Familia | null>;
+  eliminarFamilia: (id: string) => Promise<void>;
   agregarRefugiado: (nuevo: Refugiado) => Promise<void>;
   eliminarRefugiado: (id: string) => Promise<void>;
   actualizarRefugiado: (id: string, actualizado: Refugiado) => Promise<void>;
@@ -358,6 +359,17 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
     return familiaCreada;
   };
 
+  // ── Eliminar Familia ─────────────────────────────────────────────────────
+  const eliminarFamilia = async (id: string) => {
+    const { error } = await supabase.from('familias').delete().eq('id', id);
+    if (error) {
+      console.error('Error al eliminar familia:', error);
+      return;
+    }
+    setFamilias(prev => prev.filter(f => f.id !== id));
+    setRefugiados(prev => prev.map(r => r.familia_id === id ? { ...r, familia_id: undefined } : r));
+  };
+
   // ── Agregar Refugiado ──────────────────────────────────────────────────────
   const agregarRefugiado = async (nuevo: Refugiado) => {
     const { data, error } = await supabase
@@ -481,7 +493,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       campamentos, familias, refugiados,
       campamentoSeleccionado, loading, seleccionarCampamento,
       agregarCampamento, actualizarCampamento, eliminarCampamento,
-      agregarFamilia, agregarRefugiado, eliminarRefugiado, actualizarRefugiado,
+      agregarFamilia, eliminarFamilia, agregarRefugiado, eliminarRefugiado, actualizarRefugiado,
     }}>
       {children}
     </CampamentoContext.Provider>

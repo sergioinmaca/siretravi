@@ -214,7 +214,7 @@ export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 
     ctx.save();
     for (let x = 0; x <= w; x += step) {
       const isMajor = x % 100 === 0;
-      ctx.strokeStyle = isMajor ? 'rgba(0,0,0,0.12)' : 'rgba(0,0,0,0.06)';
+      ctx.strokeStyle = isMajor ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.15)';
       ctx.lineWidth = isMajor ? 1 : 0.5;
       ctx.beginPath();
       ctx.moveTo(x, 0);
@@ -223,7 +223,7 @@ export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 
     }
     for (let y = 0; y <= h; y += step) {
       const isMajor = y % 100 === 0;
-      ctx.strokeStyle = isMajor ? 'rgba(0,0,0,0.12)' : 'rgba(0,0,0,0.06)';
+      ctx.strokeStyle = isMajor ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.15)';
       ctx.lineWidth = isMajor ? 1 : 0.5;
       ctx.beginPath();
       ctx.moveTo(0, y);
@@ -883,6 +883,9 @@ export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 
       } else if (e.key.toLowerCase() === 'r') {
         e.preventDefault();
         rotateSelected();
+      } else if (e.key.toLowerCase() === 'v' && !(e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        setTool('select');
       } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c') {
         e.preventDefault();
         copySelected();
@@ -905,12 +908,12 @@ export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 
   const tools: { id: Tool; icon: React.ReactNode; label: string; color?: string }[] = [
     { id: 'select', icon: <MousePointer2 size={16} />, label: 'Seleccionar' },
     { id: 'pencil', icon: <Pencil size={16} />, label: 'Lápiz' },
+    { id: 'text', icon: <Type size={16} />, label: 'Texto', color: '#6B7280' },
     { id: 'rectangle', icon: <Square size={16} />, label: 'Rectángulo' },
     { id: 'eraser', icon: <Eraser size={16} />, label: 'Borrador' },
     { id: 'litera', icon: <BedDouble size={16} />, label: `Litera (${objects.filter(o => o.kind === 'bed' && o.bedType === 'litera').length}/${maxLiteras})`, color: '#3B82F6' },
     { id: 'individual', icon: <BedSingle size={16} />, label: `Individual (${objects.filter(o => o.kind === 'bed' && o.bedType === 'individual').length}/${maxIndividuales})`, color: '#10B981' },
     { id: 'duplex', icon: <BedDouble size={16} />, label: `Duplex (${objects.filter(o => o.kind === 'bed' && o.bedType === 'duplex').length}/${maxDuplex})`, color: '#F59E0B' },
-    { id: 'text', icon: <Type size={16} />, label: 'Texto', color: '#6B7280' },
   ];
 
   return (

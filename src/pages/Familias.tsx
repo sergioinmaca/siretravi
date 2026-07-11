@@ -1,12 +1,12 @@
 import { useState, useMemo } from 'react';
-import { Users, Search, ChevronRight, ShieldOff } from 'lucide-react';
+import { Users, Search, ChevronRight, ShieldOff, Trash2 } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
 import DetalleFamiliaModal from '../components/familias/DetalleFamiliaModal';
 import type { Familia } from '../types';
 
 export default function Familias() {
-  const { campamentoSeleccionado, familias = [], refugiados = [] } = useCampamento();
+  const { campamentoSeleccionado, familias = [], refugiados = [], eliminarFamilia } = useCampamento();
   const { tienePermisoPorCampamento } = useAuth();
 
   const tieneAcceso = campamentoSeleccionado
@@ -46,6 +46,13 @@ export default function Familias() {
   const closeModal = () => {
     setIsModalOpen(false);
     setSelectedFamilia(null);
+  };
+
+  const handleEliminar = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    if (window.confirm('¿Estás seguro de que deseas eliminar esta familia? Esta acción no se puede deshacer.')) {
+      eliminarFamilia(id);
+    }
   };
 
   return (
@@ -102,7 +109,18 @@ export default function Familias() {
                   <Users size={16} className="text-caracas-blue" />
                   <span className="font-medium">{fam.integrantes} miembro{fam.integrantes !== 1 ? 's' : ''}</span>
                 </div>
-                <span className="text-xs text-caracas-blue font-medium group-hover:underline">Ver detalle</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-caracas-blue font-medium group-hover:underline">Ver detalle</span>
+                  {campamentoSeleccionado && tienePermisoPorCampamento('Familias', campamentoSeleccionado.id, 'Eliminar') && (
+                    <button
+                      onClick={(e) => handleEliminar(e, fam.id)}
+                      className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      title="Eliminar familia"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           ))}
