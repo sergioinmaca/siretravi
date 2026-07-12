@@ -3,7 +3,7 @@ import dayjs from 'dayjs';
 import type { EventoOcurrencia, CategoriaEvento } from '../../types';
 import { formatTime12h } from '../../lib/formatTime';
 
-const DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const DIAS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
 interface CalendarioMensualProps {
   currentDate: dayjs.Dayjs;
