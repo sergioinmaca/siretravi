@@ -313,10 +313,10 @@ export default function Agenda() {
         <div className="flex items-center gap-2">
           <button
             onClick={handleExportPDF}
-            title="Exportar PDF"
-            className="p-2 rounded-lg hover:bg-gray-200 text-gray-600 transition-colors"
+            className="flex items-center gap-2 bg-caracas-red hover:bg-red-800 text-white px-4 py-2 rounded-lg font-medium transition-colors shadow-sm text-sm"
           >
-            <FileDown size={20} />
+            <FileDown size={16} />
+            Exportar PDF Impresión
           </button>
           <button
             onClick={navegarAtras}
