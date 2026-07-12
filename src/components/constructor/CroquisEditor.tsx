@@ -53,7 +53,7 @@ interface CroquisEditorProps {
   elementNumberOffset?: number;
 }
 
-export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 0, maxIndividuales = 0, maxDuplex = 0, tipoContabilizacion = 'elemento', initialData, onChange, elementNumberOffset = 0 }: CroquisEditorProps) {
+export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 0, maxIndividuales = 0, maxDuplex = 0, tipoContabilizacion = 'elemento', initialData, onChange, elementNumberOffset = 0 }: CroquisEditorProps) {
   // Bandera: el canvas está listo para ser renderizado
   const isInitialized = useRef(false);
   // Capturamos initialData en un ref al momento del montaje.
@@ -158,10 +158,10 @@ export default function CroquisEditor({ width = 700, height = 400, maxLiteras = 
         img.onload = () => {
           offCtx.fillStyle = '#FFFFFF';
           offCtx.fillRect(0, 0, offscreen.width, offscreen.height);
-          offCtx.drawImage(img, 0, 0, offscreen.width, offscreen.height);
+          offCtx.drawImage(img, 0, 0);
           ctx.fillStyle = '#FFFFFF';
           ctx.fillRect(0, 0, canvas.width, canvas.height);
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0);
           saveSnapshot();
           setObjects(savedObjects);
           isInitialized.current = true;
