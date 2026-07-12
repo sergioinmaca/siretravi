@@ -6,7 +6,7 @@ El sistema (Sistema de Registro Transitorio Ávila - SIRETRAVI) es una aplicaci�
 ## 2. Stack Tecnológico
 *   **Frontend:** React con Vite.
 *   **Estilos:** CSS / Tailwind CSS. Se debe adaptar estrictamente a la paleta de colores institucional de la Alcaldía de Caracas (tomando como base la bandera oficial que se encuentra en la carpeta del proyecto).
-*   **Hosting y Autenticación:** Firebase (para despliegue del frontend, y potencialmente servicios de autenticación).
+*   **Hosting y Autenticación:** Firebase (para despliegue del frontend).
 *   **Backend y Base de Datos:** Base de datos relacional almacenada y gestionada a través de Supabase (PostgreSQL), similar al stack utilizado en la "app zentra".
 
 ## 3. Modelo de Datos Principal

@@ -76,4 +76,13 @@ export interface Refugiado {
   mascota_raza?: string;
   mascota_nombre?: string;
   mascota_edad?: number;
+  telefono?: number;
+  profesion?: string;
+  talla_camisa?: string;
+  talla_pantalon?: string;
+  talla_zapatos?: string;
+  alergias: boolean;
+  tipo_alergia?: string;
+  enfermedad_cronica: boolean;
+  medicamento_enfermedad?: string;
 }

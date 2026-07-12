@@ -107,6 +107,15 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
           mascota_raza: (r.mascota_raza as string) || undefined,
           mascota_nombre: (r.mascota_nombre as string) || undefined,
           mascota_edad: r.mascota_edad as number | undefined,
+          telefono: r.telefono as number | undefined,
+          profesion: (r.profesion as string) || undefined,
+          talla_camisa: (r.talla_camisa as string) || undefined,
+          talla_pantalon: (r.talla_pantalon as string) || undefined,
+          talla_zapatos: (r.talla_zapatos as string) || undefined,
+          alergias: r.alergias as boolean,
+          tipo_alergia: (r.tipo_alergia as string) || undefined,
+          enfermedad_cronica: r.enfermedad_cronica as boolean,
+          medicamento_enfermedad: (r.medicamento_enfermedad as string) || undefined,
         }));
 
         setCampamentos(campamentosMapped);
@@ -150,6 +159,15 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       mascota_raza: r.mascota_raza || undefined,
       mascota_nombre: r.mascota_nombre || undefined,
       mascota_edad: r.mascota_edad || undefined,
+      telefono: r.telefono || undefined,
+      profesion: r.profesion || undefined,
+      talla_camisa: r.talla_camisa || undefined,
+      talla_pantalon: r.talla_pantalon || undefined,
+      talla_zapatos: r.talla_zapatos || undefined,
+      alergias: r.alergias,
+      tipo_alergia: r.tipo_alergia || undefined,
+      enfermedad_cronica: r.enfermedad_cronica,
+      medicamento_enfermedad: r.medicamento_enfermedad || undefined,
     });
 
     const channel = supabase.channel('campamentos-realtime')
@@ -401,6 +419,15 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         mascota_raza: nuevo.mascota_raza || null,
         mascota_nombre: nuevo.mascota_nombre || null,
         mascota_edad: nuevo.mascota_edad || null,
+        telefono: nuevo.telefono || null,
+        profesion: nuevo.profesion || null,
+        talla_camisa: nuevo.talla_camisa || null,
+        talla_pantalon: nuevo.talla_pantalon || null,
+        talla_zapatos: nuevo.talla_zapatos || null,
+        alergias: nuevo.alergias,
+        tipo_alergia: nuevo.tipo_alergia || null,
+        enfermedad_cronica: nuevo.enfermedad_cronica,
+        medicamento_enfermedad: nuevo.medicamento_enfermedad || null,
       })
       .select()
       .single();
@@ -432,6 +459,15 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       mascota_raza: data.mascota_raza || undefined,
       mascota_nombre: data.mascota_nombre || undefined,
       mascota_edad: data.mascota_edad || undefined,
+      telefono: data.telefono || undefined,
+      profesion: data.profesion || undefined,
+      talla_camisa: data.talla_camisa || undefined,
+      talla_pantalon: data.talla_pantalon || undefined,
+      talla_zapatos: data.talla_zapatos || undefined,
+      alergias: data.alergias,
+      tipo_alergia: data.tipo_alergia || undefined,
+      enfermedad_cronica: data.enfermedad_cronica,
+      medicamento_enfermedad: data.medicamento_enfermedad || undefined,
     };
     setRefugiados(prev => [...prev, refugiadoCreado]);
   };
@@ -477,6 +513,15 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         mascota_raza: actualizado.mascota_raza || null,
         mascota_nombre: actualizado.mascota_nombre || null,
         mascota_edad: actualizado.mascota_edad || null,
+        telefono: actualizado.telefono || null,
+        profesion: actualizado.profesion || null,
+        talla_camisa: actualizado.talla_camisa || null,
+        talla_pantalon: actualizado.talla_pantalon || null,
+        talla_zapatos: actualizado.talla_zapatos || null,
+        alergias: actualizado.alergias,
+        tipo_alergia: actualizado.tipo_alergia || null,
+        enfermedad_cronica: actualizado.enfermedad_cronica,
+        medicamento_enfermedad: actualizado.medicamento_enfermedad || null,
       })
       .eq('id', id);
 

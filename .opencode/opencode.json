@@ -1,0 +1,14 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "agent": {
+    "default": {
+      "prompt": "IMPORTANTE: Cuando el usuario diga 'ponte al día' o 'ponte al dia', debes cargar y ejecutar la skill 'contexto-siretravi' siguiendo TODOS sus pasos. No respondas ninguna otra petición hasta haber completado la skill.\n\nIMPORTANTE: Cuando el usuario diga 'actualiza al contexto' o 'actualiza el contexto', debes cargar y ejecutar la skill 'actualizar-contexto' siguiendo TODOS sus pasos. No respondas ninguna otra petición hasta haber completado la skill."
+    }
+  },
+  "permission": {
+    "skill": {
+      "contexto-siretravi": "allow",
+      "actualizar-contexto": "allow"
+    }
+  }
+}

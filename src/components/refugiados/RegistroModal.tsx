@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useCampamento } from '../../context/CampamentoContext';
-import { User, Users, MapPin, Save, AlertCircle, CheckCircle2, X, Accessibility } from 'lucide-react';
+import { User, Users, MapPin, Save, AlertCircle, CheckCircle2, X, Accessibility, Shirt } from 'lucide-react';
 import type { Refugiado } from '../../types';
 import { formatAge } from '../../lib/formatAge';
 
@@ -15,6 +15,15 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditing = !!refugiadoToEdit;
+
+  const TIPOS_DISCAPACIDAD = [
+    'Física o motriz',
+    'Sensorial',
+    'Intelectual',
+    'Psicosocial o mental',
+    'Visceral u Orgánica',
+    'Múltiple',
+  ];
 
   const [formData, setFormData] = useState({
     nombres: '',
@@ -38,7 +47,16 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     mascotaSexo: '',
     mascotaRaza: '',
     mascotaNombre: '',
-    mascotaEdad: ''
+    mascotaEdad: '',
+    telefono: '',
+    profesion: '',
+    tallaCamisa: '',
+    tallaPantalon: '',
+    tallaZapatos: '',
+    alergias: false,
+    tipoAlergia: '',
+    enfermedadCronica: false,
+    medicamentoEnfermedad: ''
   });
 
   // Precargar datos cuando se edita
@@ -73,7 +91,16 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
         mascotaSexo: refugiadoToEdit.mascota_sexo === true ? 'M' : refugiadoToEdit.mascota_sexo === false ? 'F' : '',
         mascotaRaza: refugiadoToEdit.mascota_raza || '',
         mascotaNombre: refugiadoToEdit.mascota_nombre || '',
-        mascotaEdad: refugiadoToEdit.mascota_edad?.toString() || ''
+        mascotaEdad: refugiadoToEdit.mascota_edad?.toString() || '',
+        telefono: refugiadoToEdit.telefono?.toString() || '',
+        profesion: refugiadoToEdit.profesion || '',
+        tallaCamisa: refugiadoToEdit.talla_camisa || '',
+        tallaPantalon: refugiadoToEdit.talla_pantalon || '',
+        tallaZapatos: refugiadoToEdit.talla_zapatos || '',
+        alergias: refugiadoToEdit.alergias,
+        tipoAlergia: refugiadoToEdit.tipo_alergia || '',
+        enfermedadCronica: refugiadoToEdit.enfermedad_cronica,
+        medicamentoEnfermedad: refugiadoToEdit.medicamento_enfermedad || ''
       });
     } else if (isOpen && !refugiadoToEdit) {
       setFormData({
@@ -82,7 +109,11 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
         nroCama: '', procedencia: '', fechaIngreso: '', direccionExacta: '',
         discapacidad: false, tipoDiscapacidad: '',
         embarazo: false, tiempoEmbarazo: '', mascotas: false, tipoMascota: '',
-        mascotaSexo: '', mascotaRaza: '', mascotaNombre: '', mascotaEdad: ''
+        mascotaSexo: '', mascotaRaza: '', mascotaNombre: '', mascotaEdad: '',
+        telefono: '', profesion: '',
+        tallaCamisa: '', tallaPantalon: '', tallaZapatos: '',
+        alergias: false, tipoAlergia: '',
+        enfermedadCronica: false, medicamentoEnfermedad: ''
       });
     }
   }, [isOpen, refugiadoToEdit]);
@@ -151,7 +182,16 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       mascota_sexo: formData.mascotaSexo === 'M' ? true : formData.mascotaSexo === 'F' ? false : undefined,
       mascota_raza: formData.mascotaRaza || undefined,
       mascota_nombre: formData.mascotaNombre || undefined,
-      mascota_edad: formData.mascotaEdad ? parseInt(formData.mascotaEdad) : undefined
+      mascota_edad: formData.mascotaEdad ? parseInt(formData.mascotaEdad) : undefined,
+      telefono: formData.telefono ? parseInt(formData.telefono) : undefined,
+      profesion: formData.profesion || undefined,
+      talla_camisa: formData.tallaCamisa || undefined,
+      talla_pantalon: formData.tallaPantalon || undefined,
+      talla_zapatos: formData.tallaZapatos || undefined,
+      alergias: formData.alergias,
+      tipo_alergia: formData.tipoAlergia || undefined,
+      enfermedad_cronica: formData.enfermedadCronica,
+      medicamento_enfermedad: formData.medicamentoEnfermedad || undefined
     };
 
     if (isEditing && refugiadoToEdit) {
@@ -244,6 +284,14 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Edad</label>
                   <input type="text" name="edad" value={formData.edad} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl bg-gray-100 text-gray-600 outline-none" placeholder="Calculada auto" readOnly />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono (Opcional)</label>
+                  <input type="number" name="telefono" value={formData.telefono} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all" placeholder="Ej. 04141234567" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Profesión u Ocupación (Opcional)</label>
+                  <input type="text" name="profesion" value={formData.profesion} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase" placeholder="EJ. INGENIERO CIVIL" />
                 </div>
               </div>
             </div>
@@ -341,15 +389,69 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                   {formData.discapacidad && (
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Discapacidad</label>
+                      <select
+                        name="tipoDiscapacidad"
+                        value={formData.tipoDiscapacidad}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all"
+                      >
+                        <option value="">-- SELECCIONE --</option>
+                        {TIPOS_DISCAPACIDAD.map(tipo => (
+                          <option key={tipo} value={tipo}>{tipo}</option>
+                        ))}
+                      </select>
+                  </div>
+                )}
+
+                <div className="space-y-3 border-t border-gray-100 pt-4">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.alergias}
+                      onChange={(e) => setFormData(prev => ({ ...prev, alergias: e.target.checked }))}
+                      className="w-5 h-5 text-caracas-red focus:ring-caracas-red rounded"
+                    />
+                    <span className="text-gray-700 font-medium">¿Presenta alguna alergia?</span>
+                  </label>
+                  {formData.alergias && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Especifique a qué es alérgico</label>
                       <input
                         type="text"
-                        value={formData.tipoDiscapacidad}
-                        onChange={(e) => setFormData(prev => ({ ...prev, tipoDiscapacidad: e.target.value.toUpperCase() }))}
+                        name="tipoAlergia"
+                        value={formData.tipoAlergia}
+                        onChange={handleChange}
                         className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase"
-                        placeholder="EJ. MOTORA, VISUAL, AUDITIVA"
+                        placeholder="EJ. PENICILINA, POLEN, MANÍ"
                       />
                     </div>
                   )}
+                </div>
+
+                <div className="space-y-3 border-t border-gray-100 pt-4">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.enfermedadCronica}
+                      onChange={(e) => setFormData(prev => ({ ...prev, enfermedadCronica: e.target.checked }))}
+                      className="w-5 h-5 text-caracas-red focus:ring-caracas-red rounded"
+                    />
+                    <span className="text-gray-700 font-medium">¿Posee alguna enfermedad que requiera tratamiento de por vida?</span>
+                  </label>
+                  {formData.enfermedadCronica && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">¿Qué medicamento necesita?</label>
+                      <input
+                        type="text"
+                        name="medicamentoEnfermedad"
+                        value={formData.medicamentoEnfermedad}
+                        onChange={handleChange}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase"
+                        placeholder="EJ. INSULINA, LEVOTIROXINA"
+                      />
+                    </div>
+                  )}
+                </div>
                 </div>
 
                 {formData.genero === 'F' && (
@@ -466,6 +568,30 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                     )}
                   </div>
                 )}
+              </div>
+            </div>
+            
+            {/* Tarjeta 5: Vestimenta */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
+                <div className="p-2 bg-teal-100 rounded-lg">
+                  <Shirt size={18} className="text-teal-600" />
+                </div>
+                <h3 className="font-semibold text-gray-800">5. Vestimenta</h3>
+              </div>
+              <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Talla de Camisa (Opcional)</label>
+                  <input type="text" name="tallaCamisa" value={formData.tallaCamisa} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase" placeholder="EJ. M, L, XL" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Talla de Pantalón (Opcional)</label>
+                  <input type="text" name="tallaPantalon" value={formData.tallaPantalon} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase" placeholder="EJ. 32, 34, M, L" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Talla de Zapatos (Opcional)</label>
+                  <input type="text" name="tallaZapatos" value={formData.tallaZapatos} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase" placeholder="EJ. 38, 40, 42" />
+                </div>
               </div>
             </div>
             
