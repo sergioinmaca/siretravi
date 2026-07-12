@@ -472,9 +472,16 @@ export default function Agenda() {
         pdf.text(`${campamentoSeleccionado?.nombre || ''}`, m, m + 5);
         pdf.setFontSize(8);
         pdf.text(`Agenda ${tituloPeriodo()} - Listado de eventos`, pw - m, m + 5, { align: 'right' });
+      } else if (vista === 'semana') {
+        pdf.addPage();
+        pdf.setFontSize(11);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(`${campamentoSeleccionado?.nombre || ''}`, m, m + 5);
+        pdf.setFontSize(8);
+        pdf.text(`Agenda ${tituloPeriodo()} - Listado de eventos`, pw - m, m + 5, { align: 'right' });
       }
 
-      const actY = vista === 'mes' ? m + 16 : calY + dayH + calGridH + 4;
+      const actY = (vista === 'mes' || vista === 'semana') ? m + 16 : calY + dayH + calGridH + 4;
       const DIAS_N = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
       const gap = 1;
       const numCols = vista === 'mes' ? 6 : 7;
@@ -486,7 +493,7 @@ export default function Agenda() {
       const dias = Array.from(agrup.keys()).sort();
 
       if (dias.length > 0) {
-        const finAct = ph - m;
+        const finAct = vista === 'semana' ? m + 16 + (ph - 2 * m - 16) * 0.55 : ph - m;
 
         pdf.setDrawColor(200, 200, 200);
         for (let i = 1; i < numCols; i++) {
@@ -517,6 +524,19 @@ export default function Agenda() {
           pdf.setTextColor(156, 163, 175);
           pdf.text(hStr, colXs[col] + 2, colYs[col]);
           colYs[col] += 5;
+
+          if (vista === 'semana' && e.descripcion && e.tipo !== 'permanente') {
+            if (colYs[col] > finAct - 2) return;
+            pdf.setFontSize(6);
+            pdf.setFont('helvetica', 'normal');
+            pdf.setTextColor(107, 114, 128);
+            const descWrapped = pdf.splitTextToSize(e.descripcion, colW - 2);
+            for (const line of descWrapped) {
+              if (colYs[col] > finAct - 2) break;
+              pdf.text(line, colXs[col] + 2, colYs[col]);
+              colYs[col] += 3;
+            }
+          }
         };
 
         if (vista === 'semana') {
@@ -563,6 +583,40 @@ export default function Agenda() {
               renderEntry(col, e);
             }
             colYs[col] += 1;
+          }
+        }
+
+        if (vista === 'semana') {
+          const permDesc = eventos.filter(e => e.tipo === 'permanente' && e.descripcion);
+          if (permDesc.length > 0) {
+            const unicos = Array.from(new Map(permDesc.map(e => [e.id, e])).values());
+            const ly = finAct + 4;
+            pdf.setDrawColor(200, 200, 200);
+            pdf.line(m, ly, pw - m, ly);
+            pdf.setFontSize(8);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(55, 65, 81);
+            pdf.text('Eventos permanentes:', m, ly + 4);
+            pdf.setFontSize(7);
+            let py = ly + 9;
+            for (const e of unicos) {
+              if (py > ph - m - 2) break;
+              const rgb = hexToRgb(getCategoriaColor(e.categoria_id, e.tipo));
+              pdf.setFillColor(rgb.r, rgb.g, rgb.b);
+              pdf.circle(m + 1.5, py - 0.5, 1.5, 'F');
+              pdf.setTextColor(rgb.r, rgb.g, rgb.b);
+              pdf.setFont('helvetica', 'bold');
+              pdf.text(e.titulo + ':', m + 4, py);
+              pdf.setFont('helvetica', 'normal');
+              pdf.setTextColor(75, 85, 99);
+              const descWrapped = pdf.splitTextToSize(e.descripcion as string, pw - m * 2 - 4);
+              for (const line of descWrapped) {
+                if (py > ph - m - 2) break;
+                pdf.text(line, m + 4, py);
+                py += 3;
+              }
+              py += 2;
+            }
           }
         }
       }
