@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react';
 import { X, Save } from 'lucide-react';
 import dayjs from 'dayjs';
+import SelectorCategoria from './SelectorCategoria';
+import { fetchCategorias, crearCategoria, actualizarCategoria } from '../../lib/eventos';
+import type { CategoriaEvento } from '../../types';
 
 interface CrearEventoModalProps {
   isOpen: boolean;
@@ -9,22 +12,26 @@ interface CrearEventoModalProps {
     titulo: string;
     fecha_inicio: string;
     hora_inicio: string;
-    hora_fin: string;
+    hora_fin?: string;
     descripcion?: string;
     tipo: 'permanente' | 'unico';
     fecha_fin?: string;
+    categoria_id?: string;
   }) => Promise<void>;
   selectedDate?: dayjs.Dayjs;
   campamentoNombre?: string;
+  tienePermisoCrear?: boolean;
 }
 
-export default function CrearEventoModal({ isOpen, onClose, onSave, selectedDate, campamentoNombre }: CrearEventoModalProps) {
+export default function CrearEventoModal({ isOpen, onClose, onSave, selectedDate, campamentoNombre, tienePermisoCrear }: CrearEventoModalProps) {
   const [titulo, setTitulo] = useState('');
   const [fecha, setFecha] = useState('');
   const [horaInicio, setHoraInicio] = useState('08:00');
-  const [horaFin, setHoraFin] = useState('09:00');
+  const [horaFin, setHoraFin] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [tipo, setTipo] = useState<'unico' | 'permanente'>('unico');
+  const [categoriaId, setCategoriaId] = useState<string | undefined>();
+  const [categorias, setCategorias] = useState<CategoriaEvento[]>([]);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -33,10 +40,12 @@ export default function CrearEventoModal({ isOpen, onClose, onSave, selectedDate
       setFecha(selectedDate ? selectedDate.format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD'));
       setTitulo('');
       setHoraInicio('08:00');
-      setHoraFin('09:00');
+      setHoraFin('');
       setDescripcion('');
       setTipo('unico');
+      setCategoriaId(undefined);
       setError('');
+      fetchCategorias().then(setCategorias).catch(console.error);
     }
   }, [isOpen, selectedDate]);
 
@@ -49,7 +58,7 @@ export default function CrearEventoModal({ isOpen, onClose, onSave, selectedDate
       return;
     }
 
-    if (horaInicio >= horaFin) {
+    if (horaFin && horaInicio >= horaFin) {
       setError('La hora de fin debe ser posterior a la hora de inicio');
       return;
     }
@@ -64,10 +73,11 @@ export default function CrearEventoModal({ isOpen, onClose, onSave, selectedDate
         titulo: titulo.trim(),
         fecha_inicio: fecha,
         hora_inicio: horaInicio,
-        hora_fin: horaFin,
+        hora_fin: horaFin || undefined,
         descripcion: descripcion.trim() || undefined,
         tipo,
         fecha_fin: fechaFin,
+        categoria_id: categoriaId || undefined,
       });
       onClose();
     } catch (err: any) {
@@ -75,6 +85,17 @@ export default function CrearEventoModal({ isOpen, onClose, onSave, selectedDate
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleCrearCategoria = async (nombre: string, color: string) => {
+    const nueva = await crearCategoria({ nombre, color });
+    setCategorias(prev => [...prev, nueva]);
+    setCategoriaId(nueva.id);
+  };
+
+  const handleUpdateCategoria = async (id: string, nombre: string, color: string) => {
+    const actualizada = await actualizarCategoria(id, { nombre, color });
+    setCategorias(prev => prev.map(c => c.id === id ? actualizada : c));
   };
 
   if (!isOpen) return null;
@@ -169,7 +190,7 @@ export default function CrearEventoModal({ isOpen, onClose, onSave, selectedDate
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Hora fin</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Hora fin <span className="text-gray-400 font-normal">(opcional)</span></label>
               <input
                 type="time"
                 value={horaFin}
@@ -178,6 +199,15 @@ export default function CrearEventoModal({ isOpen, onClose, onSave, selectedDate
               />
             </div>
           </div>
+
+          <SelectorCategoria
+            categorias={categorias}
+            selectedId={categoriaId}
+            onSelect={setCategoriaId}
+            onCreateCategoria={handleCrearCategoria}
+            onUpdateCategoria={handleUpdateCategoria}
+            puedeCrear={!!tienePermisoCrear}
+          />
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Descripción (opcional)</label>

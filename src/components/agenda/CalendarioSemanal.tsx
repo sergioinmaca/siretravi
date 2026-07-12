@@ -1,24 +1,47 @@
+import { useState } from 'react';
 import dayjs from 'dayjs';
-import type { EventoOcurrencia } from '../../types';
+import type { EventoOcurrencia, CategoriaEvento } from '../../types';
 import { formatTime12h, formatHourLabel } from '../../lib/formatTime';
 
 const DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-const HORAS = Array.from({ length: 16 }, (_, i) => i + 6); // 6:00 a 21:00
+const HORAS = Array.from({ length: 16 }, (_, i) => i + 6);
 
 interface CalendarioSemanalProps {
   currentDate: dayjs.Dayjs;
   eventosPorDia: Map<string, EventoOcurrencia[]>;
   onDayClick: (date: dayjs.Dayjs) => void;
+  categorias: CategoriaEvento[];
 }
 
-export default function CalendarioSemanal({ currentDate, eventosPorDia, onDayClick }: CalendarioSemanalProps) {
+export default function CalendarioSemanal({ currentDate, eventosPorDia, onDayClick, categorias }: CalendarioSemanalProps) {
   const hoy = dayjs().format('YYYY-MM-DD');
   const inicioSemana = currentDate.startOf('week');
 
+  const [hoveredEvent, setHoveredEvent] = useState<{
+    descripcion: string;
+    x: number;
+    y: number;
+  } | null>(null);
+
   const diasSemana = DIAS.map((_, i) => inicioSemana.add(i, 'day'));
 
+  const getCategoriaColor = (evento: EventoOcurrencia): string => {
+    if (evento.categoria_id) {
+      const cat = categorias.find(c => c.id === evento.categoria_id);
+      if (cat) return cat.color;
+    }
+    return evento.tipo === 'permanente' ? '#A855F7' : '#3B82F6';
+  };
+
+  const formatHoraRange = (evento: EventoOcurrencia): string => {
+    if (evento.hora_fin) {
+      return `${formatTime12h(evento.hora_inicio)}-${formatTime12h(evento.hora_fin)}`;
+    }
+    return formatTime12h(evento.hora_inicio);
+  };
+
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col flex-1 min-h-0 h-full">
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col flex-1 min-h-0 h-full relative">
       <div className="flex flex-1 min-h-0 overflow-auto" style={{ minWidth: '700px' }}>
         <div className="w-16 shrink-0 border-r border-gray-300">
           <div className="h-14 border-b border-gray-300" />
@@ -68,6 +91,7 @@ export default function CalendarioSemanal({ currentDate, eventosPorDia, onDayCli
                       {eventosEnHora.map((evento, idx) => {
                         const duracionMin = (() => {
                           const [hi, mi] = evento.hora_inicio.split(':').map(Number);
+                          if (!evento.hora_fin) return 60;
                           const [hf, mf] = evento.hora_fin.split(':').map(Number);
                           return (hf - hi) * 60 + (mf - mi);
                         })();
@@ -76,10 +100,22 @@ export default function CalendarioSemanal({ currentDate, eventosPorDia, onDayCli
                         return (
                           <div
                             key={`${evento.id}-${idx}`}
-                            className={`text-[13px] px-1 py-0.5 rounded text-white relative z-10 ${
-                              evento.tipo === 'permanente' ? 'bg-purple-500' : 'bg-blue-500'
-                            }`}
-                            style={{ minHeight: `${alturaSlots * 3}rem` }}
+                            className="text-[13px] px-1 py-0.5 rounded text-white relative z-10"
+                            style={{
+                              backgroundColor: getCategoriaColor(evento),
+                              minHeight: `${alturaSlots * 3}rem`,
+                            }}
+                            onMouseEnter={(e) => {
+                              if (evento.descripcion) {
+                                const rect = (e.target as HTMLElement).getBoundingClientRect();
+                                setHoveredEvent({
+                                  descripcion: evento.descripcion,
+                                  x: rect.left + rect.width / 2,
+                                  y: rect.top,
+                                });
+                              }
+                            }}
+                            onMouseLeave={() => setHoveredEvent(null)}
                           >
                             <div className="flex items-center gap-1">
                               {evento.tipo === 'permanente' && (
@@ -88,7 +124,7 @@ export default function CalendarioSemanal({ currentDate, eventosPorDia, onDayCli
                               <span className="truncate font-medium">{evento.titulo}</span>
                             </div>
                             <span className="opacity-80 text-xs block leading-tight">
-                              {formatTime12h(evento.hora_inicio)}-{formatTime12h(evento.hora_fin)}
+                              {formatHoraRange(evento)}
                             </span>
                           </div>
                         );
@@ -101,6 +137,19 @@ export default function CalendarioSemanal({ currentDate, eventosPorDia, onDayCli
           })}
         </div>
       </div>
+
+      {hoveredEvent && (
+        <div
+          className="fixed z-50 bg-gray-900 text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-lg pointer-events-none whitespace-pre-wrap max-w-[250px] break-words"
+          style={{
+            left: hoveredEvent.x,
+            top: hoveredEvent.y,
+            transform: 'translateX(-50%) translateY(calc(-100% - 8px))',
+          }}
+        >
+          {hoveredEvent.descripcion}
+        </div>
+      )}
     </div>
   );
 }
