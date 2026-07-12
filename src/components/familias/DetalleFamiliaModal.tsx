@@ -49,6 +49,7 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-white border-b border-gray-100">
+                    <th className="py-4 px-6 font-semibold text-sm text-gray-500">Código</th>
                     <th className="py-4 px-6 font-semibold text-sm text-gray-500">Cédula</th>
                     <th className="py-4 px-6 font-semibold text-sm text-gray-500">Apellidos y Nombres</th>
                     <th className="py-4 px-6 font-semibold text-sm text-gray-500">Edad</th>
@@ -61,6 +62,7 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
                 <tbody>
                   {integrantes.map((p) => (
                     <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors">
+                      <td className="py-3 px-6 text-sm font-medium text-caracas-blue">{p.codigo || '-'}</td>
                       <td className="py-3 px-6 text-sm font-medium text-gray-700">{p.cedula?.toString() || 'S/N'}</td>
                       <td className="py-3 px-6">
                         <div className="text-sm font-bold text-gray-800">{p.apellidos}</div>

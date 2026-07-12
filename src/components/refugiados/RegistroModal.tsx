@@ -16,15 +16,6 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditing = !!refugiadoToEdit;
 
-  const TIPOS_DISCAPACIDAD = [
-    'Física o motriz',
-    'Sensorial',
-    'Intelectual',
-    'Psicosocial o mental',
-    'Visceral u Orgánica',
-    'Múltiple',
-  ];
-
   const [formData, setFormData] = useState({
     nombres: '',
     apellidos: '',
@@ -39,7 +30,6 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     fechaIngreso: '',
     direccionExacta: '',
     discapacidad: false,
-    tipoDiscapacidad: '',
     embarazo: false,
     tiempoEmbarazo: '',
     mascotas: false,
@@ -54,9 +44,15 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     tallaPantalon: '',
     tallaZapatos: '',
     alergias: false,
-    tipoAlergia: '',
     enfermedadCronica: false,
-    medicamentoEnfermedad: ''
+    lesionSismo: false,
+    adultoMayorDependencia: false,
+    lactante: false,
+    nivelEducativo: '',
+    condicionVivienda: '',
+    tenenciaVivienda: '',
+    ingresoFamiliar: '',
+    parentesco: '',
   });
 
   // Precargar datos cuando se edita
@@ -83,7 +79,6 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
           : '',
         direccionExacta: refugiadoToEdit.direccion_exacta || '',
         discapacidad: refugiadoToEdit.discapacidad,
-        tipoDiscapacidad: refugiadoToEdit.tipo_discapacidad || '',
         embarazo: refugiadoToEdit.embarazo,
         tiempoEmbarazo: refugiadoToEdit.tiempo_embarazo?.toString() || '',
         mascotas: refugiadoToEdit.mascotas,
@@ -98,22 +93,36 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
         tallaPantalon: refugiadoToEdit.talla_pantalon || '',
         tallaZapatos: refugiadoToEdit.talla_zapatos || '',
         alergias: refugiadoToEdit.alergias,
-        tipoAlergia: refugiadoToEdit.tipo_alergia || '',
         enfermedadCronica: refugiadoToEdit.enfermedad_cronica,
-        medicamentoEnfermedad: refugiadoToEdit.medicamento_enfermedad || ''
+        lesionSismo: refugiadoToEdit.lesion_sismo,
+        adultoMayorDependencia: refugiadoToEdit.adulto_mayor_dependencia,
+        lactante: refugiadoToEdit.lactante || false,
+        nivelEducativo: refugiadoToEdit.nivel_educativo || '',
+        condicionVivienda: refugiadoToEdit.condicion_vivienda || '',
+        tenenciaVivienda: refugiadoToEdit.tenencia_vivienda || '',
+        ingresoFamiliar: refugiadoToEdit.ingreso_familiar || '',
+        parentesco: refugiadoToEdit.parentesco || '',
       });
     } else if (isOpen && !refugiadoToEdit) {
       setFormData({
         nombres: '', apellidos: '', cedula: '', genero: 'M',
         fechaNacimiento: '', edad: '', esJefeFamilia: true, familiaId: '',
         nroCama: '', procedencia: '', fechaIngreso: '', direccionExacta: '',
-        discapacidad: false, tipoDiscapacidad: '',
+        discapacidad: false,
         embarazo: false, tiempoEmbarazo: '', mascotas: false, tipoMascota: '',
         mascotaSexo: '', mascotaRaza: '', mascotaNombre: '', mascotaEdad: '',
         telefono: '', profesion: '',
         tallaCamisa: '', tallaPantalon: '', tallaZapatos: '',
-        alergias: false, tipoAlergia: '',
-        enfermedadCronica: false, medicamentoEnfermedad: ''
+        alergias: false,
+        enfermedadCronica: false,
+        lesionSismo: false,
+        adultoMayorDependencia: false,
+        lactante: false,
+        nivelEducativo: '',
+        condicionVivienda: '',
+        tenenciaVivienda: '',
+        ingresoFamiliar: '',
+        parentesco: '',
       });
     }
   }, [isOpen, refugiadoToEdit]);
@@ -163,6 +172,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       id: refugiadoToEdit?.id || '',
       campamento_id: campamentoSeleccionado.id,
       familia_id: finalFamiliaId,
+      codigo: refugiadoToEdit?.codigo || '',
       nombres: formData.nombres,
       apellidos: formData.apellidos,
       cedula: formData.cedula ? parseInt(formData.cedula) : undefined,
@@ -174,7 +184,6 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       fecha_ingreso: formData.fechaIngreso ? new Date(formData.fechaIngreso) : undefined,
       direccion_exacta: formData.direccionExacta || undefined,
       discapacidad: formData.discapacidad,
-      tipo_discapacidad: formData.tipoDiscapacidad,
       embarazo: formData.embarazo,
       tiempo_embarazo: formData.tiempoEmbarazo ? parseInt(formData.tiempoEmbarazo) : undefined,
       mascotas: formData.mascotas,
@@ -189,9 +198,15 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       talla_pantalon: formData.tallaPantalon || undefined,
       talla_zapatos: formData.tallaZapatos || undefined,
       alergias: formData.alergias,
-      tipo_alergia: formData.tipoAlergia || undefined,
       enfermedad_cronica: formData.enfermedadCronica,
-      medicamento_enfermedad: formData.medicamentoEnfermedad || undefined
+      lesion_sismo: formData.lesionSismo,
+      adulto_mayor_dependencia: formData.adultoMayorDependencia,
+      lactante: formData.genero === 'F' ? formData.lactante : undefined,
+      nivel_educativo: formData.nivelEducativo || undefined,
+      condicion_vivienda: formData.condicionVivienda || undefined,
+      tenencia_vivienda: formData.tenenciaVivienda || undefined,
+      ingreso_familiar: formData.ingresoFamiliar || undefined,
+      parentesco: formData.parentesco || undefined,
     };
 
     if (isEditing && refugiadoToEdit) {
@@ -270,6 +285,12 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                   <label className="block text-sm font-medium text-gray-700 mb-1">Cédula (Opcional)</label>
                   <input type="number" name="cedula" value={formData.cedula} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all" placeholder="Ej. 12345678" />
                 </div>
+                {isEditing && refugiadoToEdit?.codigo && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Código</label>
+                    <input type="text" value={refugiadoToEdit.codigo} readOnly className="w-full px-4 py-2.5 border border-gray-200 rounded-xl bg-gray-100 text-gray-600 outline-none" />
+                  </div>
+                )}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Género</label>
                   <select name="genero" value={formData.genero} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all">
@@ -292,6 +313,16 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Profesión u Ocupación (Opcional)</label>
                   <input type="text" name="profesion" value={formData.profesion} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase" placeholder="EJ. INGENIERO CIVIL" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nivel Educativo</label>
+                  <select name="nivelEducativo" value={formData.nivelEducativo} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all">
+                    <option value="">-- SELECCIONE --</option>
+                    <option value="Ninguno">NINGUNO</option>
+                    <option value="Primaria">PRIMARIA</option>
+                    <option value="Secundaria">SECUNDARIA</option>
+                    <option value="Universitario">UNIVERSITARIO</option>
+                  </select>
                 </div>
               </div>
             </div>
@@ -326,6 +357,10 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                         <option key={fam.id} value={fam.id}>{fam.nombre}</option>
                       ))}
                     </select>
+                    <div className="mt-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Parentesco con el jefe/a</label>
+                      <input type="text" name="parentesco" value={formData.parentesco} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase" placeholder="EJ. HIJO, ESPOSA, HERMANO" />
+                    </div>
                   </div>
                 )}
               </div>
@@ -367,43 +402,87 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
               </div>
             </div>
 
-            {/* Tarjeta 4: Información Adicional */}
+            {/* Tarjeta 4: Situación Socioeconómica de la Vivienda de Origen */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
+                <div className="p-2 bg-orange-100 rounded-lg">
+                  <MapPin size={18} className="text-orange-600" />
+                </div>
+                <h3 className="font-semibold text-gray-800">4. Situación Socioeconómica de la Vivienda de Origen</h3>
+              </div>
+              <div className="p-6 space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Condición de la vivienda tras el sismo</label>
+                  <select name="condicionVivienda" value={formData.condicionVivienda} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all">
+                    <option value="">-- SELECCIONE --</option>
+                    <option value="Pérdida Total/Colapso">PERDIDA TOTAL / COLAPSO</option>
+                    <option value="Daño Estructural grave/Inhabitable">DANO ESTRUCTURAL GRAVE / INHABITABLE</option>
+                    <option value="Zona de Alto Riesgo/Desalojo Preventivo">ZONA DE ALTO RIESGO / DESALOJO PREVENTIVO</option>
+                  </select>
+                </div>
+
+                <div className="border-t border-gray-100 pt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">Tenencia de la Vivienda</label>
+                  <div className="flex gap-8">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="tenenciaVivienda" checked={formData.tenenciaVivienda === 'Propia'} onChange={() => setFormData(prev => ({ ...prev, tenenciaVivienda: 'Propia' }))} className="w-5 h-5 text-caracas-red focus:ring-caracas-red" />
+                      <span className="text-gray-700">Propia</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="tenenciaVivienda" checked={formData.tenenciaVivienda === 'Alquilada'} onChange={() => setFormData(prev => ({ ...prev, tenenciaVivienda: 'Alquilada' }))} className="w-5 h-5 text-caracas-red focus:ring-caracas-red" />
+                      <span className="text-gray-700">Alquilada</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="tenenciaVivienda" checked={formData.tenenciaVivienda === 'Compartida/Familiar'} onChange={() => setFormData(prev => ({ ...prev, tenenciaVivienda: 'Compartida/Familiar' }))} className="w-5 h-5 text-caracas-red focus:ring-caracas-red" />
+                      <span className="text-gray-700">Compartida / Familiar</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="border-t border-gray-100 pt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-3">Ingreso Familiar Principal antes de la Emergencia</label>
+                  <div className="flex flex-wrap gap-6">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="ingresoFamiliar" checked={formData.ingresoFamiliar === 'Trabajo formal'} onChange={() => setFormData(prev => ({ ...prev, ingresoFamiliar: 'Trabajo formal' }))} className="w-5 h-5 text-caracas-red focus:ring-caracas-red" />
+                      <span className="text-gray-700">Trabajo formal</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="ingresoFamiliar" checked={formData.ingresoFamiliar === 'Trabajo Informal/Comercio'} onChange={() => setFormData(prev => ({ ...prev, ingresoFamiliar: 'Trabajo Informal/Comercio' }))} className="w-5 h-5 text-caracas-red focus:ring-caracas-red" />
+                      <span className="text-gray-700">Trabajo Informal / Comercio</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="ingresoFamiliar" checked={formData.ingresoFamiliar === 'Remesas'} onChange={() => setFormData(prev => ({ ...prev, ingresoFamiliar: 'Remesas' }))} className="w-5 h-5 text-caracas-red focus:ring-caracas-red" />
+                      <span className="text-gray-700">Remesas</span>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="ingresoFamiliar" checked={formData.ingresoFamiliar === 'Ayuda Social/Bonos'} onChange={() => setFormData(prev => ({ ...prev, ingresoFamiliar: 'Ayuda Social/Bonos' }))} className="w-5 h-5 text-caracas-red focus:ring-caracas-red" />
+                      <span className="text-gray-700">Ayuda Social / Bonos</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Tarjeta 5: Información Adicional */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
                 <div className="p-2 bg-purple-100 rounded-lg">
                   <Accessibility size={18} className="text-purple-600" />
                 </div>
-                <h3 className="font-semibold text-gray-800">4. Información Adicional</h3>
+                <h3 className="font-semibold text-gray-800">5. Información Adicional</h3>
               </div>
               <div className="p-6 space-y-6">
-                <div className="space-y-3">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.discapacidad}
-                      onChange={(e) => setFormData(prev => ({ ...prev, discapacidad: e.target.checked }))}
-                      className="w-5 h-5 text-caracas-red focus:ring-caracas-red rounded"
-                    />
-                    <span className="text-gray-700 font-medium">¿Presenta alguna discapacidad?</span>
-                  </label>
-                  {formData.discapacidad && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Discapacidad</label>
-                      <select
-                        name="tipoDiscapacidad"
-                        value={formData.tipoDiscapacidad}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all"
-                      >
-                        <option value="">-- SELECCIONE --</option>
-                        {TIPOS_DISCAPACIDAD.map(tipo => (
-                          <option key={tipo} value={tipo}>{tipo}</option>
-                        ))}
-                      </select>
-                  </div>
-                )}
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.discapacidad}
+                    onChange={(e) => setFormData(prev => ({ ...prev, discapacidad: e.target.checked }))}
+                    className="w-5 h-5 text-caracas-red focus:ring-caracas-red rounded"
+                  />
+                  <span className="text-gray-700 font-medium">¿Presenta alguna discapacidad?</span>
+                </label>
 
-                <div className="space-y-3 border-t border-gray-100 pt-4">
+                <div className="border-t border-gray-100 pt-4">
                   <label className="flex items-center gap-3 cursor-pointer">
                     <input
                       type="checkbox"
@@ -413,22 +492,9 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                     />
                     <span className="text-gray-700 font-medium">¿Presenta alguna alergia?</span>
                   </label>
-                  {formData.alergias && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Especifique a qué es alérgico</label>
-                      <input
-                        type="text"
-                        name="tipoAlergia"
-                        value={formData.tipoAlergia}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase"
-                        placeholder="EJ. PENICILINA, POLEN, MANÍ"
-                      />
-                    </div>
-                  )}
                 </div>
 
-                <div className="space-y-3 border-t border-gray-100 pt-4">
+                <div className="border-t border-gray-100 pt-4">
                   <label className="flex items-center gap-3 cursor-pointer">
                     <input
                       type="checkbox"
@@ -438,21 +504,45 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                     />
                     <span className="text-gray-700 font-medium">¿Posee alguna enfermedad que requiera tratamiento de por vida?</span>
                   </label>
-                  {formData.enfermedadCronica && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">¿Qué medicamento necesita?</label>
+                </div>
+
+                <div className="border-t border-gray-100 pt-4">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.lesionSismo}
+                      onChange={(e) => setFormData(prev => ({ ...prev, lesionSismo: e.target.checked }))}
+                      className="w-5 h-5 text-caracas-red focus:ring-caracas-red rounded"
+                    />
+                    <span className="text-gray-700 font-medium">¿Presenta alguna lesión física a causa del sismo?</span>
+                  </label>
+                </div>
+
+                <div className="border-t border-gray-100 pt-4">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.adultoMayorDependencia}
+                      onChange={(e) => setFormData(prev => ({ ...prev, adultoMayorDependencia: e.target.checked }))}
+                      className="w-5 h-5 text-caracas-red focus:ring-caracas-red rounded"
+                    />
+                    <span className="text-gray-700 font-medium">¿Adulto mayor en situación de dependencia?</span>
+                  </label>
+                </div>
+
+                {formData.genero === 'F' && (
+                  <div className="border-t border-gray-100 pt-4">
+                    <label className="flex items-center gap-3 cursor-pointer">
                       <input
-                        type="text"
-                        name="medicamentoEnfermedad"
-                        value={formData.medicamentoEnfermedad}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase"
-                        placeholder="EJ. INSULINA, LEVOTIROXINA"
+                        type="checkbox"
+                        checked={formData.lactante}
+                        onChange={(e) => setFormData(prev => ({ ...prev, lactante: e.target.checked }))}
+                        className="w-5 h-5 text-caracas-red focus:ring-caracas-red rounded"
                       />
-                    </div>
-                  )}
-                </div>
-                </div>
+                      <span className="text-gray-700 font-medium">¿Es lactante?</span>
+                    </label>
+                  </div>
+                )}
 
                 {formData.genero === 'F' && (
                   <div className="space-y-3 border-t border-gray-100 pt-4">
@@ -571,13 +661,13 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
               </div>
             </div>
             
-            {/* Tarjeta 5: Vestimenta */}
+            {/* Tarjeta 6: Vestimenta */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
                 <div className="p-2 bg-teal-100 rounded-lg">
                   <Shirt size={18} className="text-teal-600" />
                 </div>
-                <h3 className="font-semibold text-gray-800">5. Vestimenta</h3>
+                <h3 className="font-semibold text-gray-800">6. Vestimenta</h3>
               </div>
               <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
