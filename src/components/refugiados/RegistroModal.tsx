@@ -16,15 +16,6 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEditing = !!refugiadoToEdit;
 
-  const TIPOS_DISCAPACIDAD = [
-    'Física o motriz',
-    'Sensorial',
-    'Intelectual',
-    'Psicosocial o mental',
-    'Visceral u Orgánica',
-    'Múltiple',
-  ];
-
   const [formData, setFormData] = useState({
     nombres: '',
     apellidos: '',
@@ -39,7 +30,6 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     fechaIngreso: '',
     direccionExacta: '',
     discapacidad: false,
-    tipoDiscapacidad: '',
     embarazo: false,
     tiempoEmbarazo: '',
     mascotas: false,
@@ -54,9 +44,10 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     tallaPantalon: '',
     tallaZapatos: '',
     alergias: false,
-    tipoAlergia: '',
     enfermedadCronica: false,
-    medicamentoEnfermedad: ''
+    lesionSismo: false,
+    adultoMayorDependencia: false,
+    lactante: false,
   });
 
   // Precargar datos cuando se edita
@@ -83,7 +74,6 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
           : '',
         direccionExacta: refugiadoToEdit.direccion_exacta || '',
         discapacidad: refugiadoToEdit.discapacidad,
-        tipoDiscapacidad: refugiadoToEdit.tipo_discapacidad || '',
         embarazo: refugiadoToEdit.embarazo,
         tiempoEmbarazo: refugiadoToEdit.tiempo_embarazo?.toString() || '',
         mascotas: refugiadoToEdit.mascotas,
@@ -98,22 +88,26 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
         tallaPantalon: refugiadoToEdit.talla_pantalon || '',
         tallaZapatos: refugiadoToEdit.talla_zapatos || '',
         alergias: refugiadoToEdit.alergias,
-        tipoAlergia: refugiadoToEdit.tipo_alergia || '',
         enfermedadCronica: refugiadoToEdit.enfermedad_cronica,
-        medicamentoEnfermedad: refugiadoToEdit.medicamento_enfermedad || ''
+        lesionSismo: refugiadoToEdit.lesion_sismo,
+        adultoMayorDependencia: refugiadoToEdit.adulto_mayor_dependencia,
+        lactante: refugiadoToEdit.lactante || false,
       });
     } else if (isOpen && !refugiadoToEdit) {
       setFormData({
         nombres: '', apellidos: '', cedula: '', genero: 'M',
         fechaNacimiento: '', edad: '', esJefeFamilia: true, familiaId: '',
         nroCama: '', procedencia: '', fechaIngreso: '', direccionExacta: '',
-        discapacidad: false, tipoDiscapacidad: '',
+        discapacidad: false,
         embarazo: false, tiempoEmbarazo: '', mascotas: false, tipoMascota: '',
         mascotaSexo: '', mascotaRaza: '', mascotaNombre: '', mascotaEdad: '',
         telefono: '', profesion: '',
         tallaCamisa: '', tallaPantalon: '', tallaZapatos: '',
-        alergias: false, tipoAlergia: '',
-        enfermedadCronica: false, medicamentoEnfermedad: ''
+        alergias: false,
+        enfermedadCronica: false,
+        lesionSismo: false,
+        adultoMayorDependencia: false,
+        lactante: false,
       });
     }
   }, [isOpen, refugiadoToEdit]);
@@ -174,7 +168,6 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       fecha_ingreso: formData.fechaIngreso ? new Date(formData.fechaIngreso) : undefined,
       direccion_exacta: formData.direccionExacta || undefined,
       discapacidad: formData.discapacidad,
-      tipo_discapacidad: formData.tipoDiscapacidad,
       embarazo: formData.embarazo,
       tiempo_embarazo: formData.tiempoEmbarazo ? parseInt(formData.tiempoEmbarazo) : undefined,
       mascotas: formData.mascotas,
@@ -189,9 +182,10 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       talla_pantalon: formData.tallaPantalon || undefined,
       talla_zapatos: formData.tallaZapatos || undefined,
       alergias: formData.alergias,
-      tipo_alergia: formData.tipoAlergia || undefined,
       enfermedad_cronica: formData.enfermedadCronica,
-      medicamento_enfermedad: formData.medicamentoEnfermedad || undefined
+      lesion_sismo: formData.lesionSismo,
+      adulto_mayor_dependencia: formData.adultoMayorDependencia,
+      lactante: formData.genero === 'F' ? formData.lactante : undefined,
     };
 
     if (isEditing && refugiadoToEdit) {
@@ -376,34 +370,17 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                 <h3 className="font-semibold text-gray-800">4. Información Adicional</h3>
               </div>
               <div className="p-6 space-y-6">
-                <div className="space-y-3">
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.discapacidad}
-                      onChange={(e) => setFormData(prev => ({ ...prev, discapacidad: e.target.checked }))}
-                      className="w-5 h-5 text-caracas-red focus:ring-caracas-red rounded"
-                    />
-                    <span className="text-gray-700 font-medium">¿Presenta alguna discapacidad?</span>
-                  </label>
-                  {formData.discapacidad && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Discapacidad</label>
-                      <select
-                        name="tipoDiscapacidad"
-                        value={formData.tipoDiscapacidad}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all"
-                      >
-                        <option value="">-- SELECCIONE --</option>
-                        {TIPOS_DISCAPACIDAD.map(tipo => (
-                          <option key={tipo} value={tipo}>{tipo}</option>
-                        ))}
-                      </select>
-                  </div>
-                )}
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.discapacidad}
+                    onChange={(e) => setFormData(prev => ({ ...prev, discapacidad: e.target.checked }))}
+                    className="w-5 h-5 text-caracas-red focus:ring-caracas-red rounded"
+                  />
+                  <span className="text-gray-700 font-medium">¿Presenta alguna discapacidad?</span>
+                </label>
 
-                <div className="space-y-3 border-t border-gray-100 pt-4">
+                <div className="border-t border-gray-100 pt-4">
                   <label className="flex items-center gap-3 cursor-pointer">
                     <input
                       type="checkbox"
@@ -413,22 +390,9 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                     />
                     <span className="text-gray-700 font-medium">¿Presenta alguna alergia?</span>
                   </label>
-                  {formData.alergias && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Especifique a qué es alérgico</label>
-                      <input
-                        type="text"
-                        name="tipoAlergia"
-                        value={formData.tipoAlergia}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase"
-                        placeholder="EJ. PENICILINA, POLEN, MANÍ"
-                      />
-                    </div>
-                  )}
                 </div>
 
-                <div className="space-y-3 border-t border-gray-100 pt-4">
+                <div className="border-t border-gray-100 pt-4">
                   <label className="flex items-center gap-3 cursor-pointer">
                     <input
                       type="checkbox"
@@ -438,21 +402,45 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                     />
                     <span className="text-gray-700 font-medium">¿Posee alguna enfermedad que requiera tratamiento de por vida?</span>
                   </label>
-                  {formData.enfermedadCronica && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">¿Qué medicamento necesita?</label>
+                </div>
+
+                <div className="border-t border-gray-100 pt-4">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.lesionSismo}
+                      onChange={(e) => setFormData(prev => ({ ...prev, lesionSismo: e.target.checked }))}
+                      className="w-5 h-5 text-caracas-red focus:ring-caracas-red rounded"
+                    />
+                    <span className="text-gray-700 font-medium">¿Presenta alguna lesión física a causa del sismo?</span>
+                  </label>
+                </div>
+
+                <div className="border-t border-gray-100 pt-4">
+                  <label className="flex items-center gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={formData.adultoMayorDependencia}
+                      onChange={(e) => setFormData(prev => ({ ...prev, adultoMayorDependencia: e.target.checked }))}
+                      className="w-5 h-5 text-caracas-red focus:ring-caracas-red rounded"
+                    />
+                    <span className="text-gray-700 font-medium">¿Adulto mayor en situación de dependencia?</span>
+                  </label>
+                </div>
+
+                {formData.genero === 'F' && (
+                  <div className="border-t border-gray-100 pt-4">
+                    <label className="flex items-center gap-3 cursor-pointer">
                       <input
-                        type="text"
-                        name="medicamentoEnfermedad"
-                        value={formData.medicamentoEnfermedad}
-                        onChange={handleChange}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase"
-                        placeholder="EJ. INSULINA, LEVOTIROXINA"
+                        type="checkbox"
+                        checked={formData.lactante}
+                        onChange={(e) => setFormData(prev => ({ ...prev, lactante: e.target.checked }))}
+                        className="w-5 h-5 text-caracas-red focus:ring-caracas-red rounded"
                       />
-                    </div>
-                  )}
-                </div>
-                </div>
+                      <span className="text-gray-700 font-medium">¿Es lactante?</span>
+                    </label>
+                  </div>
+                )}
 
                 {formData.genero === 'F' && (
                   <div className="space-y-3 border-t border-gray-100 pt-4">

@@ -9,6 +9,9 @@ import Familias from './pages/Familias';
 import Usuarios from './pages/Usuarios';
 import Login from './pages/Login';
 import Reportes from './pages/Reportes';
+import SaludIndex from './pages/Salud/Index';
+import HistoriasClinicas from './pages/Salud/HistoriasClinicas';
+import RegimenDiario from './pages/Salud/RegimenDiario';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { usuarioActual, cargando } = useAuth();
@@ -47,6 +50,9 @@ function AppRoutes() {
         <Route path="familias" element={<Familias />} />
         <Route path="reportes" element={<Reportes />} />
         <Route path="usuarios" element={<Usuarios />} />
+        <Route path="salud" element={<SaludIndex />} />
+        <Route path="salud/historias-clinicas" element={<HistoriasClinicas />} />
+        <Route path="salud/regimen-diario" element={<RegimenDiario />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

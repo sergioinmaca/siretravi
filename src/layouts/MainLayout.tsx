@@ -13,6 +13,7 @@ import {
   Heart,
   LogOut,
   UserCircle,
+  HeartPulse,
 } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
@@ -22,6 +23,7 @@ const menuItems = [
   { path: '/refugiados', icon: Users, label: 'Refugiados' },
   { path: '/familias', icon: Heart, label: 'Familias' },
   { path: '/constructor', icon: Grid, label: 'Constructor' },
+  { path: '/salud', icon: HeartPulse, label: 'Salud' },
   { path: '/reportes', icon: BarChart2, label: 'Reportes' },
   { path: '/usuarios', icon: Settings, label: 'Usuarios' },
 ];
@@ -31,6 +33,7 @@ const pathToModulo: Record<string, string> = {
   '/refugiados': 'Refugiados',
   '/familias': 'Familias',
   '/constructor': 'Constructor',
+  '/salud': 'Salud',
   '/reportes': 'Reportes',
   '/usuarios': 'Usuarios',
 };
@@ -48,7 +51,8 @@ export default function MainLayout() {
     : menuItems.filter(item => tienePermiso(item.label, 'Ver'));
 
   // Módulo actual según la ruta
-  const moduloActual = pathToModulo[location.pathname] || 'Inicio';
+  const moduloActual = pathToModulo[location.pathname]
+    || (location.pathname.startsWith('/salud') ? 'Salud' : 'Inicio');
 
   // Campamentos permitidos para el módulo actual
   const campamentosPermitidos = useMemo(() => {
@@ -98,7 +102,9 @@ export default function MainLayout() {
         <nav className="flex-1 py-6 flex flex-col gap-2 px-3 overflow-y-auto">
           {menuItemsFiltrados.map((item) => {
             const Icon = item.icon;
-            const isActive = location.pathname === item.path;
+            const isActive = item.path === '/salud'
+              ? location.pathname.startsWith('/salud')
+              : location.pathname === item.path;
             return (
               <Link
                 key={item.path}

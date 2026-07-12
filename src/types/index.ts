@@ -67,7 +67,6 @@ export interface Refugiado {
   fecha_ingreso?: Date;
   direccion_exacta?: string;
   discapacidad: boolean;
-  tipo_discapacidad?: string;
   embarazo: boolean;
   tiempo_embarazo?: number;
   mascotas: boolean;
@@ -82,7 +81,49 @@ export interface Refugiado {
   talla_pantalon?: string;
   talla_zapatos?: string;
   alergias: boolean;
-  tipo_alergia?: string;
   enfermedad_cronica: boolean;
+  lesion_sismo: boolean;
+  adulto_mayor_dependencia: boolean;
+  lactante?: boolean;
+}
+
+export interface HistoriaClinica {
+  id: string;
+  refugiado_id: string;
+  tipo_discapacidad?: string;
+  tipo_alergia?: string;
   medicamento_enfermedad?: string;
+  lesion_sismo_detalle?: string;
+  adulto_mayor_detalle?: string;
+  lactante_detalle?: string;
+  enfermedades_previas?: string;
+  cirugias?: string;
+  examen_subjetivo?: string;
+  examen_objetivo?: string;
+  examen_diagnostico?: string;
+  fecha_apertura: Date;
+  created_at: Date;
+}
+
+export interface AtencionMedica {
+  id: string;
+  historia_clinica_id: string;
+  fecha_atencion: Date;
+  presion_arterial?: string;
+  temperatura?: number;
+  frecuencia_cardiaca?: number;
+  peso?: number;
+  talla?: number;
+  saturacion_oxigeno?: number;
+  observaciones?: string;
+  created_at: Date;
+}
+
+export interface Tratamiento {
+  id: string;
+  historia_clinica_id: string;
+  medicamento: string;
+  hora: string;
+  dosis?: string;
+  created_at: Date;
 }
