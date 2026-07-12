@@ -350,7 +350,7 @@ export default function Agenda() {
         const hourColW = 13;
         const dayColW = (pw - m - hourColW - m) / 7;
         const availH = ph - m - calY - dayH - m;
-        const calH = availH * 0.68;
+        const calH = availH * 0.95;
         const hourRowH = calH / HORAS.length;
         calGridH = HORAS.length * hourRowH;
         const gridY = calY + dayH;
@@ -607,6 +607,7 @@ export default function Agenda() {
               pdf.setTextColor(rgb.r, rgb.g, rgb.b);
               pdf.setFont('helvetica', 'bold');
               pdf.text(e.titulo + ':', m + 4, py);
+              py += 3.5;
               pdf.setFont('helvetica', 'normal');
               pdf.setTextColor(75, 85, 99);
               const descWrapped = pdf.splitTextToSize(e.descripcion as string, pw - m * 2 - 4);
