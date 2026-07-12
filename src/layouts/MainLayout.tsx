@@ -13,6 +13,8 @@ import {
   Heart,
   LogOut,
   UserCircle,
+  HeartPulse,
+  Calendar,
 } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
@@ -154,7 +156,7 @@ export default function MainLayout() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
+      <main className="flex-1 flex flex-col min-h-0 relative">
         <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 shadow-sm shrink-0 z-20">
           <h1 className="text-xl font-semibold text-gray-800">Panel de Control</h1>
 
@@ -195,7 +197,7 @@ export default function MainLayout() {
           </div>
         </header>
 
-        <div className="flex-1 flex flex-col px-8 py-2 bg-caracas-light min-h-0 overflow-hidden">
+        <div className="flex-1 min-h-0 overflow-y-auto p-8 bg-caracas-light">
           <div className={location.pathname === '/agenda' ? 'flex-1 min-h-0 flex flex-col overflow-hidden' : 'max-w-7xl mx-auto'}>
             <Outlet />
           </div>

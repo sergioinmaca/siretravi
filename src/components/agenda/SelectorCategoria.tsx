@@ -32,7 +32,7 @@ export default function SelectorCategoria({
   const [showForm, setShowForm] = useState<'new' | 'edit' | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formNombre, setFormNombre] = useState('');
-  const [formColor, setFormColor] = useState(COLORES[0].color);
+  const [formColor, setFormColor] = useState<string>(COLORES[0].color);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 

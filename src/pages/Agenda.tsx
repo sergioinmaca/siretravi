@@ -99,12 +99,6 @@ export default function Agenda() {
     [ocurrencias]
   );
 
-  const getCategoriaNombre = (categoriaId?: string): string | null => {
-    if (!categoriaId) return null;
-    const cat = categorias.find(c => c.id === categoriaId);
-    return cat?.nombre || null;
-  };
-
   const getCategoriaColor = (categoriaId?: string, tipo?: string): string => {
     if (categoriaId) {
       const cat = categorias.find(c => c.id === categoriaId);
