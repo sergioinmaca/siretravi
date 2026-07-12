@@ -357,7 +357,7 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
                       </p>
                       <CroquisEditor
                         width={1100}
-                        height={500}
+                        height={700}
                         maxLiteras={carpa.literas}
                         maxIndividuales={carpa.camas_individuales}
                         maxDuplex={carpa.camas_duplex}

@@ -352,7 +352,7 @@ export default function Inicio() {
                 carpaNombre={carpa.nombre}
                 elementNumberOffset={offset}
                 width={1100}
-                height={500}
+                height={700}
                 tipoContabilizacion={tipoContabilizacion}
                 occupiedBeds={occupiedBeds}
                 bedOccupants={bedOccupants}

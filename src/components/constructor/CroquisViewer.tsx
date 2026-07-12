@@ -56,7 +56,7 @@ interface CroquisViewerProps {
   bedOccupants?: Record<string, string[]>;
 }
 
-export default function CroquisViewer({ croquisData, carpaNombre, width = 700, height = 400, elementNumberOffset = 0, tipoContabilizacion = 'elemento', occupiedBeds = [], bedOccupants = {} }: CroquisViewerProps) {
+export default function CroquisViewer({ croquisData, carpaNombre, width = 700, height = 600, elementNumberOffset = 0, tipoContabilizacion = 'elemento', occupiedBeds = [], bedOccupants = {} }: CroquisViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const bedsRenderRef = useRef<BedRenderInfo[]>([]);
   const [hoveredBed, setHoveredBed] = useState<HoveredBed | null>(null);
@@ -115,7 +115,7 @@ export default function CroquisViewer({ croquisData, carpaNombre, width = 700, h
       if (parsed.drawingBase64) {
         const img = new Image();
         img.onload = () => {
-          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          ctx.drawImage(img, 0, 0);
           drawRectangles(ctx, rectangles);
           drawTexts(ctx, texts);
           drawBedsWithNumbers(ctx, beds, elementNumberOffset, tipoContabilizacion, occupiedSet, accumulator);
