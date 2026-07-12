@@ -9,6 +9,7 @@ import Familias from './pages/Familias';
 import Usuarios from './pages/Usuarios';
 import Login from './pages/Login';
 import Reportes from './pages/Reportes';
+import Agenda from './pages/Agenda';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { usuarioActual, cargando } = useAuth();
@@ -47,6 +48,7 @@ function AppRoutes() {
         <Route path="familias" element={<Familias />} />
         <Route path="reportes" element={<Reportes />} />
         <Route path="usuarios" element={<Usuarios />} />
+        <Route path="agenda" element={<Agenda />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

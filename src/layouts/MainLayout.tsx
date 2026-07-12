@@ -13,6 +13,7 @@ import {
   Heart,
   LogOut,
   UserCircle,
+  Calendar,
 } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
@@ -24,6 +25,7 @@ const menuItems = [
   { path: '/constructor', icon: Grid, label: 'Constructor' },
   { path: '/reportes', icon: BarChart2, label: 'Reportes' },
   { path: '/usuarios', icon: Settings, label: 'Usuarios' },
+  { path: '/agenda', icon: Calendar, label: 'Agenda' },
 ];
 
 const pathToModulo: Record<string, string> = {
@@ -33,6 +35,7 @@ const pathToModulo: Record<string, string> = {
   '/constructor': 'Constructor',
   '/reportes': 'Reportes',
   '/usuarios': 'Usuarios',
+  '/agenda': 'Agenda',
 };
 
 export default function MainLayout() {
@@ -188,8 +191,8 @@ export default function MainLayout() {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-8 bg-caracas-light">
-          <div className="max-w-7xl mx-auto">
+        <div className="flex-1 flex flex-col px-8 py-2 bg-caracas-light min-h-0 overflow-hidden">
+          <div className={location.pathname === '/agenda' ? 'flex-1 min-h-0 flex flex-col overflow-hidden' : 'max-w-7xl mx-auto'}>
             <Outlet />
           </div>
         </div>

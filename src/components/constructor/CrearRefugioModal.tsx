@@ -146,15 +146,15 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
 
   const handleDelete = () => {
     if (!campamentoToEdit) return;
-    
+
     const tieneRefugiados = refugiados.some(r => r.campamento_id === campamentoToEdit.id);
     const tieneFamilias = familias.some(f => f.campamento_id === campamentoToEdit.id);
-    
+
     if (tieneRefugiados || tieneFamilias) {
       alert(`⚠️ No puedes eliminar el campamento "${campamentoToEdit.nombre}" porque tiene refugiados o familias asignadas. Debes reasignarlos o eliminarlos primero.`);
       return;
     }
-    
+
     if (window.confirm(`⚠️ ¿Estás seguro de que deseas eliminar por completo el campamento "${campamentoToEdit.nombre}"? Esta acción no se puede deshacer.`)) {
       eliminarCampamento(campamentoToEdit.id);
       onClose();
@@ -194,7 +194,7 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
             </div>
           )}
 
-          <form id="crear-refugio-form" onSubmit={handleSubmit} className="space-y-6">
+          <form id="crear-refugio-form" onSubmit={handleSubmit} >
 
             {/* Sección 1: Datos Generales */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
