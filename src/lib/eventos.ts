@@ -1,9 +1,11 @@
 import dayjs from 'dayjs';
+import 'dayjs/locale/es';
 import minMax from 'dayjs/plugin/minMax';
 import { supabase } from './supabase';
 import type { Evento, EventoOcurrencia, CategoriaEvento } from '../types';
 
 dayjs.extend(minMax);
+dayjs.locale('es');
 
 export async function fetchEventos(campamentoId: string, fechaHasta: string): Promise<Evento[]> {
   const { data, error } = await supabase

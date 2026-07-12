@@ -62,66 +62,66 @@ export default function CalendarioMensual({ currentDate, eventosPorDia, onDayCli
       </div>
       <div className="flex-1 flex flex-col min-h-0 divide-y divide-gray-200 overflow-hidden">
         {semanas.map((semana, semanaIdx) => (
-          <div key={semanaIdx} className="flex-1 grid grid-cols-7 min-h-0">
-            {semana.map((dia) => {
-              const dateStr = dia.format('YYYY-MM-DD');
-              const esMesActual = dia.isSame(inicioMes, 'month');
-              const esHoy = dateStr === hoy;
-              const eventos = eventosPorDia.get(dateStr) || [];
+            <div key={semanaIdx} className="flex-1 grid grid-cols-7 min-h-0">
+              {semana.map((dia) => {
+                const dateStr = dia.format('YYYY-MM-DD');
+                const esMesActual = dia.isSame(inicioMes, 'month');
+                const esHoy = dateStr === hoy;
+                const eventos = eventosPorDia.get(dateStr) || [];
 
-              return (
-                <div
-                  key={dateStr}
-                  onClick={() => onDayClick(dia)}
-                  className={`border-r border-gray-200 p-1.5 cursor-pointer transition-colors hover:bg-gray-50 flex flex-col overflow-hidden ${esHoy ? 'bg-blue-50/50' : ''
-                    } ${!esMesActual ? 'bg-gray-50/50' : ''} ${semanaIdx === semanas.length - 1 ? '' : ''}`}
-                >
-                  <span
-                    className={`text-[11px] font-medium inline-flex items-center justify-center w-6 h-6 rounded-full ${esHoy ? 'bg-blue-600 text-white' : ''
-                      } ${!esMesActual && !esHoy ? 'text-gray-400' : 'text-gray-700'}`}
+                return (
+                  <div
+                    key={dateStr}
+                    onClick={() => onDayClick(dia)}
+                    className={`border-r border-gray-200 p-1.5 cursor-pointer transition-colors hover:bg-gray-50 flex flex-col min-h-0 overflow-hidden ${esHoy ? 'bg-blue-50/50' : ''
+                      } ${!esMesActual ? 'bg-gray-50/50' : ''}`}
                   >
-                    {dia.format('D')}
-                  </span>
-                  {esHoy && !eventos.some((e) => e.fecha_ocurrencia === dateStr && e.titulo) && (
-                    <div className="mt-0.5">
-                      <span className="text-sm bg-amber-500 text-white px-2 py-0.5 rounded font-medium">HOY</span>
-                    </div>
-                  )}
-                  <div className="mt-0.5 space-y-0.5 flex-1 min-h-0 overflow-y-auto">
-                    {eventos.map((evento, idx) => (
-                      <div
-                        key={`${evento.id}-${idx}`}
-                        className="text-sm px-1.5 py-1 rounded text-white relative"
-                        style={{ backgroundColor: getCategoriaColor(evento) }}
-                        onMouseEnter={(e) => {
-                          if (evento.descripcion) {
-                            const rect = (e.target as HTMLElement).getBoundingClientRect();
-                            setHoveredEvent({
-                              descripcion: evento.descripcion,
-                              x: rect.left + rect.width / 2,
-                              y: rect.top,
-                            });
-                          }
-                        }}
-                        onMouseLeave={() => setHoveredEvent(null)}
-                      >
-                        <div className="flex items-start gap-1">
-                          {evento.tipo === 'permanente' && (
-                            <span className="text-xs font-bold opacity-80 shrink-0 mt-0.5">P</span>
-                          )}
-                          <span className="min-w-0 break-words text-[12.5px]">{evento.titulo}</span>
-                        </div>
-                        <span className="opacity-80 text-xs block leading-tight">
-                          {formatHoraRange(evento)}
-                        </span>
+                    <span
+                      className={`text-[11px] font-medium inline-flex items-center justify-center w-6 h-6 rounded-full ${esHoy ? 'bg-blue-600 text-white' : ''
+                        } ${!esMesActual && !esHoy ? 'text-gray-400' : 'text-gray-700'}`}
+                    >
+                      {dia.format('D')}
+                    </span>
+                    {esHoy && !eventos.some((e) => e.fecha_ocurrencia === dateStr && e.titulo) && (
+                      <div className="mt-0.5">
+                        <span className="text-sm bg-amber-500 text-white px-2 py-0.5 rounded font-medium">HOY</span>
                       </div>
-                    ))}
+                    )}
+                    <div className="mt-0.5 space-y-0.5 flex-1 min-h-0 overflow-y-auto">
+                      {eventos.map((evento, idx) => (
+                        <div
+                          key={`${evento.id}-${idx}`}
+                          className="text-sm px-1.5 py-1 rounded text-white relative overflow-hidden"
+                          style={{ backgroundColor: getCategoriaColor(evento) }}
+                          onMouseEnter={(e) => {
+                            if (evento.descripcion) {
+                              const rect = (e.target as HTMLElement).getBoundingClientRect();
+                              setHoveredEvent({
+                                descripcion: evento.descripcion,
+                                x: rect.left + rect.width / 2,
+                                y: rect.top,
+                              });
+                            }
+                          }}
+                          onMouseLeave={() => setHoveredEvent(null)}
+                        >
+                          <div className="flex items-start gap-1">
+                            {evento.tipo === 'permanente' && (
+                              <span className="text-xs font-bold opacity-80 shrink-0 mt-0.5">P</span>
+                            )}
+                            <span className="min-w-0 truncate text-[12.5px]">{evento.titulo}</span>
+                          </div>
+                          <span className="opacity-80 text-xs block leading-tight truncate">
+                            {formatHoraRange(evento)}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        ))}
+                  );
+              })}
+            </div>
+          ))}
       </div>
 
       {hoveredEvent && (
