@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useCampamento } from '../../context/CampamentoContext';
 import { X, Save, Activity } from 'lucide-react';
+import { toDateInput } from '../../lib/formatDate';
 
 interface AtencionMedicaModalProps {
   isOpen: boolean;
@@ -14,7 +15,7 @@ export default function AtencionMedicaModal({ isOpen, onClose, historiaClinicaId
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [formData, setFormData] = useState({
-    fechaAtencion: new Date().toISOString().split('T')[0],
+    fechaAtencion: toDateInput(new Date()),
     presionArterial: '',
     temperatura: '',
     frecuenciaCardiaca: '',

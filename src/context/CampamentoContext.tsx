@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
+import { toDateInput } from '../lib/formatDate';
 import type { Campamento, Refugiado, Familia, Carpa, HistoriaClinica, AtencionMedica, Tratamiento } from '../types';
 
 interface CampamentoContextType {
@@ -666,13 +667,13 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         cedula: nuevo.cedula || null,
         genero: nuevo.genero,
         fecha_nacimiento: nuevo.fecha_nacimiento instanceof Date
-          ? nuevo.fecha_nacimiento.toISOString().split('T')[0]
+          ? toDateInput(nuevo.fecha_nacimiento)
           : nuevo.fecha_nacimiento,
         es_jefe_familia: nuevo.es_jefe_familia,
         nro_cama: nuevo.nro_cama || null,
         procedencia: nuevo.procedencia || null,
         fecha_ingreso: nuevo.fecha_ingreso instanceof Date
-          ? nuevo.fecha_ingreso.toISOString().split('T')[0]
+          ? toDateInput(nuevo.fecha_ingreso)
           : (nuevo.fecha_ingreso || null),
         direccion_exacta: nuevo.direccion_exacta || null,
         discapacidad: nuevo.discapacidad,
@@ -773,13 +774,13 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         cedula: actualizado.cedula || null,
         genero: actualizado.genero,
         fecha_nacimiento: actualizado.fecha_nacimiento instanceof Date
-          ? actualizado.fecha_nacimiento.toISOString().split('T')[0]
+          ? toDateInput(actualizado.fecha_nacimiento)
           : actualizado.fecha_nacimiento,
         es_jefe_familia: actualizado.es_jefe_familia,
         nro_cama: actualizado.nro_cama || null,
         procedencia: actualizado.procedencia || null,
         fecha_ingreso: actualizado.fecha_ingreso instanceof Date
-          ? actualizado.fecha_ingreso.toISOString().split('T')[0]
+          ? toDateInput(actualizado.fecha_ingreso)
           : (actualizado.fecha_ingreso || null),
         direccion_exacta: actualizado.direccion_exacta || null,
         discapacidad: actualizado.discapacidad,
@@ -835,7 +836,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         examen_objetivo: nueva.examen_objetivo || null,
         examen_diagnostico: nueva.examen_diagnostico || null,
         fecha_apertura: nueva.fecha_apertura instanceof Date
-          ? nueva.fecha_apertura.toISOString()
+          ? toDateInput(nueva.fecha_apertura)
           : nueva.fecha_apertura,
         enf_cronica_1: nueva.enf_cronica_1 || null,
         tratamiento_1: nueva.tratamiento_1 || null,
@@ -960,7 +961,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       .insert({
         historia_clinica_id: nueva.historia_clinica_id,
         fecha_atencion: nueva.fecha_atencion instanceof Date
-          ? nueva.fecha_atencion.toISOString()
+          ? toDateInput(nueva.fecha_atencion)
           : nueva.fecha_atencion,
         presion_arterial: nueva.presion_arterial || null,
         temperatura: nueva.temperatura || null,
