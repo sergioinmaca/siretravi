@@ -104,6 +104,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
           id: r.id as string,
           campamento_id: r.campamento_id as string,
           familia_id: (r.familia_id as string) || undefined,
+          codigo: (r.codigo as string) || '',
           nombres: r.nombres as string,
           apellidos: r.apellidos as string,
           cedula: r.cedula as number | undefined,
@@ -133,6 +134,11 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
           lesion_sismo: r.lesion_sismo as boolean,
           adulto_mayor_dependencia: r.adulto_mayor_dependencia as boolean,
           lactante: r.lactante as boolean | undefined,
+          nivel_educativo: (r.nivel_educativo as string) || undefined,
+          condicion_vivienda: (r.condicion_vivienda as string) || undefined,
+          tenencia_vivienda: (r.tenencia_vivienda as string) || undefined,
+          ingreso_familiar: (r.ingreso_familiar as string) || undefined,
+          parentesco: (r.parentesco as string) || undefined,
         }));
 
         setCampamentos(campamentosMapped);
@@ -155,6 +161,26 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
           examen_diagnostico: (h.examen_diagnostico as string) || undefined,
           fecha_apertura: new Date(h.fecha_apertura as string),
           created_at: new Date(h.created_at as string),
+          enf_cronica_1: (h.enf_cronica_1 as string) || undefined,
+          tratamiento_1: (h.tratamiento_1 as string) || undefined,
+          enf_cronica_2: (h.enf_cronica_2 as string) || undefined,
+          tratamiento_2: (h.tratamiento_2 as string) || undefined,
+          enf_cronica_3: (h.enf_cronica_3 as string) || undefined,
+          tratamiento_3: (h.tratamiento_3 as string) || undefined,
+          enf_cronica_4: (h.enf_cronica_4 as string) || undefined,
+          tratamiento_4: (h.tratamiento_4 as string) || undefined,
+          enf_cronica_5: (h.enf_cronica_5 as string) || undefined,
+          tratamiento_5: (h.tratamiento_5 as string) || undefined,
+          enf_cronica_6: (h.enf_cronica_6 as string) || undefined,
+          tratamiento_6: (h.tratamiento_6 as string) || undefined,
+          enf_cronica_7: (h.enf_cronica_7 as string) || undefined,
+          tratamiento_7: (h.tratamiento_7 as string) || undefined,
+          enf_cronica_8: (h.enf_cronica_8 as string) || undefined,
+          tratamiento_8: (h.tratamiento_8 as string) || undefined,
+          enf_cronica_9: (h.enf_cronica_9 as string) || undefined,
+          tratamiento_9: (h.tratamiento_9 as string) || undefined,
+          enf_cronica_10: (h.enf_cronica_10 as string) || undefined,
+          tratamiento_10: (h.tratamiento_10 as string) || undefined,
         }));
         setHistoriasClinicas(hcMapped);
 
@@ -200,6 +226,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       id: r.id,
       campamento_id: r.campamento_id,
       familia_id: r.familia_id || undefined,
+      codigo: r.codigo || '',
       nombres: r.nombres,
       apellidos: r.apellidos,
       cedula: r.cedula || undefined,
@@ -229,6 +256,11 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       lesion_sismo: r.lesion_sismo,
       adulto_mayor_dependencia: r.adulto_mayor_dependencia,
       lactante: r.lactante ?? undefined,
+      nivel_educativo: r.nivel_educativo || undefined,
+      condicion_vivienda: r.condicion_vivienda || undefined,
+      tenencia_vivienda: r.tenencia_vivienda || undefined,
+      ingreso_familiar: r.ingreso_familiar || undefined,
+      parentesco: r.parentesco || undefined,
     });
 
     const channel = supabase.channel('campamentos-realtime')
@@ -274,6 +306,26 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
               examen_diagnostico: payload.new.examen_diagnostico || undefined,
               fecha_apertura: new Date(payload.new.fecha_apertura),
               created_at: new Date(payload.new.created_at),
+              enf_cronica_1: payload.new.enf_cronica_1 || undefined,
+              tratamiento_1: payload.new.tratamiento_1 || undefined,
+              enf_cronica_2: payload.new.enf_cronica_2 || undefined,
+              tratamiento_2: payload.new.tratamiento_2 || undefined,
+              enf_cronica_3: payload.new.enf_cronica_3 || undefined,
+              tratamiento_3: payload.new.tratamiento_3 || undefined,
+              enf_cronica_4: payload.new.enf_cronica_4 || undefined,
+              tratamiento_4: payload.new.tratamiento_4 || undefined,
+              enf_cronica_5: payload.new.enf_cronica_5 || undefined,
+              tratamiento_5: payload.new.tratamiento_5 || undefined,
+              enf_cronica_6: payload.new.enf_cronica_6 || undefined,
+              tratamiento_6: payload.new.tratamiento_6 || undefined,
+              enf_cronica_7: payload.new.enf_cronica_7 || undefined,
+              tratamiento_7: payload.new.tratamiento_7 || undefined,
+              enf_cronica_8: payload.new.enf_cronica_8 || undefined,
+              tratamiento_8: payload.new.tratamiento_8 || undefined,
+              enf_cronica_9: payload.new.enf_cronica_9 || undefined,
+              tratamiento_9: payload.new.tratamiento_9 || undefined,
+              enf_cronica_10: payload.new.enf_cronica_10 || undefined,
+              tratamiento_10: payload.new.tratamiento_10 || undefined,
             }];
           });
         } else if (payload.eventType === 'UPDATE') {
@@ -293,6 +345,26 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
             examen_diagnostico: payload.new.examen_diagnostico || undefined,
             fecha_apertura: new Date(payload.new.fecha_apertura),
             created_at: new Date(payload.new.created_at),
+            enf_cronica_1: payload.new.enf_cronica_1 || undefined,
+            tratamiento_1: payload.new.tratamiento_1 || undefined,
+            enf_cronica_2: payload.new.enf_cronica_2 || undefined,
+            tratamiento_2: payload.new.tratamiento_2 || undefined,
+            enf_cronica_3: payload.new.enf_cronica_3 || undefined,
+            tratamiento_3: payload.new.tratamiento_3 || undefined,
+            enf_cronica_4: payload.new.enf_cronica_4 || undefined,
+            tratamiento_4: payload.new.tratamiento_4 || undefined,
+            enf_cronica_5: payload.new.enf_cronica_5 || undefined,
+            tratamiento_5: payload.new.tratamiento_5 || undefined,
+            enf_cronica_6: payload.new.enf_cronica_6 || undefined,
+            tratamiento_6: payload.new.tratamiento_6 || undefined,
+            enf_cronica_7: payload.new.enf_cronica_7 || undefined,
+            tratamiento_7: payload.new.tratamiento_7 || undefined,
+            enf_cronica_8: payload.new.enf_cronica_8 || undefined,
+            tratamiento_8: payload.new.tratamiento_8 || undefined,
+            enf_cronica_9: payload.new.enf_cronica_9 || undefined,
+            tratamiento_9: payload.new.tratamiento_9 || undefined,
+            enf_cronica_10: payload.new.enf_cronica_10 || undefined,
+            tratamiento_10: payload.new.tratamiento_10 || undefined,
           } : h));
         } else if (payload.eventType === 'DELETE') {
           setHistoriasClinicas(prev => prev.filter(h => h.id !== payload.old.id));
@@ -534,11 +606,61 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
 
   // ── Agregar Refugiado ──────────────────────────────────────────────────────
   const agregarRefugiado = async (nuevo: Refugiado) => {
+    const campPref = campamentos
+      .find(c => c.id === nuevo.campamento_id)
+      ?.nombre
+      .split(/\s+/)
+      .map(w => w[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 3) || 'CAM';
+
+    let secuencia = 1;
+    const { data: actual } = await supabase
+      .from('campamento_contadores')
+      .select('ultimo_secuencia')
+      .eq('campamento_id', nuevo.campamento_id)
+      .single();
+
+    if (actual) {
+      secuencia = (actual.ultimo_secuencia as number) + 1;
+      const { error: updErr } = await supabase
+        .from('campamento_contadores')
+        .update({ ultimo_secuencia: secuencia } as Record<string, unknown>)
+        .eq('campamento_id', nuevo.campamento_id);
+
+      if (updErr) {
+        console.error('Error incrementando contador:', updErr);
+      }
+    } else {
+      const { error: insErr } = await supabase
+        .from('campamento_contadores')
+        .insert({ campamento_id: nuevo.campamento_id, ultimo_secuencia: 1 });
+
+      if (insErr) {
+        const { data: retryActual } = await supabase
+          .from('campamento_contadores')
+          .select('ultimo_secuencia')
+          .eq('campamento_id', nuevo.campamento_id)
+          .single();
+        if (retryActual) {
+          secuencia = (retryActual.ultimo_secuencia as number) + 1;
+          await supabase
+            .from('campamento_contadores')
+            .update({ ultimo_secuencia: secuencia } as Record<string, unknown>)
+            .eq('campamento_id', nuevo.campamento_id);
+        }
+      }
+    }
+
+    const codigo = `${campPref}-${String(secuencia).padStart(4, '0')}`;
+
     const { data, error } = await supabase
       .from('refugiados')
       .insert({
         campamento_id: nuevo.campamento_id,
         familia_id: nuevo.familia_id || null,
+        codigo,
         nombres: nuevo.nombres,
         apellidos: nuevo.apellidos,
         cedula: nuevo.cedula || null,
@@ -572,6 +694,11 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         lesion_sismo: nuevo.lesion_sismo,
         adulto_mayor_dependencia: nuevo.adulto_mayor_dependencia,
         lactante: nuevo.lactante ?? null,
+        nivel_educativo: nuevo.nivel_educativo || null,
+        condicion_vivienda: nuevo.condicion_vivienda || null,
+        tenencia_vivienda: nuevo.tenencia_vivienda || null,
+        ingreso_familiar: nuevo.ingreso_familiar || null,
+        parentesco: nuevo.parentesco || null,
       })
       .select()
       .single();
@@ -585,6 +712,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       id: data.id,
       campamento_id: data.campamento_id,
       familia_id: data.familia_id || undefined,
+      codigo: data.codigo || '',
       nombres: data.nombres,
       apellidos: data.apellidos,
       cedula: data.cedula || undefined,
@@ -593,6 +721,8 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       es_jefe_familia: data.es_jefe_familia,
       nro_cama: data.nro_cama || '',
       procedencia: data.procedencia || '',
+      fecha_ingreso: data.fecha_ingreso ? new Date(data.fecha_ingreso) : undefined,
+      direccion_exacta: data.direccion_exacta || undefined,
       discapacidad: data.discapacidad,
       embarazo: data.embarazo,
       tiempo_embarazo: data.tiempo_embarazo || undefined,
@@ -612,6 +742,11 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       lesion_sismo: data.lesion_sismo,
       adulto_mayor_dependencia: data.adulto_mayor_dependencia,
       lactante: data.lactante ?? undefined,
+      nivel_educativo: data.nivel_educativo || undefined,
+      condicion_vivienda: data.condicion_vivienda || undefined,
+      tenencia_vivienda: data.tenencia_vivienda || undefined,
+      ingreso_familiar: data.ingreso_familiar || undefined,
+      parentesco: data.parentesco || undefined,
     };
     setRefugiados(prev => [...prev, refugiadoCreado]);
   };
@@ -666,6 +801,11 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         lesion_sismo: actualizado.lesion_sismo,
         adulto_mayor_dependencia: actualizado.adulto_mayor_dependencia,
         lactante: actualizado.lactante ?? null,
+        nivel_educativo: actualizado.nivel_educativo || null,
+        condicion_vivienda: actualizado.condicion_vivienda || null,
+        tenencia_vivienda: actualizado.tenencia_vivienda || null,
+        ingreso_familiar: actualizado.ingreso_familiar || null,
+        parentesco: actualizado.parentesco || null,
       })
       .eq('id', id);
 
@@ -697,6 +837,26 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         fecha_apertura: nueva.fecha_apertura instanceof Date
           ? nueva.fecha_apertura.toISOString()
           : nueva.fecha_apertura,
+        enf_cronica_1: nueva.enf_cronica_1 || null,
+        tratamiento_1: nueva.tratamiento_1 || null,
+        enf_cronica_2: nueva.enf_cronica_2 || null,
+        tratamiento_2: nueva.tratamiento_2 || null,
+        enf_cronica_3: nueva.enf_cronica_3 || null,
+        tratamiento_3: nueva.tratamiento_3 || null,
+        enf_cronica_4: nueva.enf_cronica_4 || null,
+        tratamiento_4: nueva.tratamiento_4 || null,
+        enf_cronica_5: nueva.enf_cronica_5 || null,
+        tratamiento_5: nueva.tratamiento_5 || null,
+        enf_cronica_6: nueva.enf_cronica_6 || null,
+        tratamiento_6: nueva.tratamiento_6 || null,
+        enf_cronica_7: nueva.enf_cronica_7 || null,
+        tratamiento_7: nueva.tratamiento_7 || null,
+        enf_cronica_8: nueva.enf_cronica_8 || null,
+        tratamiento_8: nueva.tratamiento_8 || null,
+        enf_cronica_9: nueva.enf_cronica_9 || null,
+        tratamiento_9: nueva.tratamiento_9 || null,
+        enf_cronica_10: nueva.enf_cronica_10 || null,
+        tratamiento_10: nueva.tratamiento_10 || null,
       })
       .select()
       .single();
@@ -722,6 +882,26 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       examen_diagnostico: data.examen_diagnostico || undefined,
       fecha_apertura: new Date(data.fecha_apertura),
       created_at: new Date(data.created_at),
+      enf_cronica_1: data.enf_cronica_1 || undefined,
+      tratamiento_1: data.tratamiento_1 || undefined,
+      enf_cronica_2: data.enf_cronica_2 || undefined,
+      tratamiento_2: data.tratamiento_2 || undefined,
+      enf_cronica_3: data.enf_cronica_3 || undefined,
+      tratamiento_3: data.tratamiento_3 || undefined,
+      enf_cronica_4: data.enf_cronica_4 || undefined,
+      tratamiento_4: data.tratamiento_4 || undefined,
+      enf_cronica_5: data.enf_cronica_5 || undefined,
+      tratamiento_5: data.tratamiento_5 || undefined,
+      enf_cronica_6: data.enf_cronica_6 || undefined,
+      tratamiento_6: data.tratamiento_6 || undefined,
+      enf_cronica_7: data.enf_cronica_7 || undefined,
+      tratamiento_7: data.tratamiento_7 || undefined,
+      enf_cronica_8: data.enf_cronica_8 || undefined,
+      tratamiento_8: data.tratamiento_8 || undefined,
+      enf_cronica_9: data.enf_cronica_9 || undefined,
+      tratamiento_9: data.tratamiento_9 || undefined,
+      enf_cronica_10: data.enf_cronica_10 || undefined,
+      tratamiento_10: data.tratamiento_10 || undefined,
     };
     setHistoriasClinicas(prev => [...prev, hcCreada]);
   };
@@ -742,6 +922,26 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         examen_subjetivo: actualizada.examen_subjetivo || null,
         examen_objetivo: actualizada.examen_objetivo || null,
         examen_diagnostico: actualizada.examen_diagnostico || null,
+        enf_cronica_1: actualizada.enf_cronica_1 || null,
+        tratamiento_1: actualizada.tratamiento_1 || null,
+        enf_cronica_2: actualizada.enf_cronica_2 || null,
+        tratamiento_2: actualizada.tratamiento_2 || null,
+        enf_cronica_3: actualizada.enf_cronica_3 || null,
+        tratamiento_3: actualizada.tratamiento_3 || null,
+        enf_cronica_4: actualizada.enf_cronica_4 || null,
+        tratamiento_4: actualizada.tratamiento_4 || null,
+        enf_cronica_5: actualizada.enf_cronica_5 || null,
+        tratamiento_5: actualizada.tratamiento_5 || null,
+        enf_cronica_6: actualizada.enf_cronica_6 || null,
+        tratamiento_6: actualizada.tratamiento_6 || null,
+        enf_cronica_7: actualizada.enf_cronica_7 || null,
+        tratamiento_7: actualizada.tratamiento_7 || null,
+        enf_cronica_8: actualizada.enf_cronica_8 || null,
+        tratamiento_8: actualizada.tratamiento_8 || null,
+        enf_cronica_9: actualizada.enf_cronica_9 || null,
+        tratamiento_9: actualizada.tratamiento_9 || null,
+        enf_cronica_10: actualizada.enf_cronica_10 || null,
+        tratamiento_10: actualizada.tratamiento_10 || null,
       })
       .eq('id', id);
 

@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useCampamento } from '../../context/CampamentoContext';
 import { X, Save, Pill } from 'lucide-react';
-import type { Tratamiento } from '../../types';
 
 interface TratamientoModalProps {
   isOpen: boolean;

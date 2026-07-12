@@ -5,7 +5,7 @@ import { useCampamento } from '../../context/CampamentoContext';
 import { ArrowLeft, Stethoscope, Search, Plus, MoreVertical } from 'lucide-react';
 import HistoriaClinicaModal from '../../components/salud/HistoriaClinicaModal';
 import AtencionMedicaModal from '../../components/salud/AtencionMedicaModal';
-import type { HistoriaClinica, Refugiado } from '../../types';
+import type { HistoriaClinica } from '../../types';
 
 export default function HistoriasClinicas() {
   const navigate = useNavigate();
@@ -102,6 +102,7 @@ export default function HistoriasClinicas() {
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 text-left">
+                <th className="px-6 py-4 font-semibold text-gray-600">Codigo</th>
                 <th className="px-6 py-4 font-semibold text-gray-600">Cedula</th>
                 <th className="px-6 py-4 font-semibold text-gray-600">Apellidos y Nombres</th>
                 <th className="px-6 py-4 font-semibold text-gray-600">Cama</th>
@@ -112,7 +113,7 @@ export default function HistoriasClinicas() {
             <tbody className="divide-y divide-gray-50">
               {paginated.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-6 py-16 text-center text-gray-400">
+                  <td colSpan={6} className="px-6 py-16 text-center text-gray-400">
                     <Stethoscope size={40} className="mx-auto mb-3 opacity-50" />
                     <p className="font-medium">No se encontraron historias clinicas</p>
                   </td>
@@ -120,6 +121,9 @@ export default function HistoriasClinicas() {
               )}
               {paginated.map(({ historia, refugiado }) => (
                 <tr key={historia.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 font-medium text-caracas-blue">
+                    {refugiado?.codigo || '-'}
+                  </td>
                   <td className="px-6 py-4 font-medium text-gray-800">
                     {refugiado?.cedula || 'S/C'}
                   </td>

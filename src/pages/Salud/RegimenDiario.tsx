@@ -73,6 +73,7 @@ export default function RegimenDiario() {
                   {refugiado.apellidos}, {refugiado.nombres}
                 </h3>
                 <p className="text-blue-100 text-sm">
+                  {refugiado.codigo && <>{refugiado.codigo} | </>}
                   C.I: {refugiado.cedula || 'S/C'} | Cama: {refugiado.nro_cama || 'N/A'}
                 </p>
               </div>

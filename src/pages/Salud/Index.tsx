@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useCampamento } from '../../context/CampamentoContext';
-import { Stethoscope, Pill, ArrowLeft } from 'lucide-react';
+import { Stethoscope, Pill } from 'lucide-react';
 
 const submodulos = [
   {

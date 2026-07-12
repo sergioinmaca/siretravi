@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useCampamento } from '../../context/CampamentoContext';
 import { X, Save, Activity } from 'lucide-react';
-import type { AtencionMedica } from '../../types';
 
 interface AtencionMedicaModalProps {
   isOpen: boolean;

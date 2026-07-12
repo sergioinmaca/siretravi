@@ -56,6 +56,7 @@ export interface Refugiado {
   id: string;
   campamento_id: string;
   familia_id?: string;
+  codigo: string;
   nombres: string;
   apellidos: string;
   cedula?: number;
@@ -85,6 +86,11 @@ export interface Refugiado {
   lesion_sismo: boolean;
   adulto_mayor_dependencia: boolean;
   lactante?: boolean;
+  nivel_educativo?: string;
+  condicion_vivienda?: string;
+  tenencia_vivienda?: string;
+  ingreso_familiar?: string;
+  parentesco?: string;
 }
 
 export interface HistoriaClinica {
@@ -103,6 +109,26 @@ export interface HistoriaClinica {
   examen_diagnostico?: string;
   fecha_apertura: Date;
   created_at: Date;
+  enf_cronica_1?: string;
+  tratamiento_1?: string;
+  enf_cronica_2?: string;
+  tratamiento_2?: string;
+  enf_cronica_3?: string;
+  tratamiento_3?: string;
+  enf_cronica_4?: string;
+  tratamiento_4?: string;
+  enf_cronica_5?: string;
+  tratamiento_5?: string;
+  enf_cronica_6?: string;
+  tratamiento_6?: string;
+  enf_cronica_7?: string;
+  tratamiento_7?: string;
+  enf_cronica_8?: string;
+  tratamiento_8?: string;
+  enf_cronica_9?: string;
+  tratamiento_9?: string;
+  enf_cronica_10?: string;
+  tratamiento_10?: string;
 }
 
 export interface AtencionMedica {

@@ -49,7 +49,8 @@ export default function Refugiados() {
       .filter(r => 
         r.nombres.includes(term) || 
         r.apellidos.includes(term) || 
-        (r.cedula?.toString() || '').includes(term)
+        (r.cedula?.toString() || '').includes(term) ||
+        (r.codigo || '').toUpperCase().includes(term)
       )
       .map(r => {
         let jerarquiaStr = 'Jefe de Familia';
@@ -60,6 +61,7 @@ export default function Refugiados() {
 
         return {
           id: r.id,
+          codigo: r.codigo || '-',
           cedula: r.cedula?.toString() || 'S/N',
           nombres: r.nombres,
           apellidos: r.apellidos,
@@ -150,6 +152,7 @@ export default function Refugiados() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-white border-b border-gray-100">
+                <th className="py-4 px-6 font-semibold text-sm text-gray-500">Código</th>
                 <th className="py-4 px-6 font-semibold text-sm text-gray-500">Cédula</th>
                 <th className="py-4 px-6 font-semibold text-sm text-gray-500">Apellidos y Nombres</th>
                 <th className="py-4 px-6 font-semibold text-sm text-gray-500">Edad</th>
@@ -162,6 +165,7 @@ export default function Refugiados() {
               {paginatedRefugiados.length > 0 ? (
                 paginatedRefugiados.map((refugiado) => (
                   <tr key={refugiado.id} className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors group">
+                    <td className="py-3 px-6 text-sm font-medium text-caracas-blue">{refugiado.codigo || '-'}</td>
                     <td className="py-3 px-6 text-sm font-medium text-gray-700">{refugiado.cedula}</td>
                     <td className="py-3 px-6">
                       <div className="text-sm font-bold text-gray-800">{refugiado.apellidos}</div>
