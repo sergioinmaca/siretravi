@@ -52,6 +52,23 @@ export interface Permiso {
   campamentos: string[] | null;
 }
 
+export interface Evento {
+  id: string;
+  id_campamento: string;
+  titulo: string;
+  descripcion?: string;
+  fecha_inicio: string;
+  fecha_fin?: string;
+  hora_inicio: string;
+  hora_fin: string;
+  tipo: 'permanente' | 'unico';
+  created_at?: string;
+}
+
+export interface EventoOcurrencia extends Evento {
+  fecha_ocurrencia: string;
+}
+
 export interface Refugiado {
   id: string;
   campamento_id: string;
