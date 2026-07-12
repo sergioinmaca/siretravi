@@ -1,17 +1,16 @@
 import { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Plus, ShieldOff, Edit, FileDown } from 'lucide-react';
 import dayjs from 'dayjs';
-import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
 import { fetchEventos, fetchCategorias, crearEvento, expandirPermanentes, agruparPorDia } from '../lib/eventos';
-import { formatTime12h } from '../lib/formatTime';
+import { formatTime12h, formatHourLabel } from '../lib/formatTime';
 import CalendarioMensual from '../components/agenda/CalendarioMensual';
 import CalendarioSemanal from '../components/agenda/CalendarioSemanal';
 import CrearEventoModal from '../components/agenda/CrearEventoModal';
 import EditorEventosModal from '../components/agenda/EditorEventosModal';
-import type { Evento, CategoriaEvento } from '../types';
+import type { Evento, CategoriaEvento, EventoOcurrencia } from '../types';
 
 export default function Agenda() {
   const { campamentoSeleccionado } = useCampamento();
@@ -83,6 +82,7 @@ export default function Agenda() {
     fetchEventos(campamentoSeleccionado.id, fechaHasta)
       .then(setEventos)
       .catch(console.error);
+    fetchCategorias().then(setCategorias).catch(console.error);
   };
 
   const ocurrencias = useMemo(() => {
@@ -104,6 +104,20 @@ export default function Agenda() {
     const cat = categorias.find(c => c.id === categoriaId);
     return cat?.nombre || null;
   };
+
+  const getCategoriaColor = (categoriaId?: string, tipo?: string): string => {
+    if (categoriaId) {
+      const cat = categorias.find(c => c.id === categoriaId);
+      if (cat) return cat.color;
+    }
+    return tipo === 'permanente' ? '#A855F7' : '#3B82F6';
+  };
+
+  const hexToRgb = (hex: string) => ({
+    r: parseInt(hex.slice(1, 3), 16),
+    g: parseInt(hex.slice(3, 5), 16),
+    b: parseInt(hex.slice(5, 7), 16),
+  });
 
   const handleCrearEvento = async (data: {
     titulo: string;
@@ -162,106 +176,393 @@ export default function Agenda() {
   };
 
   const handleExportPDF = async () => {
-    const calendarioEl = document.getElementById('calendario-container');
-    if (!calendarioEl) return;
+    const pdf = new jsPDF('landscape', 'mm', 'letter');
+    const pw = pdf.internal.pageSize.getWidth();
+    const ph = pdf.internal.pageSize.getHeight();
+    const m = 5;
+
+    const fx = (pdf.internal as any).scaleFactor as number;
+    const tw = (t: string) => pdf.getStringUnitWidth(t) * pdf.getFontSize() / fx;
+    const trunc = (t: string, maxW: number) => {
+      if (tw(t) <= maxW) return t;
+      for (let i = t.length; i > 0; i--) {
+        const s = t.slice(0, i) + '...';
+        if (tw(s) <= maxW) return s;
+      }
+      return '...';
+    };
+
+    const getMonday = (d: dayjs.Dayjs) => {
+      const day = d.day();
+      return day === 0 ? d.add(-6, 'day') : d.add(1 - day, 'day');
+    };
+    const getCol = (d: number) => d === 0 ? 6 : d - 1;
+    const timeToHours = (time: string) => {
+      const [h, m] = time.split(':').map(Number);
+      return h + m / 60;
+    };
 
     try {
-      const canvas = await html2canvas(calendarioEl, {
-        scale: window.devicePixelRatio * 2,
-        useCORS: true,
-        backgroundColor: '#ffffff',
-      });
-
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('landscape', 'mm', 'letter');
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const margin = 5;
-
       pdf.setFontSize(11);
       pdf.setFont('helvetica', 'bold');
-      pdf.text(`AGENDA - ${campamentoSeleccionado?.nombre || ''} - ${tituloPeriodo()}`, margin, margin + 5);
+      pdf.text(`${campamentoSeleccionado?.nombre || ''}`, m, m + 5);
       pdf.setFontSize(8);
+      pdf.text(`Agenda ${tituloPeriodo()}`, m, m + 9);
+      pdf.setFontSize(7);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`Generado: ${dayjs().format('DD/MM/YYYY')}`, margin, margin + 9);
+      pdf.text(`Generado: ${dayjs().format('DD/MM/YYYY')}`, m, m + 13);
 
       const categoriasEnRango = new Map<string, CategoriaEvento>();
       for (const e of eventos) {
         if (e.categoria_id) {
           const cat = categorias.find(c => c.id === e.categoria_id);
-          if (cat && !categoriasEnRango.has(cat.id)) {
-            categoriasEnRango.set(cat.id, cat);
+          if (cat && !categoriasEnRango.has(cat.id)) categoriasEnRango.set(cat.id, cat);
+        }
+      }
+
+      const catsArr = Array.from(categoriasEnRango.values());
+      const legendX = pw / 2;
+      const legendY = m + 5;
+      const legendCols = 3;
+      const rightW = pw - m - legendX;
+      const legendItemW = rightW / legendCols;
+      catsArr.forEach((cat, idx) => {
+        const col = idx % legendCols;
+        const row = Math.floor(idx / legendCols);
+        const x = legendX + col * legendItemW;
+        const y = legendY + row * 5;
+        const rgb = hexToRgb(cat.color);
+        pdf.setFillColor(rgb.r, rgb.g, rgb.b);
+        pdf.circle(x, y, 1.5, 'F');
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(7);
+        pdf.text(cat.nombre, x + 3, y + 1);
+      });
+      const legendRows = Math.ceil(catsArr.length / legendCols);
+      const calY = Math.max(m + 17, legendY + legendRows * 5 + 2);
+      const dayH = 8;
+      let calGridH = 0;
+
+      if (vista === 'mes') {
+        const inicioMes = currentDate.startOf('month');
+        const finMes = currentDate.endOf('month');
+        const inicioCal = getMonday(inicioMes.startOf('week'));
+        const finCal = (() => {
+          const eow = finMes.endOf('week');
+          return eow.day() === 0 ? eow : eow.add(7 - eow.day(), 'day');
+        })();
+
+        const semanas: dayjs.Dayjs[][] = [];
+        let actual = inicioCal;
+        while (actual.isBefore(finCal) || actual.isSame(finCal, 'day')) {
+          const s: dayjs.Dayjs[] = [];
+          for (let i = 0; i < 7; i++) { s.push(actual); actual = actual.add(1, 'day'); }
+          semanas.push(s);
+        }
+
+        const cellW = (pw - m * 2) / 7;
+        const availH = ph - m - calY - dayH - m;
+        const calPct = 0.95;
+        const calH = availH * calPct;
+        const rowH = calH / semanas.length;
+        calGridH = semanas.length * rowH;
+        const DIAS_H = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+
+        const eventSlot = 5;
+        const numberZone = 6.5;
+        const fitNoBadge = Math.max(1, Math.floor((rowH - numberZone) / eventSlot));
+        const fitWithBadge = Math.max(1, Math.floor((rowH - numberZone - 2) / eventSlot));
+
+        for (let d = 0; d < 7; d++) {
+          const cx = m + d * cellW;
+          pdf.setFillColor(243, 244, 246);
+          pdf.rect(cx, calY, cellW, dayH, 'F');
+          pdf.setDrawColor(229, 231, 235);
+          pdf.rect(cx, calY, cellW, dayH, 'S');
+          pdf.setFontSize(9);
+          pdf.setFont('helvetica', 'bold');
+          pdf.setTextColor(107, 114, 128);
+          pdf.text(DIAS_H[d], cx + cellW / 2, calY + dayH / 2 + 1.5, { align: 'center' });
+        }
+
+        for (let s = 0; s < semanas.length; s++) {
+          for (let d = 0; d < 7; d++) {
+            const dia = semanas[s][d];
+            const dateStr = dia.format('YYYY-MM-DD');
+            const cx = m + d * cellW;
+            const cy = calY + dayH + s * rowH;
+            const esHoy = dateStr === dayjs().format('YYYY-MM-DD');
+            const esMesActual = dia.isSame(inicioMes, 'month');
+            const evts = eventosPorDia.get(dateStr) || [];
+
+            pdf.setDrawColor(229, 231, 235);
+            pdf.rect(cx, cy, cellW, rowH, 'S');
+
+            if (esHoy) {
+              pdf.setFillColor(239, 246, 255);
+              pdf.rect(cx + 0.5, cy + 0.5, cellW - 1, rowH - 1, 'F');
+            }
+
+            if (esHoy) {
+              pdf.setFillColor(37, 99, 235);
+              pdf.circle(cx + 4, cy + 3.5, 3, 'F');
+              pdf.setTextColor(255, 255, 255);
+            } else {
+              pdf.setTextColor(esMesActual ? 55 : 156, esMesActual ? 65 : 163, esMesActual ? 75 : 174);
+            }
+            pdf.setFontSize(9);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(dia.format('D'), cx + 4, cy + 4.5, { align: 'center' });
+
+            const mostrarMas = evts.length > fitNoBadge;
+            const visibleCount = mostrarMas ? fitWithBadge : Math.min(evts.length, fitNoBadge);
+            const sobra = evts.length - visibleCount;
+
+            evts.slice(0, visibleCount).forEach((e, i) => {
+              const ey = cy + numberZone + i * eventSlot;
+              const color = getCategoriaColor(e.categoria_id, e.tipo);
+              const rgb = hexToRgb(color);
+              pdf.setFillColor(rgb.r, rgb.g, rgb.b);
+              pdf.roundedRect(cx + 1, ey, cellW - 2, 4.5, 0.5, 0.5, 'F');
+              pdf.setTextColor(255, 255, 255);
+              pdf.setFontSize(7);
+              pdf.setFont('helvetica', 'normal');
+              const tituloTrunc = trunc(e.titulo, cellW - 4);
+              pdf.text(tituloTrunc, cx + cellW / 2, ey + 3.2, { align: 'center' });
+            });
+
+            if (sobra > 0) {
+              pdf.setFontSize(7);
+              pdf.setFont('helvetica', 'normal');
+              pdf.setTextColor(107, 114, 128);
+              const sy = cy + numberZone + visibleCount * eventSlot + 1;
+              pdf.text(`+${sobra} más`, cx + cellW / 2, sy, { align: 'center' });
+            }
+          }
+        }
+      } else {
+        const HORAS = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
+        const DIAS_SEM = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+        const inicioSem = getMonday(currentDate);
+        const diasSem: dayjs.Dayjs[] = [];
+        for (let i = 0; i < 7; i++) diasSem.push(inicioSem.add(i, 'day'));
+
+        const hourColW = 13;
+        const dayColW = (pw - m - hourColW - m) / 7;
+        const availH = ph - m - calY - dayH - m;
+        const calH = availH * 0.68;
+        const hourRowH = calH / HORAS.length;
+        calGridH = HORAS.length * hourRowH;
+        const gridY = calY + dayH;
+
+        // Day headers (two-line format)
+        for (let d = 0; d < 7; d++) {
+          const cx = m + hourColW + d * dayColW;
+          const dia = diasSem[d];
+          const dateStr = dia.format('YYYY-MM-DD');
+          const esHoy = dateStr === dayjs().format('YYYY-MM-DD');
+
+          pdf.setFillColor(243, 244, 246);
+          pdf.rect(cx, calY, dayColW, dayH, 'F');
+          pdf.setDrawColor(229, 231, 235);
+          pdf.rect(cx, calY, dayColW, dayH, 'S');
+
+          pdf.setFontSize(6.5);
+          pdf.setFont('helvetica', 'normal');
+          pdf.setTextColor(107, 114, 128);
+          pdf.text(DIAS_SEM[d], cx + dayColW / 2, calY + 2, { align: 'center' });
+
+          if (esHoy) {
+            pdf.setFillColor(37, 99, 235);
+            pdf.circle(cx + dayColW / 2, calY + dayH / 2 + 1, 3, 'F');
+            pdf.setTextColor(255, 255, 255);
+          } else {
+            pdf.setTextColor(55, 65, 81);
+          }
+          pdf.setFontSize(8);
+          pdf.setFont('helvetica', 'bold');
+          pdf.text(dia.format('D'), cx + dayColW / 2, calY + dayH / 2 + 3, { align: 'center' });
+        }
+
+        // Hour labels + grid
+        pdf.setFillColor(243, 244, 246);
+        pdf.rect(m, calY, hourColW, dayH, 'F');
+
+        for (let h = 0; h < HORAS.length; h++) {
+          const hora = HORAS[h];
+          const ry = gridY + h * hourRowH;
+
+          pdf.setDrawColor(229, 231, 235);
+          pdf.rect(m, ry, hourColW, hourRowH, 'S');
+          pdf.setFontSize(7);
+          pdf.setFont('helvetica', 'normal');
+          pdf.setTextColor(107, 114, 128);
+          pdf.text(formatHourLabel(hora), m + hourColW - 1, ry + hourRowH / 2 + 1.2, { align: 'right' });
+
+          for (let d = 0; d < 7; d++) {
+            const cx = m + hourColW + d * dayColW;
+            const dateStr = diasSem[d].format('YYYY-MM-DD');
+            const esHoy = dateStr === dayjs().format('YYYY-MM-DD');
+
+            pdf.setDrawColor(229, 231, 235);
+            pdf.rect(cx, ry, dayColW, hourRowH, 'S');
+
+            if (esHoy) {
+              pdf.setFillColor(239, 246, 255);
+              pdf.rect(cx + 0.5, ry + 0.5, dayColW - 1, hourRowH - 1, 'F');
+            }
+          }
+        }
+
+        // Events con stacking (posicionados por hora exacta)
+        const stackOffset = 2.5;
+        for (let d = 0; d < 7; d++) {
+          const dateStr = diasSem[d].format('YYYY-MM-DD');
+          const cx = m + hourColW + d * dayColW;
+
+          const evts = eventosPorDia.get(dateStr) || [];
+          if (evts.length === 0) continue;
+
+          const sorted = [...evts].sort((a, b) => {
+            const c = a.hora_inicio.localeCompare(b.hora_inicio);
+            if (c !== 0) return c;
+            return (b.hora_fin || '24:00').localeCompare(a.hora_fin || '24:00');
+          });
+
+          const stack: number[] = [];
+
+          for (const e of sorted) {
+            const startH = timeToHours(e.hora_inicio);
+            const endH = Math.min(timeToHours(e.hora_fin || '22:00'), 22);
+            const top = Math.max(0, startH - 6) * hourRowH;
+            const h = Math.max(hourRowH * 0.3, (endH - startH) * hourRowH);
+
+            while (stack.length > 0 && stack[0] <= startH) {
+              stack.shift();
+            }
+
+            const level = stack.length;
+            stack.push(endH);
+            stack.sort((a, b) => a - b);
+
+            const left = level * stackOffset;
+            const w = dayColW - left - 0.5;
+
+            if (w < 5) continue;
+
+            const color = getCategoriaColor(e.categoria_id, e.tipo);
+            const rgb = hexToRgb(color);
+            const ey = gridY + top;
+
+            pdf.setFillColor(rgb.r, rgb.g, rgb.b);
+            pdf.roundedRect(cx + left, ey, w, h, 0.5, 0.5, 'F');
+            pdf.setTextColor(255, 255, 255);
+
+            pdf.setFontSize(6);
+            pdf.setFont('helvetica', 'bold');
+            pdf.text(trunc(e.titulo, w - 2), cx + left + 1.5, ey + 2);
           }
         }
       }
 
-      let leyendaX = pageWidth / 2;
-      const catsArray = Array.from(categoriasEnRango.values());
-      for (let i = 0; i < catsArray.length; i++) {
-        const cat = catsArray[i];
-        const hexToRgb = (hex: string) => {
-          const r = parseInt(hex.slice(1, 3), 16);
-          const g = parseInt(hex.slice(3, 5), 16);
-          const b = parseInt(hex.slice(5, 7), 16);
-          return { r, g, b };
-        };
-        const rgb = hexToRgb(cat.color);
-        pdf.setFillColor(rgb.r, rgb.g, rgb.b);
-        pdf.circle(leyendaX, margin + 5, 1.5, 'F');
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(7);
-        pdf.text(cat.nombre, leyendaX + 3, margin + 6);
-        leyendaX += 22;
+      if (vista === 'mes') {
+        pdf.addPage();
+        pdf.setFontSize(11);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(`${campamentoSeleccionado?.nombre || ''}`, m, m + 5);
+        pdf.setFontSize(8);
+        pdf.text(`Agenda ${tituloPeriodo()} - Listado de eventos`, pw - m, m + 5, { align: 'right' });
       }
 
-      const imgWidth = pageWidth - margin * 2;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      const headerHeight = 20;
-      pdf.addImage(imgData, 'PNG', margin, margin + headerHeight, imgWidth, imgHeight);
+      const actY = vista === 'mes' ? m + 16 : calY + dayH + calGridH + 4;
+      const DIAS_N = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+      const gap = 1;
+      const numCols = vista === 'mes' ? 6 : 7;
+      const colW = (pw - m * 2 - (numCols - 1) * gap) / numCols;
+      const colXs = Array.from({ length: numCols }, (_, i) => m + i * (colW + gap));
 
-      const actividadesY = margin + headerHeight + imgHeight + 8;
-      const ocurrenciasAct = expandirPermanentes(eventos, fechaDesde, fechaHasta);
-      const agrupadas = agruparPorDia(ocurrenciasAct);
-      const diasAct = Array.from(agrupadas.keys()).sort();
+      const occs = expandirPermanentes(eventos, fechaDesde, fechaHasta);
+      const agrup = agruparPorDia(occs);
+      const dias = Array.from(agrup.keys()).sort();
 
-      if (diasAct.length > 0) {
-        const colWidth = (pageWidth - margin * 2) / 3;
-        const DIAS_NAMES = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+      if (dias.length > 0) {
+        const finAct = ph - m;
 
-        let colY = actividadesY;
-        let col = 0;
-        let maxColH = colY;
+        pdf.setDrawColor(200, 200, 200);
+        for (let i = 1; i < numCols; i++) {
+          pdf.line(colXs[i], actY, colXs[i], finAct);
+        }
 
-        for (const dateStr of diasAct) {
-          const evts = agrupadas.get(dateStr) || [];
-          const dia = dayjs(dateStr);
-          const colX = margin + col * colWidth;
+        const colYs = Array(numCols).fill(actY);
 
-          pdf.setFontSize(7);
-          pdf.setFont('helvetica', 'bold');
-          pdf.text(`${DIAS_NAMES[dia.day()]} ${dia.format('D')}`, colX, colY);
-          colY += 4;
-
-          pdf.setFont('helvetica', 'normal');
-          for (const e of evts) {
-            const horaStr = e.hora_fin
-              ? `${formatTime12h(e.hora_inicio)} - ${formatTime12h(e.hora_fin)}`
-              : formatTime12h(e.hora_inicio);
-            const catNombre = e.categoria_id ? (getCategoriaNombre(e.categoria_id) || '') : '';
-            const linea = `${horaStr} · ${e.titulo}${catNombre ? ' · ' + catNombre : ''}`;
-            pdf.setFontSize(6);
-            pdf.text(linea, colX + 2, colY, { maxWidth: colWidth - 4 });
-            colY += 3.5;
+        const renderEntry = (col: number, e: EventoOcurrencia) => {
+          if (colYs[col] > finAct - 2) return;
+          const hStr = e.hora_fin
+            ? `${formatTime12h(e.hora_inicio)} - ${formatTime12h(e.hora_fin)}`
+            : formatTime12h(e.hora_inicio);
+          const color = getCategoriaColor(e.categoria_id, e.tipo);
+          const rgb = hexToRgb(color);
+          
+          pdf.setFontSize(8);
+          const wrapped = pdf.splitTextToSize(e.titulo, colW - 2);
+          for (let i = 0; i < wrapped.length; i++) {
+            if (colYs[col] > finAct - 2) break;
+            pdf.setTextColor(rgb.r, rgb.g, rgb.b);
+            pdf.text(wrapped[i], colXs[col] + 2, colYs[col]);
+            colYs[col] += 3.5;
           }
-          colY += 2;
+          
+          if (colYs[col] > finAct - 2) return;
+          pdf.setFontSize(7);
+          pdf.setTextColor(156, 163, 175);
+          pdf.text(hStr, colXs[col] + 2, colYs[col]);
+          colYs[col] += 5;
+        };
 
-          if (colY > maxColH) maxColH = colY;
+        if (vista === 'semana') {
+          for (const dateStr of dias) {
+            const dia = dayjs(dateStr);
+            const col = getCol(dia.day());
+            if (colYs[col] > finAct - 5) break;
+            const evts = agrup.get(dateStr) || [];
 
-          col++;
-          if (col >= 3) {
-            col = 0;
-            colY = maxColH + 4;
-          } else {
-            colY = actividadesY;
+            pdf.setFontSize(9);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(55, 65, 81);
+            pdf.text(`${DIAS_N[col]} ${dia.format('D')}`, colXs[col], colYs[col]);
+            colYs[col] += 4.5;
+
+            pdf.setFont('helvetica', 'normal');
+            for (const e of evts) renderEntry(col, e);
+            colYs[col] += 1;
+          }
+        } else {
+          const total = dias.length;
+          let col = 0;
+          for (let idx = 0; idx < total; idx++) {
+            if (colYs[col] > finAct - 5) {
+              col++;
+              if (col >= numCols) break;
+            }
+            const dateStr = dias[idx];
+            const evts = agrup.get(dateStr) || [];
+            const dia = dayjs(dateStr);
+
+            pdf.setFontSize(9);
+            pdf.setFont('helvetica', 'bold');
+            pdf.setTextColor(55, 65, 81);
+            pdf.text(`${DIAS_N[getCol(dia.day())]} ${dia.format('D')}`, colXs[col], colYs[col]);
+            colYs[col] += 4.5;
+
+            pdf.setFont('helvetica', 'normal');
+            for (const e of evts) {
+              if (colYs[col] > finAct - 2) {
+                col++;
+                if (col >= numCols) break;
+              }
+              renderEntry(col, e);
+            }
+            colYs[col] += 1;
           }
         }
       }
@@ -362,7 +663,7 @@ export default function Agenda() {
           <p className="text-lg font-medium">Cargando eventos...</p>
         </div>
       ) : (
-        <div id="calendario-container" className="min-h-0 overflow-hidden flex flex-col">
+        <div className="min-h-0 overflow-hidden flex flex-col">
           {vista === 'mes' ? (
             <CalendarioMensual
               currentDate={currentDate}
