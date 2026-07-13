@@ -52,7 +52,7 @@ export default function CalendarioMensual({ currentDate, eventosPorDia, onDayCli
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-hidden flex flex-col flex-1 min-h-0 relative">
+    <div className="bg-white rounded-2xl border border-gray-200 shadow-sm overflow-y-auto flex flex-col min-h-0 relative">
       <div className="grid grid-cols-7 shrink-0">
         {DIAS.map((dia) => (
           <div key={dia} className="text-center py-3 text-base font-semibold text-gray-500 bg-gray-50 border-b border-gray-300">
@@ -60,9 +60,9 @@ export default function CalendarioMensual({ currentDate, eventosPorDia, onDayCli
           </div>
         ))}
       </div>
-      <div className="flex-1 flex flex-col min-h-0 divide-y divide-gray-200 overflow-hidden">
+      <div className="flex flex-col divide-y divide-gray-200">
         {semanas.map((semana, semanaIdx) => (
-            <div key={semanaIdx} className="flex-1 grid grid-cols-7 min-h-0">
+            <div key={semanaIdx} className="grid grid-cols-7 h-60">
               {semana.map((dia) => {
                 const dateStr = dia.format('YYYY-MM-DD');
                 const esMesActual = dia.isSame(inicioMes, 'month');
@@ -73,7 +73,7 @@ export default function CalendarioMensual({ currentDate, eventosPorDia, onDayCli
                   <div
                     key={dateStr}
                     onClick={() => onDayClick(dia)}
-                    className={`border-r border-gray-200 p-1.5 cursor-pointer transition-colors hover:bg-gray-50 flex flex-col min-h-0 overflow-hidden ${esHoy ? 'bg-blue-50/50' : ''
+                    className={`border-r border-gray-200 p-1.5 cursor-pointer transition-colors hover:bg-gray-50 flex flex-col min-h-0 overflow-y-auto ${esHoy ? 'bg-blue-50/50' : ''
                       } ${!esMesActual ? 'bg-gray-50/50' : ''}`}
                   >
                     <span
