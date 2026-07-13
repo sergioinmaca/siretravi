@@ -46,8 +46,8 @@ export default function Login() {
               <div className="w-20 h-20 mx-auto mb-4 rounded-2xl overflow-hidden">
                 <img src="/favicon.svg" alt="Logo" className="w-full h-full object-cover" />
               </div>
-              <h1 className="text-2xl font-bold text-white tracking-tight">Gestión de Refugios</h1>
-              <p className="text-sm text-white/70 mt-1">Sistema de Registro Unificado de Refugiados</p>
+              <h1 className="text-2xl font-bold text-white tracking-tight">Gestión de Campamentos</h1>
+              <p className="text-sm text-white/70 mt-1">Sistema de Registro Unificado de Campamentos</p>
             </div>
           </div>
 

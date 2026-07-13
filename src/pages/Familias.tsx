@@ -130,7 +130,7 @@ export default function Familias() {
           <Users size={64} className="mb-4 opacity-40" />
           <p className="text-lg font-medium text-gray-500">No hay familias registradas</p>
           <p className="text-sm text-gray-400 mt-1">
-            Las familias se crean automáticamente al registrar un refugiado como Jefe de Familia
+            Las familias se crean automáticamente al registrar un integrante como Jefe de Familia
           </p>
         </div>
       )}

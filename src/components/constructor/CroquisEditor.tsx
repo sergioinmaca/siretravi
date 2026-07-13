@@ -292,10 +292,13 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
         }
 
         ctx.rotate(-(obj.rotation * Math.PI) / 180);
+        const isHorizontal = obj.rotation === 90 || obj.rotation === 270;
         ctx.fillStyle = '#FFFFFF';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.font = 'normal 17px Inter, sans-serif';
+        ctx.font = isHorizontal
+          ? 'normal 13px Inter, sans-serif'
+          : 'normal 17px Inter, sans-serif';
 
         if (tipoContabilizacionRef.current === 'cama') {
           if (obj.bedType === 'individual' || obj.bedType === 'duplex') {
@@ -305,7 +308,6 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
             const num1 = objectCounter + 1;
             const num2 = objectCounter + 2;
             objectCounter += 2;
-            const isHorizontal = obj.rotation === 90 || obj.rotation === 270;
             if (isHorizontal) {
               ctx.fillText(String(num1).padStart(2, '0'), -14, 0);
               ctx.fillText(String(num2).padStart(2, '0'), 14, 0);
@@ -318,7 +320,6 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
           objectCounter++;
           const objNumber = objectCounter;
           if (obj.bedType === 'litera') {
-            const isHorizontal = obj.rotation === 90 || obj.rotation === 270;
             if (isHorizontal) {
               ctx.fillText(String(objNumber).padStart(2, '0'), -14, 0);
               ctx.fillText(String(objNumber).padStart(2, '0'), 14, 0);

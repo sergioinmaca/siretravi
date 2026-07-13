@@ -361,12 +361,13 @@ function drawBedsWithNumbers(
 
     // Desrotar para dibujar textos siempre legibles
     ctx.rotate(-(bed.rotation * Math.PI) / 180);
+    const isHorizontal = bed.rotation === 90 || bed.rotation === 270;
     ctx.fillStyle = '#FFFFFF';
-    ctx.font = 'normal 14px Inter, sans-serif';
+    ctx.font = isHorizontal
+      ? 'normal 12.5px Inter, sans-serif'
+      : 'normal 14px Inter, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-
-    const isHorizontal = bed.rotation === 90 || bed.rotation === 270;
 
     if (modo === 'cama') {
       const num1 = actualNumbers[0];

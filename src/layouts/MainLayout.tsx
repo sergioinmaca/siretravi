@@ -21,7 +21,7 @@ import { useAuth } from '../context/AuthContext';
 
 const menuItems = [
   { path: '/', icon: Home, label: 'Inicio' },
-  { path: '/refugiados', icon: Users, label: 'Refugiados' },
+  { path: '/refugiados', icon: Users, label: 'Integrantes' },
   { path: '/familias', icon: Heart, label: 'Familias' },
   { path: '/constructor', icon: Grid, label: 'Constructor' },
   { path: '/salud', icon: HeartPulse, label: 'Salud' },
@@ -32,7 +32,7 @@ const menuItems = [
 
 const pathToModulo: Record<string, string> = {
   '/': 'Inicio',
-  '/refugiados': 'Refugiados',
+  '/refugiados': 'Integrantes',
   '/familias': 'Familias',
   '/constructor': 'Constructor',
   '/salud': 'Salud',
@@ -91,7 +91,7 @@ export default function MainLayout() {
         <div className="h-16 flex items-center justify-between px-4 border-b border-gray-100 shrink-0">
           {isSidebarOpen && (
             <span className="text-caracas-red font-bold text-md truncate ml-2">
-              GESTIÓN DE REFUGIOS
+              GESTIÓN DE CAMPAMENTOS
             </span>
           )}
           <button

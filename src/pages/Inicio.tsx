@@ -164,7 +164,7 @@ export default function Inicio() {
             <Users size={32} />
           </div>
           <div className="overflow-hidden">
-            <p className="text-sm font-medium text-gray-500 truncate">Total Refugiados</p>
+            <p className="text-sm font-medium text-gray-500 truncate">Total de Integrantes</p>
             <p className="text-3xl font-bold text-gray-900">{totalRefugiados}</p>
             <p className="text-xs text-gray-400 mt-1">
               <span className="text-blue-600 font-medium">{totalHombres}</span> H · <span className="text-pink-600 font-medium">{totalMujeres}</span> M
@@ -315,7 +315,7 @@ export default function Inicio() {
           </div>
         ) : (
           <div className="text-center py-10 text-gray-400">
-            <p className="font-medium">No hay refugiados registrados para mostrar procedencias.</p>
+            <p className="font-medium">No hay integrantes registrados para mostrar procedencias.</p>
           </div>
         )}
       </div>
@@ -363,7 +363,7 @@ export default function Inicio() {
           <div className="border-2 border-dashed border-gray-200 rounded-2xl h-72 flex flex-col items-center justify-center text-gray-400 bg-gray-50 hover:bg-gray-100 transition-colors">
             <Tent size={48} className="mb-4 opacity-50" />
             <p className="font-medium text-gray-500">No hay carpas configuradas para este campamento.</p>
-            <p className="text-sm text-gray-400 mt-1">Ve al módulo Constructor para crear un refugio con carpas y croquis.</p>
+            <p className="text-sm text-gray-400 mt-1">Ve al módulo Constructor para crear un campamento con carpas y croquis.</p>
           </div>
         )}
       </div>

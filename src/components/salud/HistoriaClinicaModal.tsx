@@ -174,7 +174,7 @@ export default function HistoriaClinicaModal({ isOpen, onClose, historiaToEdit, 
     if (encontrado) {
       const yaTieneHC = historiasClinicas.some(hc => hc.refugiado_id === encontrado.id);
       if (yaTieneHC && !isEditing) {
-        alert('Este refugiado ya tiene una historia clinica abierta.');
+        alert('Este integrante ya tiene una historia clinica abierta.');
         return;
       }
       setRefugiadoEncontrado(encontrado);
@@ -191,7 +191,7 @@ export default function HistoriaClinicaModal({ isOpen, onClose, historiaToEdit, 
         tiempoEmbarazo: encontrado.tiempo_embarazo?.toString() || '',
       }));
     } else {
-      alert('No se encontro ningun refugiado con esa cedula en este campamento.');
+      alert('No se encontro ningun integrante con esa cedula en este campamento.');
       setRefugiadoEncontrado(null);
     }
   };
@@ -199,7 +199,7 @@ export default function HistoriaClinicaModal({ isOpen, onClose, historiaToEdit, 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!refugiadoEncontrado && !isEditing) {
-      alert('Debe buscar un refugiado por cedula primero.');
+      alert('Debe buscar un integrante por cedula primero.');
       return;
     }
 
@@ -361,12 +361,12 @@ export default function HistoriaClinicaModal({ isOpen, onClose, historiaToEdit, 
                   <div className="p-2 bg-caracas-blue/10 rounded-lg">
                     <Search size={18} className="text-caracas-blue" />
                   </div>
-                  <h3 className="font-semibold text-gray-800">Buscar Refugiado</h3>
+                  <h3 className="font-semibold text-gray-800">Buscar Integrante</h3>
                 </div>
                 <div className="p-6">
                   <div className="flex gap-4 items-end">
                     <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Cedula o Codigo del Refugiado</label>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Cedula o Codigo del Integrante</label>
                       <input
                         type="number"
                         value={cedulaBusqueda}

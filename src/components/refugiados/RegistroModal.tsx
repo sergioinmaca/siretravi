@@ -234,7 +234,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
         <div className="px-8 py-5 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white z-10">
           <div>
             <h2 className="text-2xl font-bold text-gray-800">
-              {isEditing ? 'Modificar Refugiado' : 'Registrar Nuevo Refugiado'}
+              {isEditing ? 'Modificar Integrante' : 'Registrar Nuevo Integrante'}
             </h2>
             <p className="text-sm text-gray-500 mt-1">
               Destino: <span className="font-semibold text-caracas-red">{campamentoSeleccionado?.nombre || 'Ninguno'}</span>
@@ -258,7 +258,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
           {showSuccess && (
             <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-xl flex items-center gap-3 mb-6 shadow-sm">
               <CheckCircle2 size={20} className="text-green-600" />
-              <p className="font-medium">{isEditing ? '¡Refugiado modificado exitosamente!' : '¡Refugiado registrado exitosamente!'}</p>
+              <p className="font-medium">{isEditing ? '¡Integrante modificado exitosamente!' : '¡Integrante registrado exitosamente!'}</p>
             </div>
           )}
 
