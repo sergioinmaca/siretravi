@@ -426,7 +426,7 @@ export default function Reportes() {
           <div>
             <h3 className="text-lg font-bold text-slate-800 mb-2">Reporte General Demográfico</h3>
             <p className="text-sm text-slate-500 leading-relaxed">
-              Consolida la información general del refugio. Incluye dos páginas: distribución de familias por procedencia y desglose completo de grupos etarios censados.
+              Consolida la información general del Campamento. Incluye dos páginas: distribución de familias por procedencia y desglose completo de grupos etarios censados.
             </p>
           </div>
           <div className="flex gap-4 mt-6 pt-4 border-t border-slate-50">

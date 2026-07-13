@@ -107,7 +107,7 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
       }));
 
       if (campamentoToEdit) {
-        if (!window.confirm(`¿Estás seguro que deseas sobreescribir los datos del refugio "${nombre.toUpperCase()}"?`)) {
+        if (!window.confirm(`¿Estás seguro que deseas sobreescribir los datos del campamento "${nombre.toUpperCase()}"?`)) {
           setIsSubmitting(false);
           return;
         }
@@ -137,7 +137,7 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
         onClose();
       }, 1000);
     } catch (err) {
-      console.error('Error al guardar el refugio:', err);
+      console.error('Error al guardar el campamento:', err);
       alert('Ocurrió un error al guardar los cambios. Intenta de nuevo.');
     } finally {
       setIsSubmitting(false);
@@ -151,7 +151,7 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
     const tieneFamilias = familias.some(f => f.campamento_id === campamentoToEdit.id);
 
     if (tieneRefugiados || tieneFamilias) {
-      alert(`⚠️ No puedes eliminar el campamento "${campamentoToEdit.nombre}" porque tiene refugiados o familias asignadas. Debes reasignarlos o eliminarlos primero.`);
+      alert(`⚠️ No puedes eliminar el campamento "${campamentoToEdit.nombre}" porque tiene integrantes o familias asignadas. Debes reasignarlos o eliminarlos primero.`);
       return;
     }
 
@@ -171,10 +171,10 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
         <div className="px-8 py-5 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white sticky top-0 z-10">
           <div>
             <h2 className="text-2xl font-bold text-gray-800">
-              {campamentoToEdit ? 'Editar Refugio' : 'Crear Nuevo Refugio'}
+              {campamentoToEdit ? 'Editar Campamento' : 'Crear Nuevo Campamento'}
             </h2>
             <p className="text-sm text-gray-500 mt-1">
-              {campamentoToEdit ? 'Modifica las características del refugio y sus carpas' : 'Define las características del refugio y sus carpas'}
+              {campamentoToEdit ? 'Modifica las características del campamento y sus carpas' : 'Define las características del campamento y sus carpas'}
             </p>
           </div>
           <button onClick={onClose} className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition-colors">
@@ -189,7 +189,7 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
             <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-xl flex items-center gap-3 mb-6 shadow-sm">
               <Save size={20} className="text-green-600" />
               <p className="font-medium">
-                {campamentoToEdit ? '¡Refugio actualizado exitosamente!' : '¡Refugio creado exitosamente! Ya está disponible en el selector del Header.'}
+                {campamentoToEdit ? '¡Campamento actualizado exitosamente!' : '¡Campamento creado exitosamente! Ya está disponible en el selector del Header.'}
               </p>
             </div>
           )}
@@ -202,11 +202,11 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
                 <div className="p-2 bg-caracas-red/10 rounded-lg">
                   <MapPin size={18} className="text-caracas-red" />
                 </div>
-                <h3 className="font-semibold text-gray-800">Datos Generales del Refugio</h3>
+                <h3 className="font-semibold text-gray-800">Datos Generales del Campamento</h3>
               </div>
               <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del Refugio <span className="text-caracas-red">*</span></label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del Campamento <span className="text-caracas-red">*</span></label>
                   <input
                     required
                     type="text"
@@ -405,7 +405,7 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
                 className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-red-600 font-medium hover:bg-red-50 transition-colors border border-red-100 mr-auto"
               >
                 <Trash2 size={18} />
-                Eliminar Refugio
+                Eliminar Campamento
               </button>
             )}
             <button onClick={onClose} type="button" className="px-6 py-2.5 rounded-xl text-gray-600 font-medium hover:bg-gray-200 transition-colors">
@@ -418,7 +418,7 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
               className="flex items-center gap-2 bg-caracas-red hover:bg-red-800 text-white px-8 py-2.5 rounded-xl font-medium transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save size={18} />
-              {isSubmitting ? 'Guardando...' : campamentoToEdit ? 'Guardar Cambios' : 'Crear Refugio'}
+              {isSubmitting ? 'Guardando...' : campamentoToEdit ? 'Guardar Cambios' : 'Crear Campamento'}
             </button>
           </div>
         </div>

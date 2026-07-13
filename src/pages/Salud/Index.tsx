@@ -8,7 +8,7 @@ const submodulos = [
     path: '/salud/historias-clinicas',
     icon: Stethoscope,
     title: 'Historias Clinicas',
-    description: 'Registro medico completo de cada refugiado. Abra historias clinicas, registre atenciones medicas y documente examenes fisicos.',
+    description: 'Registro medico completo de cada integrante. Abra historias clinicas, registre atenciones medicas y documente examenes fisicos.',
     color: 'bg-caracas-red',
     iconBg: 'bg-caracas-red/10',
     iconColor: 'text-caracas-red',

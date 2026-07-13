@@ -11,7 +11,7 @@ export default function Refugiados() {
   const { tienePermisoPorCampamento } = useAuth();
 
   const tieneAcceso = campamentoSeleccionado
-    ? tienePermisoPorCampamento('Refugiados', campamentoSeleccionado.id, 'Ver')
+    ? tienePermisoPorCampamento('Integrantes', campamentoSeleccionado.id, 'Ver')
     : true;
 
   if (!tieneAcceso) {
@@ -19,7 +19,7 @@ export default function Refugiados() {
       <div className="flex flex-col items-center justify-center py-20 text-gray-400">
         <ShieldOff size={64} className="mb-4 opacity-40" />
         <p className="text-lg font-medium text-gray-500">Sin acceso a este campamento</p>
-        <p className="text-sm text-gray-400 mt-1">No tienes permisos para ver los refugiados de {campamentoSeleccionado?.nombre}</p>
+        <p className="text-sm text-gray-400 mt-1">No tienes permisos para ver los integrantes de {campamentoSeleccionado?.nombre}</p>
       </div>
     );
   }
@@ -89,7 +89,7 @@ export default function Refugiados() {
 
   const handleEliminar = (id: string) => {
     setMenuAbiertoId(null);
-    if (window.confirm('¿Estás seguro de que deseas eliminar este refugiado? Esta acción no se puede deshacer.')) {
+    if (window.confirm('¿Estás seguro de que deseas eliminar este integrante? Esta acción no se puede deshacer.')) {
       eliminarRefugiado(id);
     }
   };
@@ -106,12 +106,12 @@ export default function Refugiados() {
       {/* Cabecera */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Panel de Refugiados</h2>
+          <h2 className="text-2xl font-bold text-gray-800">Panel de Integrantes</h2>
           <p className="text-gray-500">
             Gestionando registros del <span className="font-semibold text-caracas-red">{campamentoSeleccionado?.nombre || 'Ninguno'}</span>
           </p>
         </div>
-        {campamentoSeleccionado && tienePermisoPorCampamento('Refugiados', campamentoSeleccionado.id, 'Crear') && (
+        {campamentoSeleccionado && tienePermisoPorCampamento('Integrantes', campamentoSeleccionado.id, 'Crear') && (
           <button 
             onClick={() => {
               setEditandoRefugiado(null);
@@ -120,7 +120,7 @@ export default function Refugiados() {
             className="flex items-center justify-center gap-2 bg-caracas-red hover:bg-red-800 text-white px-6 py-3 rounded-xl font-medium transition-all shadow-lg shadow-caracas-red/20 transform hover:-translate-y-0.5"
           >
             <UserPlus size={20} />
-            Registrar Nuevo Refugiado
+            Registrar Nuevo Integrante
           </button>
         )}
       </div>
@@ -200,7 +200,7 @@ export default function Refugiados() {
                           ref={menuRef}
                           className="absolute right-4 top-12 z-50 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden w-44"
                         >
-                          {campamentoSeleccionado && tienePermisoPorCampamento('Refugiados', campamentoSeleccionado.id, 'Modificar') && (
+                          {campamentoSeleccionado && tienePermisoPorCampamento('Integrantes', campamentoSeleccionado.id, 'Modificar') && (
                             <button
                               onClick={() => handleModificar(refugiado.refugiado)}
                               className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-caracas-blue/5 hover:text-caracas-blue transition-colors text-left"
@@ -209,7 +209,7 @@ export default function Refugiados() {
                               Modificar
                             </button>
                           )}
-                          {campamentoSeleccionado && tienePermisoPorCampamento('Refugiados', campamentoSeleccionado.id, 'Eliminar') && (
+                          {campamentoSeleccionado && tienePermisoPorCampamento('Integrantes', campamentoSeleccionado.id, 'Eliminar') && (
                             <button
                               onClick={() => handleEliminar(refugiado.id)}
                               className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors text-left border-t border-gray-100"

@@ -29,7 +29,7 @@ export default function Constructor() {
       {/* Cabecera */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-gray-800">Constructor de Refugios</h2>
+          <h2 className="text-2xl font-bold text-gray-800">Constructor de Campamentos</h2>
           <p className="text-gray-500">Gestiona la infraestructura de los campamentos y sus carpas</p>
         </div>
         {tienePermiso('Constructor', 'Crear') && (
@@ -41,7 +41,7 @@ export default function Constructor() {
             className="flex items-center justify-center gap-2 bg-caracas-red hover:bg-red-800 text-white px-6 py-3 rounded-xl font-medium transition-all shadow-lg shadow-caracas-red/20 transform hover:-translate-y-0.5"
           >
             <Plus size={20} />
-            Crear Nuevo Refugio
+            Crear Nuevo Campamento
           </button>
         )}
       </div>
