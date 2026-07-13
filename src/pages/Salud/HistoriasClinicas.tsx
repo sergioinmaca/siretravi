@@ -6,6 +6,7 @@ import { ArrowLeft, Stethoscope, Search, Plus, MoreVertical } from 'lucide-react
 import HistoriaClinicaModal from '../../components/salud/HistoriaClinicaModal';
 import AtencionMedicaModal from '../../components/salud/AtencionMedicaModal';
 import type { HistoriaClinica } from '../../types';
+import { toDisplayDate } from '../../lib/formatDate';
 
 export default function HistoriasClinicas() {
   const navigate = useNavigate();
@@ -136,9 +137,7 @@ export default function HistoriasClinicas() {
                     {refugiado?.nro_cama || 'N/A'}
                   </td>
                   <td className="px-6 py-4 text-gray-600">
-                    {historia.fecha_apertura instanceof Date
-                      ? historia.fecha_apertura.toLocaleDateString('es-VE')
-                      : new Date(historia.fecha_apertura).toLocaleDateString('es-VE')}
+                    {toDisplayDate(historia.fecha_apertura)}
                   </td>
                   <td className="px-6 py-4 text-center relative">
                     <button

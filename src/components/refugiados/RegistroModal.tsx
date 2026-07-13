@@ -3,6 +3,7 @@ import { useCampamento } from '../../context/CampamentoContext';
 import { User, Users, MapPin, Save, AlertCircle, CheckCircle2, X, Accessibility, Shirt } from 'lucide-react';
 import type { Refugiado } from '../../types';
 import { formatAge } from '../../lib/formatAge';
+import { toDateInput } from '../../lib/formatDate';
 
 interface RegistroModalProps {
   isOpen: boolean;
@@ -59,16 +60,13 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
   useEffect(() => {
     if (isOpen && refugiadoToEdit) {
       const birth = new Date(refugiadoToEdit.fecha_nacimiento);
-      const y = birth.getFullYear().toString().padStart(4, '0');
-      const m = (birth.getMonth() + 1).toString().padStart(2, '0');
-      const d = birth.getDate().toString().padStart(2, '0');
 
       setFormData({
         nombres: refugiadoToEdit.nombres,
         apellidos: refugiadoToEdit.apellidos,
         cedula: refugiadoToEdit.cedula?.toString() || '',
         genero: refugiadoToEdit.genero ? 'M' : 'F',
-        fechaNacimiento: `${y}-${m}-${d}`,
+        fechaNacimiento: toDateInput(birth),
         edad: '',
         esJefeFamilia: refugiadoToEdit.es_jefe_familia,
         familiaId: refugiadoToEdit.familia_id || '',
@@ -403,6 +401,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
             </div>
 
             {/* Tarjeta 4: Situación Socioeconómica de la Vivienda de Origen */}
+            {formData.esJefeFamilia && (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
                 <div className="p-2 bg-orange-100 rounded-lg">
@@ -462,6 +461,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                 </div>
               </div>
             </div>
+            )}
 
             {/* Tarjeta 5: Información Adicional */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">

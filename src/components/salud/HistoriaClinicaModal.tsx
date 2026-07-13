@@ -3,6 +3,7 @@ import { useCampamento } from '../../context/CampamentoContext';
 import { X, Save, Search, User, Users, MapPin, Stethoscope, Accessibility, AlertCircle } from 'lucide-react';
 import type { Refugiado, HistoriaClinica } from '../../types';
 import { formatAge } from '../../lib/formatAge';
+import { toDateInput, toDisplayDate } from '../../lib/formatDate';
 
 interface HistoriaClinicaModalProps {
   isOpen: boolean;
@@ -46,7 +47,7 @@ function buildEmptyFormData() {
     examenSubjetivo: '',
     examenObjetivo: '',
     examenDiagnostico: '',
-    fechaApertura: new Date().toISOString().split('T')[0],
+    fechaApertura: toDateInput(new Date()),
   };
 }
 
@@ -127,8 +128,8 @@ export default function HistoriaClinicaModal({ isOpen, onClose, historiaToEdit, 
           examenObjetivo: historiaToEdit.examen_objetivo || '',
           examenDiagnostico: historiaToEdit.examen_diagnostico || '',
           fechaApertura: historiaToEdit.fecha_apertura instanceof Date
-            ? historiaToEdit.fecha_apertura.toISOString().split('T')[0]
-            : new Date().toISOString().split('T')[0],
+            ? toDateInput(historiaToEdit.fecha_apertura)
+            : toDateInput(new Date()),
         });
 
         const refConHC = refugiados.find(r => r.id === historiaToEdit.refugiado_id);
@@ -433,7 +434,7 @@ export default function HistoriaClinicaModal({ isOpen, onClose, historiaToEdit, 
                       <label className="block text-xs font-medium text-gray-500 mb-1">Fecha de Nacimiento</label>
                       <p className="font-semibold text-gray-800 bg-gray-100 px-4 py-2.5 rounded-xl">
                         {refugiadoEncontrado.fecha_nacimiento instanceof Date
-                          ? refugiadoEncontrado.fecha_nacimiento.toLocaleDateString('es-VE')
+                          ? toDisplayDate(refugiadoEncontrado.fecha_nacimiento)
                           : ''}
                       </p>
                     </div>
@@ -502,7 +503,7 @@ export default function HistoriaClinicaModal({ isOpen, onClose, historiaToEdit, 
                       <label className="block text-xs font-medium text-gray-500 mb-1">Fecha de Ingreso</label>
                       <p className="font-semibold text-gray-800 bg-gray-100 px-4 py-2.5 rounded-xl">
                         {refugiadoEncontrado.fecha_ingreso instanceof Date
-                          ? refugiadoEncontrado.fecha_ingreso.toLocaleDateString('es-VE')
+                          ? toDisplayDate(refugiadoEncontrado.fecha_ingreso)
                           : 'No registrada'}
                       </p>
                     </div>
@@ -693,11 +694,12 @@ export default function HistoriaClinicaModal({ isOpen, onClose, historiaToEdit, 
                     </label>
                     {formData.lactante && (
                       <input
-                        type="text"
+                        type="number"
+                        min={0}
                         value={formData.lactanteDetalle}
-                        onChange={(e) => setFormData(prev => ({ ...prev, lactanteDetalle: e.target.value.toUpperCase() }))}
-                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase"
-                        placeholder="EJ. LACTANCIA MATERNA EXCLUSIVA"
+                        onChange={(e) => setFormData(prev => ({ ...prev, lactanteDetalle: e.target.value }))}
+                        className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all"
+                        placeholder="Cuántos meses tiene el bebé?"
                       />
                     )}
                   </div>
