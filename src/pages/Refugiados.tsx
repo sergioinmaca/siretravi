@@ -1,9 +1,10 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
-import { Search, UserPlus, MoreHorizontal, FileText, Pencil, Trash2, ShieldOff } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Search, UserPlus, FileText, Pencil, Trash2, ShieldOff, Eye } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
 import type { Refugiado } from '../types';
 import RegistroModal from '../components/refugiados/RegistroModal';
+import FichaRefugiadoModal from '../components/refugiados/FichaRefugiadoModal';
 import { formatAge } from '../lib/formatAge';
 
 export default function Refugiados() {
@@ -25,20 +26,9 @@ export default function Refugiados() {
   }
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [menuAbiertoId, setMenuAbiertoId] = useState<string | null>(null);
   const [editandoRefugiado, setEditandoRefugiado] = useState<Refugiado | null>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  // Cerrar menú al hacer click fuera
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuAbiertoId(null);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
+  const [fichaRefugiado, setFichaRefugiado] = useState<Refugiado | null>(null);
+  const [isFichaOpen, setIsFichaOpen] = useState(false);
 
   const filteredRefugiados = useMemo(() => {
     if (!campamentoSeleccionado) return [];
@@ -88,14 +78,12 @@ export default function Refugiados() {
   }, [searchTerm]);
 
   const handleEliminar = (id: string) => {
-    setMenuAbiertoId(null);
     if (window.confirm('¿Estás seguro de que deseas eliminar este integrante? Esta acción no se puede deshacer.')) {
       eliminarRefugiado(id);
     }
   };
 
   const handleModificar = (refugiado: Refugiado) => {
-    setMenuAbiertoId(null);
     setEditandoRefugiado(refugiado);
     setIsModalOpen(true);
   };
@@ -172,8 +160,8 @@ export default function Refugiados() {
                       <div className="text-xs text-gray-500">{refugiado.nombres}</div>
                     </td>
                     <td className="py-3 px-6 text-sm text-gray-600">{refugiado.edad}</td>
-                    <td className="py-3 px-6">
-                      <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                    <td className="py-3 px-3 max-w-[180px]">
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium whitespace-normal break-words ${
                         refugiado.jerarquia === 'Jefe de Familia' 
                           ? 'bg-caracas-blue/10 text-caracas-blue' 
                           : 'bg-gray-100 text-gray-600'
@@ -187,45 +175,43 @@ export default function Refugiados() {
                         {refugiado.cama}
                       </div>
                     </td>
-                    <td className="py-3 px-6 text-right relative">
-                      <button
-                        onClick={() => setMenuAbiertoId(menuAbiertoId === refugiado.id ? null : refugiado.id)}
-                        className="p-2 text-gray-400 hover:text-caracas-red hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                      >
-                        <MoreHorizontal size={18} />
-                      </button>
-
-                      {menuAbiertoId === refugiado.id && (
-                        <div
-                          ref={menuRef}
-                          className="absolute right-4 top-12 z-50 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden w-44"
+                    <td className="py-3 px-4">
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => {
+                            setFichaRefugiado(refugiado.refugiado);
+                            setIsFichaOpen(true);
+                          }}
+                          className="p-2 text-gray-400 hover:text-caracas-blue hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Ver Ficha"
                         >
-                          {campamentoSeleccionado && tienePermisoPorCampamento('Integrantes', campamentoSeleccionado.id, 'Modificar') && (
-                            <button
-                              onClick={() => handleModificar(refugiado.refugiado)}
-                              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-caracas-blue/5 hover:text-caracas-blue transition-colors text-left"
-                            >
-                              <Pencil size={16} />
-                              Modificar
-                            </button>
-                          )}
-                          {campamentoSeleccionado && tienePermisoPorCampamento('Integrantes', campamentoSeleccionado.id, 'Eliminar') && (
-                            <button
-                              onClick={() => handleEliminar(refugiado.id)}
-                              className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors text-left border-t border-gray-100"
-                            >
-                              <Trash2 size={16} />
-                              Eliminar
-                            </button>
-                          )}
-                        </div>
-                      )}
+                          <Eye size={18} />
+                        </button>
+                        {campamentoSeleccionado && tienePermisoPorCampamento('Integrantes', campamentoSeleccionado.id, 'Modificar') && (
+                          <button
+                            onClick={() => handleModificar(refugiado.refugiado)}
+                            className="p-2 text-gray-400 hover:text-caracas-blue hover:bg-blue-50 rounded-lg transition-colors"
+                            title="Modificar"
+                          >
+                            <Pencil size={18} />
+                          </button>
+                        )}
+                        {campamentoSeleccionado && tienePermisoPorCampamento('Integrantes', campamentoSeleccionado.id, 'Eliminar') && (
+                          <button
+                            onClick={() => handleEliminar(refugiado.id)}
+                            className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Eliminar"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={6} className="py-12 text-center text-gray-500">
+                  <td colSpan={7} className="py-12 text-center text-gray-500">
                     <div className="flex flex-col items-center justify-center">
                       <Search size={48} className="text-gray-300 mb-4" />
                       <p className="text-lg font-medium text-gray-600">No se encontraron resultados</p>
@@ -270,6 +256,16 @@ export default function Refugiados() {
           setEditandoRefugiado(null);
         }}
         refugiadoToEdit={editandoRefugiado}
+      />
+
+      {/* Modal de Ficha del Refugiado */}
+      <FichaRefugiadoModal
+        isOpen={isFichaOpen}
+        onClose={() => {
+          setIsFichaOpen(false);
+          setFichaRefugiado(null);
+        }}
+        refugiado={fichaRefugiado}
       />
 
     </div>
