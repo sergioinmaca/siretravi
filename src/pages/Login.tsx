@@ -43,8 +43,8 @@ export default function Login() {
             <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full translate-y-12 -translate-x-12" />
 
             <div className="relative z-10">
-              <div className="w-20 h-20 mx-auto mb-4 rounded-2xl overflow-hidden">
-                <img src="/favicon.svg" alt="Logo" className="w-full h-full object-cover" />
+              <div className="w-40 h-30 mx-auto mb-6 rounded-2xl overflow-visible">
+                <img src="/logovere.svg" alt="Logo" className="w-full h-full object-fit" />
               </div>
               <h1 className="text-2xl font-bold text-white tracking-tight">Gestión de Campamentos</h1>
               <p className="text-sm text-white/70 mt-1">Sistema de Registro Unificado de Campamentos</p>

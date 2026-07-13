@@ -11,8 +11,6 @@ export default function Reportes() {
   const { campamentoSeleccionado, refugiados = [], familias = [] } = useCampamento();
   const { tienePermisoPorCampamento } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
-  const [logoVeneError, setLogoVeneError] = useState(false);
-  const [logoCcsError, setLogoCcsError] = useState(false);
   const [logoKidsError, setLogoKidsError] = useState(false);
 
   const tieneAcceso = campamentoSeleccionado
@@ -46,11 +44,11 @@ export default function Reportes() {
   // Cálculos demográficos
   const datosReporte = useMemo(() => {
     const hoy = new Date();
-    
+
     let totalRefugiados = refugiadosDelCampamento.length;
     let masculinos = 0;
     let femeninos = 0;
-    
+
     let adultos = 0;
     let adultosMayores = 0;
     let ninasNinos = 0;
@@ -168,46 +166,16 @@ export default function Reportes() {
   // SVG de borde bandera decorativa nacional para el reporte
   const BorderDecoration = () => (
     <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 1120 790" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M 30,300 L 30,50 A 20,20 0 0,1 50,30 L 400,30" stroke="#C21807" strokeWidth="8" strokeLinecap="round"/>
-      <path d="M 410,30 L 710,30" stroke="#1D4ED8" strokeWidth="5" strokeLinecap="round"/>
-      <path d="M 720,30 L 1070,30 A 20,20 0 0,1 1090,50 L 1090,300" stroke="#007F5F" strokeWidth="8" strokeLinecap="round"/>
-      <path d="M 30,320 L 30,740 A 20,20 0 0,0 50,760 L 400,760" stroke="#007F5F" strokeWidth="8" strokeLinecap="round"/>
-      <path d="M 410,760 L 710,760" stroke="#1D4ED8" strokeWidth="5" strokeLinecap="round"/>
-      <path d="M 720,760 L 1070,760 A 20,20 0 0,0 1090,740 L 1090,320" stroke="#C21807" strokeWidth="8" strokeLinecap="round"/>
+      <path d="M 30,300 L 30,50 A 20,20 0 0,1 50,30 L 400,30" stroke="#C21807" strokeWidth="8" strokeLinecap="round" />
+      <path d="M 410,30 L 710,30" stroke="#1D4ED8" strokeWidth="5" strokeLinecap="round" />
+      <path d="M 720,30 L 1070,30 A 20,20 0 0,1 1090,50 L 1090,300" stroke="#007F5F" strokeWidth="8" strokeLinecap="round" />
+      <path d="M 30,320 L 30,740 A 20,20 0 0,0 50,760 L 400,760" stroke="#007F5F" strokeWidth="8" strokeLinecap="round" />
+      <path d="M 410,760 L 710,760" stroke="#1D4ED8" strokeWidth="5" strokeLinecap="round" />
+      <path d="M 720,760 L 1070,760 A 20,20 0 0,0 1090,740 L 1090,320" stroke="#C21807" strokeWidth="8" strokeLinecap="round" />
     </svg>
   );
 
-  // Logo de Venezuela en SVG (fallback si la imagen no carga)
-  const VenezuelaLogoFallback = () => (
-    <div className="flex flex-col items-start gap-1 select-none">
-      <div className="flex h-2 w-32 rounded overflow-hidden">
-        <div className="bg-yellow-400 w-1/3 h-full" />
-        <div className="bg-blue-600 w-1/3 h-full flex items-center justify-center relative">
-          <div className="absolute text-[6px] text-white font-bold leading-none -translate-y-[1px]">★ ★ ★ ★</div>
-        </div>
-        <div className="bg-red-600 w-1/3 h-full" />
-      </div>
-      <span className="text-[9px] font-bold text-slate-700 tracking-tight leading-none">
-        REPÚBLICA BOLIVARIANA DE<br />
-        <span className="text-[11px] text-blue-800">VENEZUELA</span>
-      </span>
-    </div>
-  );
 
-  // Logo de Caracas en SVG (fallback si la imagen no carga)
-  const CaracasLogoFallback = () => (
-    <div className="flex items-center gap-1.5 font-sans font-black select-none">
-      <span className="text-2xl tracking-tighter flex items-center leading-none">
-        <span className="text-blue-600">C</span>
-        <span className="text-yellow-500 -ml-0.5">A</span>
-        <span className="text-red-600 -ml-0.5">R</span>
-        <span className="text-blue-700 -ml-0.5">A</span>
-        <span className="text-yellow-600 -ml-0.5">C</span>
-        <span className="text-red-500 -ml-0.5">A</span>
-        <span className="text-blue-600 -ml-0.5">S</span>
-      </span>
-    </div>
-  );
 
   // Fallback para la ilustración de niños
   const KidsIllustrationFallback = () => (
@@ -216,13 +184,13 @@ export default function Reportes() {
       {/* Ilustración básica geométrica de niños jugando */}
       <circle cx="80" cy="110" r="22" fill="#93C5FD" />
       <path d="M 55,165 C 55,140 70,135 80,135 C 90,135 105,140 105,165 Z" fill="#2563EB" />
-      
+
       <circle cx="160" cy="100" r="20" fill="#FBCFE8" />
       <path d="M 138,165 C 138,142 150,122 160,122 C 170,122 182,142 182,165 Z" fill="#DB2777" />
 
       <circle cx="120" cy="120" r="16" fill="#FDE047" />
       <path d="M 102,165 C 102,148 112,138 120,138 C 128,138 138,148 138,165 Z" fill="#CA8A04" />
-      
+
       {/* Sol y nubes decorativos */}
       <circle cx="210" cy="40" r="12" fill="#FEF08A" />
       <path d="M 30,55 C 30,48 42,42 55,48 C 65,40 85,46 85,55 Z" fill="#E2E8F0" />
@@ -320,7 +288,7 @@ export default function Reportes() {
       <svg width="290" height="220" viewBox="0 0 290 220" className="mx-auto">
         <circle cx="110" cy="110" r={radius} fill="transparent" stroke="#F97316" strokeWidth="42" strokeDasharray={`${femStroke} ${circ}`} />
         <circle cx="110" cy="110" r={radius} fill="transparent" stroke="#3B82F6" strokeWidth="42" strokeDasharray={`${mascStroke} ${circ}`} strokeDashoffset={-femStroke} />
-        
+
         {/* Etiquetas de porcentaje */}
         {femPct > 0 && (
           <g transform={`translate(${xFem - 16}, ${yFem - 10})`}>
@@ -339,7 +307,7 @@ export default function Reportes() {
         <g transform="translate(195, 80)">
           <rect width="10" height="10" rx="2" fill="#3B82F6" />
           <text x="15" y="9" className="text-[9px] font-bold fill-slate-600">MASCULINOS</text>
-          
+
           <rect y="18" width="10" height="10" rx="2" fill="#F97316" />
           <text x="15" y="27" className="text-[9px] font-bold fill-slate-600">FEMENINOS</text>
         </g>
@@ -365,24 +333,23 @@ export default function Reportes() {
           const widthPct = Math.max(8, (cat.val / maxVal) * 82); // Mínimo de ancho visual
           return (
             <div key={idx} className="flex items-center w-full">
-              <span className="text-[8px] font-black text-slate-500 w-[100px] text-right pr-3 truncate">
+              <span className="text-[11px] font-black text-slate-500 w-[170px] text-right pr-3">
                 {cat.key}
               </span>
               <div className="flex-1 flex items-center">
+                {cat.val > 0 && (
+                  <span className="text-[11px] font-black text-slate-800 mr-2">{cat.val}</span>
+                )}
+                {cat.val === 0 && (
+                  <span className="text-[11px] font-black text-slate-400 mr-2">0</span>
+                )}
                 <div
-                  className="h-5 rounded-md flex items-center justify-end pr-2 transition-all shadow-sm border border-black/5"
+                  className="h-5 rounded-md transition-all shadow-sm border border-black/5"
                   style={{
                     width: `${widthPct}%`,
                     backgroundColor: cat.color
                   }}
-                >
-                  {cat.val > 0 && (
-                    <span className="text-[9px] font-black text-slate-800">{cat.val}</span>
-                  )}
-                </div>
-                {cat.val === 0 && (
-                  <span className="text-[9px] font-black text-slate-400 ml-1.5">0</span>
-                )}
+                />
               </div>
             </div>
           );
@@ -420,7 +387,7 @@ export default function Reportes() {
 
       {/* Grid de Tarjetas de Reportes */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        
+
         {/* Card 1: Reporte General Demográfico */}
         <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
           <div>
@@ -484,10 +451,10 @@ export default function Reportes() {
       {/* ========================================================================= */}
       {campamentoSeleccionado && (
         <div className="absolute left-[-9999px] top-[-9999px] overflow-hidden select-none bg-slate-900">
-          
+
           {/* REPORTE 1: DEMOGRÁFICO GENERAL (2 PÁGINAS) */}
           <div id="reporte-demografico-render" className="flex flex-col">
-            
+
             {/* PÁGINA 1 */}
             <div className="report-page w-[1120px] h-[790px] bg-white relative flex flex-col justify-between p-12 overflow-hidden">
               <BorderDecoration />
@@ -495,7 +462,7 @@ export default function Reportes() {
               {/* Header */}
               <div className="text-center mt-6 z-10">
                 <h2 className="text-[22px] font-black text-slate-800 uppercase tracking-wide">
-                  CAMPAMENTO TRANSITORIO ({campamentoSeleccionado.nombre})
+                  {campamentoSeleccionado.nombre}
                 </h2>
               </div>
 
@@ -562,26 +529,9 @@ export default function Reportes() {
 
               {/* Footer */}
               <div className="flex items-end justify-between px-10 mb-4 z-10 shrink-0">
-                {logoVeneError ? (
-                  <VenezuelaLogoFallback />
-                ) : (
-                  <img
-                    src="/logos/venezuela.png"
-                    alt="Logo Venezuela"
-                    className="h-12 w-auto object-contain"
-                    onError={() => setLogoVeneError(true)}
-                  />
-                )}
-                {logoCcsError ? (
-                  <CaracasLogoFallback />
-                ) : (
-                  <img
-                    src="/logos/caracas.png"
-                    alt="Logo Caracas"
-                    className="h-10 w-auto object-contain"
-                    onError={() => setLogoCcsError(true)}
-                  />
-                )}
+                <img src="/logorepublica.png" alt="Logo República" className="h-12 w-auto object-contain" />
+                <img src="/logovererojo.png" alt="Logo Venezuela" className="h-12 w-auto object-contain" />
+                <img src="/logoalcadia.png" alt="Logo Alcaldía" className="h-12 w-auto object-contain" />
               </div>
             </div>
 
@@ -592,7 +542,7 @@ export default function Reportes() {
               {/* Header */}
               <div className="text-center mt-6 z-10">
                 <h2 className="text-[22px] font-black text-slate-800 uppercase tracking-wide">
-                  CAMPAMENTO TRANSITORIO ({campamentoSeleccionado.nombre})
+                  {campamentoSeleccionado.nombre}
                 </h2>
               </div>
 
@@ -665,26 +615,9 @@ export default function Reportes() {
 
               {/* Footer */}
               <div className="flex items-end justify-between px-10 mb-4 z-10 shrink-0">
-                {logoVeneError ? (
-                  <VenezuelaLogoFallback />
-                ) : (
-                  <img
-                    src="/logos/venezuela.png"
-                    alt="Logo Venezuela"
-                    className="h-12 w-auto object-contain"
-                    onError={() => setLogoVeneError(true)}
-                  />
-                )}
-                {logoCcsError ? (
-                  <CaracasLogoFallback />
-                ) : (
-                  <img
-                    src="/logos/caracas.png"
-                    alt="Logo Caracas"
-                    className="h-10 w-auto object-contain"
-                    onError={() => setLogoCcsError(true)}
-                  />
-                )}
+                <img src="/logorepublica.png" alt="Logo República" className="h-12 w-auto object-contain" />
+                <img src="/logovererojo.png" alt="Logo Venezuela" className="h-12 w-auto object-contain" />
+                <img src="/logoalcadia.png" alt="Logo Alcaldía" className="h-12 w-auto object-contain" />
               </div>
             </div>
 
@@ -692,14 +625,14 @@ export default function Reportes() {
 
           {/* REPORTE 2: NIÑOS, NIÑAS Y ADOLESCENTES (1 PÁGINA) */}
           <div id="reporte-nna-render" className="flex flex-col">
-            
+
             <div className="report-page w-[1120px] h-[790px] bg-white relative flex flex-col justify-between p-12 overflow-hidden">
               <BorderDecoration />
 
               {/* Header */}
               <div className="text-center mt-6 z-10">
                 <h2 className="text-[22px] font-black text-slate-800 uppercase tracking-wide">
-                  CAMPAMENTO TRANSITORIO ({campamentoSeleccionado.nombre})
+                  {campamentoSeleccionado.nombre}
                 </h2>
               </div>
 
@@ -786,9 +719,9 @@ export default function Reportes() {
                     <KidsIllustrationFallback />
                   ) : (
                     <img
-                      src="/logos/kids_illustration.png"
+                      src="/ninos.png"
                       alt="Ilustración Niños"
-                      className="max-h-[220px] w-auto object-contain"
+                      className="max-h-[350px] w-auto object-contain"
                       onError={() => setLogoKidsError(true)}
                     />
                   )}
@@ -797,26 +730,9 @@ export default function Reportes() {
 
               {/* Footer */}
               <div className="flex items-end justify-between px-10 mb-4 z-10 shrink-0">
-                {logoVeneError ? (
-                  <VenezuelaLogoFallback />
-                ) : (
-                  <img
-                    src="/logos/venezuela.png"
-                    alt="Logo Venezuela"
-                    className="h-12 w-auto object-contain"
-                    onError={() => setLogoVeneError(true)}
-                  />
-                )}
-                {logoCcsError ? (
-                  <CaracasLogoFallback />
-                ) : (
-                  <img
-                    src="/logos/caracas.png"
-                    alt="Logo Caracas"
-                    className="h-10 w-auto object-contain"
-                    onError={() => setLogoCcsError(true)}
-                  />
-                )}
+                <img src="/logorepublica.png" alt="Logo República" className="h-12 w-auto object-contain" />
+                <img src="/logovererojo.png" alt="Logo Venezuela" className="h-12 w-auto object-contain" />
+                <img src="/logoalcadia.png" alt="Logo Alcaldía" className="h-12 w-auto object-contain" />
               </div>
             </div>
 
