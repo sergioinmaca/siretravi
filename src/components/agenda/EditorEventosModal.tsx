@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { X, Save, Trash2 } from 'lucide-react';
 import dayjs from 'dayjs';
 import { fetchEventos, expandirPermanentes, agruparPorDia, actualizarEvento, eliminarEvento, fetchCategorias, crearCategoria, actualizarCategoria } from '../../lib/eventos';
-import { formatTime12h } from '../../lib/formatTime';
+import { formatTime12h, addOneHour } from '../../lib/formatTime';
 import SelectorCategoria from './SelectorCategoria';
 import type { Evento, EventoOcurrencia, CategoriaEvento } from '../../types';
 
@@ -130,7 +130,7 @@ export default function EditorEventosModal({
         fecha_inicio: formFecha,
         fecha_fin: fechaFin,
         hora_inicio: formHoraInicio,
-        hora_fin: formHoraFin || undefined,
+          hora_fin: formHoraFin || addOneHour(formHoraInicio),
         tipo: formTipo,
         categoria_id: formCategoriaId || undefined,
       });

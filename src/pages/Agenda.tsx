@@ -5,7 +5,7 @@ import { jsPDF } from 'jspdf';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
 import { fetchEventos, fetchCategorias, crearEvento, expandirPermanentes, agruparPorDia } from '../lib/eventos';
-import { formatTime12h, formatHourLabel } from '../lib/formatTime';
+import { formatTime12h, formatHourLabel, addOneHour } from '../lib/formatTime';
 import CalendarioMensual from '../components/agenda/CalendarioMensual';
 import CalendarioSemanal from '../components/agenda/CalendarioSemanal';
 import CrearEventoModal from '../components/agenda/CrearEventoModal';
@@ -420,14 +420,14 @@ export default function Agenda() {
           const sorted = [...evts].sort((a, b) => {
             const c = a.hora_inicio.localeCompare(b.hora_inicio);
             if (c !== 0) return c;
-            return (b.hora_fin || '24:00').localeCompare(a.hora_fin || '24:00');
+            return (b.hora_fin || addOneHour(b.hora_inicio)).localeCompare(a.hora_fin || addOneHour(a.hora_inicio));
           });
 
           const stack: number[] = [];
 
           for (const e of sorted) {
             const startH = timeToHours(e.hora_inicio);
-            const endH = Math.min(timeToHours(e.hora_fin || '22:00'), 22);
+            const endH = Math.min(timeToHours(e.hora_fin || addOneHour(e.hora_inicio)), 22);
             const top = Math.max(0, startH - 6) * hourRowH;
             const h = Math.max(hourRowH * 0.3, (endH - startH) * hourRowH);
 
