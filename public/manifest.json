@@ -2,7 +2,7 @@
   "name": "Gestión de Campamentos",
   "short_name": "Campamentos",
   "start_url": "/",
-  "display": "standalone",
+  "display": "minimal-ui",
   "theme_color": "#0AA7CE",
   "background_color": "#FFFFFF",
   "icons": [
