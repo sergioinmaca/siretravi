@@ -202,6 +202,49 @@ export default function Reportes() {
       .sort((a, b) => b.count - a.count);
   }, [discapacitadosReporte]);
 
+  // ── Datos para Reporte de Mascotas ───────────────────────────────────────
+  const mascotasReporte = useMemo(() => {
+    return refugiadosDelCampamento
+      .filter(r => r.mascotas && r.tipo_mascota)
+      .map((r, i) => {
+        const jefe = refugiadosDelCampamento.find(j => j.familia_id === r.familia_id && j.es_jefe_familia);
+        return {
+          ...r,
+          index: i + 1,
+          dueno: jefe ? `${jefe.nombres} ${jefe.apellidos}` : (r.nombres + ' ' + r.apellidos),
+        };
+      })
+      .sort((a, b) => {
+        const tipoComp = (a.tipo_mascota || '').localeCompare(b.tipo_mascota || '');
+        if (tipoComp !== 0) return tipoComp;
+        return (a.mascota_nombre || '').localeCompare(b.mascota_nombre || '');
+      });
+  }, [refugiadosDelCampamento]);
+
+  const mascotasGrupos = useMemo(() => {
+    const COLORS = ['#EF4444', '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#06B6D4', '#EC4899', '#F97316'];
+    const map = new Map<string, number>();
+    mascotasReporte.forEach(r => {
+      const tipo = r.tipo_mascota || 'Sin tipo';
+      map.set(tipo, (map.get(tipo) || 0) + 1);
+    });
+    return Array.from(map.entries())
+      .map(([nombre, count], idx) => ({ nombre, count, color: COLORS[idx % COLORS.length] }))
+      .sort((a, b) => b.count - a.count);
+  }, [mascotasReporte]);
+
+  const mascotasRazasPorTipo = useMemo(() => {
+    const map = new Map<string, Map<string, number>>();
+    mascotasReporte.forEach(r => {
+      const tipo = r.tipo_mascota || 'Sin tipo';
+      const raza = r.mascota_raza?.trim() || 'Sin raza';
+      if (!map.has(tipo)) map.set(tipo, new Map());
+      const razaMap = map.get(tipo)!;
+      razaMap.set(raza, (razaMap.get(raza) || 0) + 1);
+    });
+    return map;
+  }, [mascotasReporte]);
+
   // SVG de borde bandera decorativa nacional para el reporte
   const BorderDecoration = () => (
     <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 1120 790" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -502,6 +545,34 @@ export default function Reportes() {
             </button>
             <button
               onClick={() => handleExportPPTX('reporte-discapacitados-render', `Reporte_Discapacitados_${campamentoSeleccionado?.nombre.replace(/\s+/g, '_')}`)}
+              disabled={!campamentoSeleccionado || isGenerating}
+              className="flex-1 flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50"
+            >
+              <Presentation size={18} />
+              Exportar PowerPoint
+            </button>
+          </div>
+        </div>
+
+        {/* Card 4: Reporte de Mascotas */}
+        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
+          <div>
+            <h3 className="text-lg font-bold text-slate-800 mb-2">Reporte de Mascotas</h3>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Listado de mascotas registradas en el campamento. Incluye tipo, raza, edad, sexo y el jefe de familia al que pertenecen.
+            </p>
+          </div>
+          <div className="flex gap-4 mt-6 pt-4 border-t border-slate-50">
+            <button
+              onClick={() => handleExportPDF('reporte-mascotas-render', `Reporte_Mascotas_${campamentoSeleccionado?.nombre.replace(/\s+/g, '_')}`)}
+              disabled={!campamentoSeleccionado || isGenerating}
+              className="flex-1 flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50"
+            >
+              <FileText size={18} />
+              Exportar PDF
+            </button>
+            <button
+              onClick={() => handleExportPPTX('reporte-mascotas-render', `Reporte_Mascotas_${campamentoSeleccionado?.nombre.replace(/\s+/g, '_')}`)}
               disabled={!campamentoSeleccionado || isGenerating}
               className="flex-1 flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50"
             >
@@ -919,6 +990,161 @@ export default function Reportes() {
                           {chunk.length < ROWS_PER_PAGE && Array.from({ length: ROWS_PER_PAGE - chunk.length }).map((_, i) => (
                             <tr key={`empty-${i}`} className="border-b border-slate-200 h-[28px]">
                               <td colSpan={6} className="border-r border-slate-200">&nbsp;</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="flex items-center justify-center gap-16 px-8 mt-3 z-10">
+                      <div className="shrink-0">
+                        {renderDonutChart()}
+                      </div>
+                      <div className="flex-1">
+                        {renderDonutLegend()}
+                      </div>
+                    </div>
+
+                    <div className="flex items-end justify-between px-10 z-10 shrink-0">
+                      <img src="/logorepublica.png" alt="Logo República" className="h-12 w-auto object-contain" />
+                      <img src="/logovererojo.png" alt="Logo Venezuela" className="h-12 w-auto object-contain" />
+                      <img src="/logoalcadia.png" alt="Logo Alcaldía" className="h-12 w-auto object-contain" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+
+          {/* REPORTE 4: MASCOTAS */}
+          {(() => {
+            const ROWS_PER_PAGE = 11;
+            const total = mascotasReporte.length;
+            const totalPaginas = Math.max(1, Math.ceil(total / ROWS_PER_PAGE));
+            const pages = Array.from({ length: totalPaginas }, (_, i) =>
+              mascotasReporte.slice(i * ROWS_PER_PAGE, (i + 1) * ROWS_PER_PAGE)
+            );
+
+            const renderDonutChart = () => {
+              const cx = 110;
+              const cy = 110;
+              const outerR = 70;
+              const innerR = 42;
+              const circ = 2 * Math.PI * outerR;
+              let dashOffset = 0;
+
+              if (mascotasGrupos.length === 0) {
+                return (
+                  <svg width="300" height="230" viewBox="0 0 300 230" className="mx-auto">
+                    <circle cx={cx} cy={cy} r={outerR} fill="transparent" stroke="#E2E8F0" strokeWidth={outerR - innerR} />
+                    <circle cx={cx} cy={cy} r={innerR} fill="white" />
+                    <text x={cx} y={cy - 5} textAnchor="middle" style={{ fontSize: '11px', fontWeight: 700, fill: '#9CA3AF' }}>Sin datos</text>
+                  </svg>
+                );
+              }
+
+              const segments = mascotasGrupos.map(g => {
+                const pct = g.count / total;
+                const dashLen = pct * circ;
+                const seg = { ...g, dashLen, dashOffset };
+                dashOffset -= dashLen;
+                return seg;
+              });
+
+              return (
+                <svg width="300" height="230" viewBox="0 0 300 230" className="mx-auto">
+                  {segments.map((seg, i) => (
+                    <circle
+                      key={i}
+                      cx={cx}
+                      cy={cy}
+                      r={outerR}
+                      fill="transparent"
+                      stroke={seg.color}
+                      strokeWidth={outerR - innerR}
+                      strokeDasharray={`${seg.dashLen} ${circ - seg.dashLen}`}
+                      strokeDashoffset={seg.dashOffset}
+                      transform={`rotate(-90 ${cx} ${cy})`}
+                    />
+                  ))}
+                  <circle cx={cx} cy={cy} r={innerR} fill="white" />
+                  <text x={cx} y={cy - 6} textAnchor="middle" style={{ fontSize: '22px', fontWeight: 800, fill: '#1E293B' }}>{total}</text>
+                  <text x={cx} y={cy + 10} textAnchor="middle" style={{ fontSize: '9px', fontWeight: 600, fill: '#64748B' }}>TOTAL</text>
+                </svg>
+              );
+            };
+
+            const renderDonutLegend = () => (
+              <div className="flex flex-col gap-2 max-w-[400px] text-[11px]">
+                <div className="flex flex-wrap gap-x-6 gap-y-1">
+                  {mascotasGrupos.map((g, i) => (
+                    <div key={i} className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: g.color }} />
+                      <span className="text-slate-600">{g.nombre}</span>
+                      <span className="font-bold text-slate-800">{g.count}</span>
+                    </div>
+                  ))}
+                </div>
+                {Array.from(mascotasRazasPorTipo.entries()).map(([tipo, razas]) => (
+                  <div key={tipo}>
+                    <span className="font-semibold text-slate-700">{tipo}:</span>{' '}
+                    <span className="text-slate-500">
+                      {Array.from(razas.entries())
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([raza, count]) => `${raza} (${count})`)
+                        .join(', ')}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            );
+
+            return (
+              <div id="reporte-mascotas-render" className="flex flex-col">
+                {pages.map((chunk, pageIdx) => (
+                  <div key={pageIdx} className="report-page w-[1120px] h-[790px] bg-white relative flex flex-col justify-between pt-8 px-12 pb-[43px] overflow-hidden">
+                    <BorderDecoration />
+
+                    <div className="text-center mt-0 z-10">
+                      <h2 className="text-[22px] font-black text-slate-800 uppercase tracking-wide">
+                        {campamentoSeleccionado.nombre}
+                      </h2>
+                      <h3 className="text-[13px] font-bold text-slate-600 uppercase tracking-wider mt-1.5">
+                        Reporte de Mascotas{' '}
+                        <span className="text-slate-400">—</span>{' '}
+                        Total: <span className="font-black text-[#C21807]">{total}</span>
+                        {totalPaginas > 1 ? <span className="text-xs text-slate-400 ml-2">· Página {pageIdx + 1} de {totalPaginas}</span> : null}
+                      </h3>
+                    </div>
+
+                    <div className="px-8 mt-2 z-10">
+                      <table className="w-full border-collapse border border-slate-300 text-slate-800">
+                        <thead>
+                          <tr className="bg-slate-50 border-b border-slate-300">
+                            <th className="p-2.5 text-[11px] font-black tracking-wide text-slate-700 border-r border-slate-300 w-[40px]">#</th>
+                            <th className="p-2.5 text-[11px] font-black tracking-wide text-slate-700 border-r border-slate-300 w-[100px]">TIPO</th>
+                            <th className="p-2.5 text-[11px] font-black tracking-wide text-slate-700 border-r border-slate-300 w-[140px]">RAZA</th>
+                            <th className="p-2.5 text-[11px] font-black tracking-wide text-slate-700 border-r border-slate-300">DUEÑO (JEFE DE FAMILIA)</th>
+                            <th className="p-2.5 text-[11px] font-black tracking-wide text-slate-700 border-r border-slate-300 w-[120px]">MASCOTA</th>
+                            <th className="p-2.5 text-[11px] font-black tracking-wide text-slate-700 border-r border-slate-300 w-[40px]">SX</th>
+                            <th className="p-2.5 text-[11px] font-black tracking-wide text-slate-700 w-[40px]">ED</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {chunk.map((r, idx) => (
+                            <tr key={r.id} className={`border-b border-slate-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                              <td className="p-2 text-xs text-center border-r border-slate-200">{r.index}</td>
+                              <td className="p-2 text-xs border-r border-slate-200">{r.tipo_mascota || '—'}</td>
+                              <td className="p-2 text-xs border-r border-slate-200">{r.mascota_raza || '—'}</td>
+                              <td className="p-2 text-xs border-r border-slate-200">{r.dueno}</td>
+                              <td className="p-2 text-xs border-r border-slate-200">{r.mascota_nombre || '—'}</td>
+                              <td className="p-2 text-xs text-center border-r border-slate-200">{r.mascota_sexo === true ? 'M' : r.mascota_sexo === false ? 'H' : '—'}</td>
+                              <td className="p-2 text-xs text-center">{r.mascota_edad ?? '—'}</td>
+                            </tr>
+                          ))}
+                          {chunk.length < ROWS_PER_PAGE && Array.from({ length: ROWS_PER_PAGE - chunk.length }).map((_, i) => (
+                            <tr key={`empty-${i}`} className="border-b border-slate-200 h-[28px]">
+                              <td colSpan={7} className="border-r border-slate-200">&nbsp;</td>
                             </tr>
                           ))}
                         </tbody>
