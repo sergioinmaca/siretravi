@@ -3,6 +3,7 @@ import { X, Save } from 'lucide-react';
 import dayjs from 'dayjs';
 import SelectorCategoria from './SelectorCategoria';
 import { fetchCategorias, crearCategoria, actualizarCategoria } from '../../lib/eventos';
+import { addOneHour } from '../../lib/formatTime';
 import type { CategoriaEvento } from '../../types';
 
 interface CrearEventoModalProps {
@@ -73,7 +74,7 @@ export default function CrearEventoModal({ isOpen, onClose, onSave, selectedDate
         titulo: titulo.trim(),
         fecha_inicio: fecha,
         hora_inicio: horaInicio,
-        hora_fin: horaFin || undefined,
+        hora_fin: horaFin || addOneHour(horaInicio),
         descripcion: descripcion.trim() || undefined,
         tipo,
         fecha_fin: fechaFin,

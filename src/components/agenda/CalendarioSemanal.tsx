@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import dayjs from 'dayjs';
 import type { EventoOcurrencia, CategoriaEvento } from '../../types';
-import { formatTime12h, formatHourLabel } from '../../lib/formatTime';
+import { formatTime12h, formatHourLabel, addOneHour } from '../../lib/formatTime';
 
 const DIAS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const HORAS = Array.from({ length: 16 }, (_, i) => i + 6);
@@ -93,7 +93,7 @@ export default function CalendarioSemanal({ currentDate, eventosPorDia, onDayCli
                         const sorted = [...eventos].sort((a, b) => {
                           const c = a.hora_inicio.localeCompare(b.hora_inicio);
                           if (c !== 0) return c;
-                          return (b.hora_fin || '24:00').localeCompare(a.hora_fin || '24:00');
+                          return (b.hora_fin || addOneHour(b.hora_inicio)).localeCompare(a.hora_fin || addOneHour(a.hora_inicio));
                         });
                         const stack: number[] = [];
                         return sorted.map((evento, idx) => {
@@ -101,10 +101,10 @@ export default function CalendarioSemanal({ currentDate, eventosPorDia, onDayCli
                             stack.shift();
                           }
                           const level = stack.length;
-                          stack.push(timeToHours(evento.hora_fin || '22:00'));
+                          stack.push(timeToHours(evento.hora_fin || addOneHour(evento.hora_inicio)));
                           stack.sort((a, b) => a - b);
                           const startH = timeToHours(evento.hora_inicio);
-                          const endH = Math.min(timeToHours(evento.hora_fin || '22:00'), 22);
+                          const endH = Math.min(timeToHours(evento.hora_fin || addOneHour(evento.hora_inicio)), 22);
                           const top = Math.max(0, startH - 6) * 3;
                           const h = Math.max(1.5, (endH - startH) * 3);
                           const offset = level * 1.5;
