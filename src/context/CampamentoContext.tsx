@@ -68,23 +68,17 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       try {
         // Traer campamentos y carpas en paralelo
-        const [{ data: campsData }, { data: carpasData }, { data: famData }, { data: refData }, { data: hcData }, { data: atData }, { data: trData }] = await Promise.all([
+        const [{ data: campsData }, { data: carpasData }, { data: famData }, { data: refData }] = await Promise.all([
           supabase.from('campamentos').select('*').order('created_at', { ascending: true }),
           supabase.from('carpas').select('*').order('orden', { ascending: true }),
           supabase.from('familias').select('*').order('created_at', { ascending: true }),
           supabase.from('refugiados').select('*').order('created_at', { ascending: true }),
-          supabase.from('historias_clinicas').select('*').order('created_at', { ascending: true }),
-          supabase.from('atenciones_medicas').select('*').order('fecha_atencion', { ascending: false }),
-          supabase.from('tratamientos').select('*').order('hora', { ascending: true }),
         ]);
 
         const campsRows = (campsData || []) as Record<string, unknown>[];
         const carpasRows = (carpasData || []) as Record<string, unknown>[];
         const famRows = (famData || []) as Record<string, unknown>[];
         const refRows = (refData || []) as Record<string, unknown>[];
-        const hcRows = (hcData || []) as Record<string, unknown>[];
-        const atRows = (atData || []) as Record<string, unknown>[];
-        const trRows = (trData || []) as Record<string, unknown>[];
 
         const campamentosMapped = campsRows.map(c => mapCampamento(c, carpasRows));
 
@@ -139,81 +133,22 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         setFamilias(familiasMapped);
         setRefugiados(refugiadosMapped);
 
-        const hcMapped: HistoriaClinica[] = hcRows.map(h => ({
-          id: h.id as string,
-          refugiado_id: h.refugiado_id as string,
-          tipo_discapacidad: (h.tipo_discapacidad as string) || undefined,
-          tipo_alergia: (h.tipo_alergia as string) || undefined,
-          medicamento_enfermedad: (h.medicamento_enfermedad as string) || undefined,
-          lesion_sismo_detalle: (h.lesion_sismo_detalle as string) || undefined,
-          adulto_mayor_detalle: (h.adulto_mayor_detalle as string) || undefined,
-          lactante_detalle: (h.lactante_detalle as string) || undefined,
-          enfermedades_previas: (h.enfermedades_previas as string) || undefined,
-          cirugias: (h.cirugias as string) || undefined,
-          examen_subjetivo: (h.examen_subjetivo as string) || undefined,
-          examen_objetivo: (h.examen_objetivo as string) || undefined,
-          examen_diagnostico: (h.examen_diagnostico as string) || undefined,
-          fecha_apertura: new Date(h.fecha_apertura as string),
-          created_at: new Date(h.created_at as string),
-          enf_cronica_1: (h.enf_cronica_1 as string) || undefined,
-          tratamiento_1: (h.tratamiento_1 as string) || undefined,
-          enf_cronica_2: (h.enf_cronica_2 as string) || undefined,
-          tratamiento_2: (h.tratamiento_2 as string) || undefined,
-          enf_cronica_3: (h.enf_cronica_3 as string) || undefined,
-          tratamiento_3: (h.tratamiento_3 as string) || undefined,
-          enf_cronica_4: (h.enf_cronica_4 as string) || undefined,
-          tratamiento_4: (h.tratamiento_4 as string) || undefined,
-          enf_cronica_5: (h.enf_cronica_5 as string) || undefined,
-          tratamiento_5: (h.tratamiento_5 as string) || undefined,
-          enf_cronica_6: (h.enf_cronica_6 as string) || undefined,
-          tratamiento_6: (h.tratamiento_6 as string) || undefined,
-          enf_cronica_7: (h.enf_cronica_7 as string) || undefined,
-          tratamiento_7: (h.tratamiento_7 as string) || undefined,
-          enf_cronica_8: (h.enf_cronica_8 as string) || undefined,
-          tratamiento_8: (h.tratamiento_8 as string) || undefined,
-          enf_cronica_9: (h.enf_cronica_9 as string) || undefined,
-          tratamiento_9: (h.tratamiento_9 as string) || undefined,
-          enf_cronica_10: (h.enf_cronica_10 as string) || undefined,
-          tratamiento_10: (h.tratamiento_10 as string) || undefined,
-        }));
-        setHistoriasClinicas(hcMapped);
-
-        const atMapped: AtencionMedica[] = atRows.map(a => ({
-          id: a.id as string,
-          historia_clinica_id: a.historia_clinica_id as string,
-          fecha_atencion: new Date(a.fecha_atencion as string),
-          presion_arterial: (a.presion_arterial as string) || undefined,
-          temperatura: a.temperatura as number | undefined,
-          frecuencia_cardiaca: a.frecuencia_cardiaca as number | undefined,
-          peso: a.peso as number | undefined,
-          talla: a.talla as number | undefined,
-          saturacion_oxigeno: a.saturacion_oxigeno as number | undefined,
-          observaciones: (a.observaciones as string) || undefined,
-          created_at: new Date(a.created_at as string),
-        }));
-        setAtencionesMedicas(atMapped);
-
-        const trMapped: Tratamiento[] = trRows.map(t => ({
-          id: t.id as string,
-          historia_clinica_id: t.historia_clinica_id as string,
-          medicamento: t.medicamento as string,
-          hora: t.hora as string,
-          dosis: (t.dosis as string) || undefined,
-          created_at: new Date(t.created_at as string),
-        }));
-        setTratamientos(trMapped);
-
         // Auto-seleccionar el primero si existe
         if (campamentosMapped.length > 0) {
           setCampamentoSeleccionado(campamentosMapped[0]);
         }
-
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Error desconocido';
+        console.error('Error cargando datos:', err);
+        setErrorCarga(message);
+      } finally {
         setLoading(false);
       }
+    }
     cargarDatos();
 
-      // ── Suscripción a Realtime ────────────────────────────────────────────────
-      const mapRefugiadoPayload = (r: Record<string, any>): Refugiado => ({
+    // ── Suscripción a Realtime ────────────────────────────────────────────────
+    const mapRefugiadoPayload = (r: Record<string, any>): Refugiado => ({
         id: r.id,
         campamento_id: r.campamento_id,
         familia_id: r.familia_id || undefined,
@@ -783,8 +718,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
   return (
     <CampamentoContext.Provider value={{
       campamentos, familias, refugiados,
-      historiasClinicas, atencionesMedicas, tratamientos,
-      campamentoSeleccionado, loading, seleccionarCampamento,
+      campamentoSeleccionado, loading, errorCarga, seleccionarCampamento,
       agregarCampamento, actualizarCampamento, eliminarCampamento,
       agregarFamilia, eliminarFamilia, agregarRefugiado, eliminarRefugiado, actualizarRefugiado,
       obtenerRefugiadosPaginados, contarRefugiados,
