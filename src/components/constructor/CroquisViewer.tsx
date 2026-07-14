@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useCallback } from 'react';
+import { useRef, useEffect, useState, useCallback, forwardRef } from 'react';
 
 interface PlacedBed {
   type: 'litera' | 'individual' | 'duplex';
@@ -56,13 +56,19 @@ interface CroquisViewerProps {
   bedOccupants?: Record<string, string[]>;
 }
 
-export default function CroquisViewer({ croquisData, carpaNombre, width = 700, height = 600, elementNumberOffset = 0, tipoContabilizacion = 'elemento', occupiedBeds = [], bedOccupants = {} }: CroquisViewerProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function CroquisViewer({ croquisData, carpaNombre, width = 700, height = 600, elementNumberOffset = 0, tipoContabilizacion = 'elemento', occupiedBeds = [], bedOccupants = {} }, ref) {
+  const internalCanvasRef = useRef<HTMLCanvasElement>(null);
   const bedsRenderRef = useRef<BedRenderInfo[]>([]);
   const [hoveredBed, setHoveredBed] = useState<HoveredBed | null>(null);
 
+  const setCanvasRef = useCallback((node: HTMLCanvasElement | null) => {
+    internalCanvasRef.current = node;
+    if (typeof ref === 'function') { ref(node); }
+    else if (ref) { ref.current = node; }
+  }, [ref]);
+
   useEffect(() => {
-    const canvas = canvasRef.current;
+    const canvas = internalCanvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
@@ -137,7 +143,7 @@ export default function CroquisViewer({ croquisData, carpaNombre, width = 700, h
   }, [croquisData, elementNumberOffset, tipoContabilizacion, occupiedBeds]);
 
   const handleCanvasMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
+    const canvas = internalCanvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
@@ -183,7 +189,7 @@ export default function CroquisViewer({ croquisData, carpaNombre, width = 700, h
       <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
         <div className="relative">
           <canvas
-            ref={canvasRef}
+            ref={setCanvasRef}
             width={width}
             height={height}
             className="w-full block"
@@ -219,7 +225,9 @@ export default function CroquisViewer({ croquisData, carpaNombre, width = 700, h
       </div>
     </div>
   );
-}
+});
+
+export default CroquisViewer;
 
 function drawRectangles(ctx: CanvasRenderingContext2D, rects: PlacedRectangle[]) {
   rects.forEach(rect => {
