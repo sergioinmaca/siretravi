@@ -126,6 +126,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
           condicion_vivienda: (r.condicion_vivienda as string) || undefined,
           tenencia_vivienda: (r.tenencia_vivienda as string) || undefined,
           ingreso_familiar: (r.ingreso_familiar as string) || undefined,
+          observaciones: (r.observaciones as string) || undefined,
           parentesco: (r.parentesco as string) || undefined,
         }));
 
@@ -186,6 +187,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         condicion_vivienda: r.condicion_vivienda || undefined,
         tenencia_vivienda: r.tenencia_vivienda || undefined,
         ingreso_familiar: r.ingreso_familiar || undefined,
+        observaciones: r.observaciones || undefined,
         parentesco: r.parentesco || undefined,
       });
 
@@ -502,6 +504,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         condicion_vivienda: nuevo.condicion_vivienda || null,
         tenencia_vivienda: nuevo.tenencia_vivienda || null,
         ingreso_familiar: nuevo.ingreso_familiar || null,
+        observaciones: nuevo.observaciones || null,
         parentesco: nuevo.parentesco || null,
       })
       .select()
@@ -550,6 +553,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       condicion_vivienda: data.condicion_vivienda || undefined,
       tenencia_vivienda: data.tenencia_vivienda || undefined,
       ingreso_familiar: data.ingreso_familiar || undefined,
+      observaciones: data.observaciones || undefined,
       parentesco: data.parentesco || undefined,
     };
     setRefugiados(prev => [...prev, refugiadoCreado]);
@@ -609,6 +613,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         condicion_vivienda: actualizado.condicion_vivienda || null,
         tenencia_vivienda: actualizado.tenencia_vivienda || null,
         ingreso_familiar: actualizado.ingreso_familiar || null,
+        observaciones: actualizado.observaciones || null,
         parentesco: actualizado.parentesco || null,
       })
       .eq('id', id);
@@ -690,6 +695,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       condicion_vivienda: (r.condicion_vivienda as string) || undefined,
       tenencia_vivienda: (r.tenencia_vivienda as string) || undefined,
       ingreso_familiar: (r.ingreso_familiar as string) || undefined,
+      observaciones: (r.observaciones as string) || undefined,
       parentesco: (r.parentesco as string) || undefined,
     })) as Refugiado[];
 

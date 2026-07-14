@@ -182,6 +182,10 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
                   <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Ingreso Familiar Principal antes de la Emergencia</h4>
                   <p className="text-sm font-medium text-gray-800">{jefe.ingreso_familiar || '—'}</p>
                 </div>
+                <div className="border-t border-gray-100 pt-5">
+                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Observaciones</h4>
+                  <p className="text-sm font-medium text-gray-800">{jefe.observaciones || '—'}</p>
+                </div>
               </div>
             </div>
           )}
@@ -371,6 +375,12 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
                 <span className="font-bold text-xs shrink-0">Ingreso Familiar Principal antes de la Emergencia:</span>
                 <span className="flex-1 ml-2 px-1 text-sm font-semibold text-black leading-none">
                   {jefe.ingreso_familiar || '—'}
+                </span>
+              </div>
+              <div className="flex items-baseline">
+                <span className="font-bold text-xs shrink-0">Observaciones:</span>
+                <span className="flex-1 ml-2 px-1 text-sm font-semibold text-black leading-none">
+                  {jefe.observaciones || '—'}
                 </span>
               </div>
             </div>

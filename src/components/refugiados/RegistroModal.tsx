@@ -53,6 +53,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     condicionVivienda: '',
     tenenciaVivienda: '',
     ingresoFamiliar: '',
+    observaciones: '',
     parentesco: '',
   });
 
@@ -99,6 +100,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
         condicionVivienda: refugiadoToEdit.condicion_vivienda || '',
         tenenciaVivienda: refugiadoToEdit.tenencia_vivienda || '',
         ingresoFamiliar: refugiadoToEdit.ingreso_familiar || '',
+        observaciones: refugiadoToEdit.observaciones || '',
         parentesco: refugiadoToEdit.parentesco || '',
       });
     } else if (isOpen && !refugiadoToEdit) {
@@ -120,6 +122,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
         condicionVivienda: '',
         tenenciaVivienda: '',
         ingresoFamiliar: '',
+        observaciones: '',
         parentesco: '',
       });
     }
@@ -204,6 +207,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       condicion_vivienda: formData.condicionVivienda || undefined,
       tenencia_vivienda: formData.tenenciaVivienda || undefined,
       ingreso_familiar: formData.ingresoFamiliar || undefined,
+      observaciones: formData.observaciones || undefined,
       parentesco: formData.parentesco || undefined,
     };
 
@@ -458,6 +462,11 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                       <span className="text-gray-700">Ayuda Social / Bonos</span>
                     </label>
                   </div>
+                </div>
+
+                <div className="border-t border-gray-100 pt-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Observaciones</label>
+                  <textarea name="observaciones" value={formData.observaciones} onChange={handleChange} rows={3} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase resize-none" placeholder="Observaciones adicionales sobre la situación socioeconómica..." />
                 </div>
               </div>
             </div>
