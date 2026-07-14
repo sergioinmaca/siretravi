@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { useCampamento } from '../../context/CampamentoContext';
 import { X, Save, Pill } from 'lucide-react';
+import { agregarTratamiento } from '../../lib/salud';
 
 interface TratamientoModalProps {
   isOpen: boolean;
@@ -10,7 +10,6 @@ interface TratamientoModalProps {
 }
 
 export default function TratamientoModal({ isOpen, onClose, historiaClinicaId, refugiadoNombre }: TratamientoModalProps) {
-  const { agregarTratamiento } = useCampamento();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [formData, setFormData] = useState({

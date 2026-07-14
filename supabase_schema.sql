@@ -69,20 +69,21 @@ CREATE INDEX IF NOT EXISTS idx_refugiados_campamento ON refugiados(campamento_id
 CREATE INDEX IF NOT EXISTS idx_refugiados_familia ON refugiados(familia_id);
 
 -- ================================================
--- ROW LEVEL SECURITY (RLS) - Acceso abierto de lectura
--- y escritura para la anon key (ajustar según necesidades)
+-- ROW LEVEL SECURITY (RLS) - Solo usuarios autenticados
 -- ================================================
 ALTER TABLE campamentos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE carpas ENABLE ROW LEVEL SECURITY;
 ALTER TABLE familias ENABLE ROW LEVEL SECURITY;
 ALTER TABLE refugiados ENABLE ROW LEVEL SECURITY;
 
--- Políticas que permiten acceso total al rol anon (público)
--- NOTA: En producción real, restringir con autenticación de usuarios
-CREATE POLICY "Acceso total campamentos" ON campamentos FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Acceso total carpas" ON carpas FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Acceso total familias" ON familias FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Acceso total refugiados" ON refugiados FOR ALL TO anon USING (true) WITH CHECK (true);
+-- Políticas que requieren sesión iniciada (rol authenticated).
+-- La anon key está expuesta en el bundle del frontend, por lo que
+-- permitir acceso a "anon" dejaría los datos vulnerables a cualquiera
+-- que inspeccione el código (DevTools).
+CREATE POLICY "auth_all_campamentos" ON campamentos FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "auth_all_carpas" ON carpas FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "auth_all_familias" ON familias FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "auth_all_refugiados" ON refugiados FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- ================================================
 -- Tablas del módulo de Usuarios y Permisos
@@ -157,7 +158,7 @@ ALTER TABLE modulos ENABLE ROW LEVEL SECURITY;
 ALTER TABLE acciones ENABLE ROW LEVEL SECURITY;
 ALTER TABLE permisos ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Acceso total usuarios" ON usuarios FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Acceso total modulos" ON modulos FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Acceso total acciones" ON acciones FOR ALL TO anon USING (true) WITH CHECK (true);
-CREATE POLICY "Acceso total permisos" ON permisos FOR ALL TO anon USING (true) WITH CHECK (true);
+CREATE POLICY "auth_all_usuarios" ON usuarios FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "auth_all_modulos" ON modulos FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "auth_all_acciones" ON acciones FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "auth_all_permisos" ON permisos FOR ALL TO authenticated USING (true) WITH CHECK (true);

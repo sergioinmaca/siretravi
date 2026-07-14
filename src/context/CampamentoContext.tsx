@@ -1,16 +1,13 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { toDateInput } from '../lib/formatDate';
-import type { Campamento, Refugiado, Familia, Carpa, HistoriaClinica, AtencionMedica, Tratamiento } from '../types';
+import type { Campamento, Refugiado, Familia, Carpa } from '../types';
 
 interface CampamentoContextType {
   campamentos: Campamento[];
   familias: Familia[];
   refugiados: Refugiado[];
-  historiasClinicas: HistoriaClinica[];
-  atencionesMedicas: AtencionMedica[];
-  tratamientos: Tratamiento[];
   campamentoSeleccionado: Campamento | null;
   loading: boolean;
   seleccionarCampamento: (id: string) => void;
@@ -22,11 +19,8 @@ interface CampamentoContextType {
   agregarRefugiado: (nuevo: Refugiado) => Promise<void>;
   eliminarRefugiado: (id: string) => Promise<void>;
   actualizarRefugiado: (id: string, actualizado: Refugiado) => Promise<void>;
-  agregarHistoriaClinica: (nueva: HistoriaClinica) => Promise<void>;
-  actualizarHistoriaClinica: (id: string, actualizada: HistoriaClinica) => Promise<void>;
-  agregarAtencionMedica: (nueva: AtencionMedica) => Promise<void>;
-  agregarTratamiento: (nuevo: Tratamiento) => Promise<void>;
-  eliminarTratamiento: (id: string) => Promise<void>;
+  obtenerRefugiadosPaginados: (campamentoId: string, page: number, pageSize: number, searchTerm?: string) => Promise<{ data: Refugiado[]; count: number }>;
+  contarRefugiados: (campamentoId: string, genero?: boolean) => Promise<number>;
 }
 
 const CampamentoContext = createContext<CampamentoContextType | undefined>(undefined);
@@ -63,9 +57,6 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
   const [campamentos, setCampamentos] = useState<Campamento[]>([]);
   const [familias, setFamilias] = useState<Familia[]>([]);
   const [refugiados, setRefugiados] = useState<Refugiado[]>([]);
-  const [historiasClinicas, setHistoriasClinicas] = useState<HistoriaClinica[]>([]);
-  const [atencionesMedicas, setAtencionesMedicas] = useState<AtencionMedica[]>([]);
-  const [tratamientos, setTratamientos] = useState<Tratamiento[]>([]);
   const [campamentoSeleccionado, setCampamentoSeleccionado] = useState<Campamento | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -75,23 +66,17 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       try {
         // Traer campamentos y carpas en paralelo
-        const [{ data: campsData }, { data: carpasData }, { data: famData }, { data: refData }, { data: hcData }, { data: atData }, { data: trData }] = await Promise.all([
+        const [{ data: campsData }, { data: carpasData }, { data: famData }, { data: refData }] = await Promise.all([
           supabase.from('campamentos').select('*').order('created_at', { ascending: true }),
           supabase.from('carpas').select('*').order('orden', { ascending: true }),
           supabase.from('familias').select('*').order('created_at', { ascending: true }),
-          supabase.from('refugiados').select('*').order('created_at', { ascending: true }),
-          supabase.from('historias_clinicas').select('*').order('created_at', { ascending: true }),
-          supabase.from('atenciones_medicas').select('*').order('fecha_atencion', { ascending: false }),
-          supabase.from('tratamientos').select('*').order('hora', { ascending: true }),
+          supabase.from('refugiados').select('*').order('created_at', { ascending: false }).limit(200),
         ]);
 
         const campsRows = (campsData || []) as Record<string, unknown>[];
         const carpasRows = (carpasData || []) as Record<string, unknown>[];
         const famRows = (famData || []) as Record<string, unknown>[];
         const refRows = (refData || []) as Record<string, unknown>[];
-        const hcRows = (hcData || []) as Record<string, unknown>[];
-        const atRows = (atData || []) as Record<string, unknown>[];
-        const trRows = (trData || []) as Record<string, unknown>[];
 
         const campamentosMapped = campsRows.map(c => mapCampamento(c, carpasRows));
 
@@ -145,70 +130,6 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         setCampamentos(campamentosMapped);
         setFamilias(familiasMapped);
         setRefugiados(refugiadosMapped);
-
-        const hcMapped: HistoriaClinica[] = hcRows.map(h => ({
-          id: h.id as string,
-          refugiado_id: h.refugiado_id as string,
-          tipo_discapacidad: (h.tipo_discapacidad as string) || undefined,
-          tipo_alergia: (h.tipo_alergia as string) || undefined,
-          medicamento_enfermedad: (h.medicamento_enfermedad as string) || undefined,
-          lesion_sismo_detalle: (h.lesion_sismo_detalle as string) || undefined,
-          adulto_mayor_detalle: (h.adulto_mayor_detalle as string) || undefined,
-          lactante_detalle: (h.lactante_detalle as string) || undefined,
-          enfermedades_previas: (h.enfermedades_previas as string) || undefined,
-          cirugias: (h.cirugias as string) || undefined,
-          examen_subjetivo: (h.examen_subjetivo as string) || undefined,
-          examen_objetivo: (h.examen_objetivo as string) || undefined,
-          examen_diagnostico: (h.examen_diagnostico as string) || undefined,
-          fecha_apertura: new Date(h.fecha_apertura as string),
-          created_at: new Date(h.created_at as string),
-          enf_cronica_1: (h.enf_cronica_1 as string) || undefined,
-          tratamiento_1: (h.tratamiento_1 as string) || undefined,
-          enf_cronica_2: (h.enf_cronica_2 as string) || undefined,
-          tratamiento_2: (h.tratamiento_2 as string) || undefined,
-          enf_cronica_3: (h.enf_cronica_3 as string) || undefined,
-          tratamiento_3: (h.tratamiento_3 as string) || undefined,
-          enf_cronica_4: (h.enf_cronica_4 as string) || undefined,
-          tratamiento_4: (h.tratamiento_4 as string) || undefined,
-          enf_cronica_5: (h.enf_cronica_5 as string) || undefined,
-          tratamiento_5: (h.tratamiento_5 as string) || undefined,
-          enf_cronica_6: (h.enf_cronica_6 as string) || undefined,
-          tratamiento_6: (h.tratamiento_6 as string) || undefined,
-          enf_cronica_7: (h.enf_cronica_7 as string) || undefined,
-          tratamiento_7: (h.tratamiento_7 as string) || undefined,
-          enf_cronica_8: (h.enf_cronica_8 as string) || undefined,
-          tratamiento_8: (h.tratamiento_8 as string) || undefined,
-          enf_cronica_9: (h.enf_cronica_9 as string) || undefined,
-          tratamiento_9: (h.tratamiento_9 as string) || undefined,
-          enf_cronica_10: (h.enf_cronica_10 as string) || undefined,
-          tratamiento_10: (h.tratamiento_10 as string) || undefined,
-        }));
-        setHistoriasClinicas(hcMapped);
-
-        const atMapped: AtencionMedica[] = atRows.map(a => ({
-          id: a.id as string,
-          historia_clinica_id: a.historia_clinica_id as string,
-          fecha_atencion: new Date(a.fecha_atencion as string),
-          presion_arterial: (a.presion_arterial as string) || undefined,
-          temperatura: a.temperatura as number | undefined,
-          frecuencia_cardiaca: a.frecuencia_cardiaca as number | undefined,
-          peso: a.peso as number | undefined,
-          talla: a.talla as number | undefined,
-          saturacion_oxigeno: a.saturacion_oxigeno as number | undefined,
-          observaciones: (a.observaciones as string) || undefined,
-          created_at: new Date(a.created_at as string),
-        }));
-        setAtencionesMedicas(atMapped);
-
-        const trMapped: Tratamiento[] = trRows.map(t => ({
-          id: t.id as string,
-          historia_clinica_id: t.historia_clinica_id as string,
-          medicamento: t.medicamento as string,
-          hora: t.hora as string,
-          dosis: (t.dosis as string) || undefined,
-          created_at: new Date(t.created_at as string),
-        }));
-        setTratamientos(trMapped);
 
         // Auto-seleccionar el primero si existe
         if (campamentosMapped.length > 0) {
@@ -287,129 +208,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
           setFamilias(prev => prev.filter(f => f.id !== payload.old.id));
         }
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'historias_clinicas' }, (payload) => {
-        if (payload.eventType === 'INSERT') {
-          setHistoriasClinicas(prev => {
-            if (prev.find(h => h.id === payload.new.id)) return prev;
-            return [...prev, {
-              id: payload.new.id,
-              refugiado_id: payload.new.refugiado_id,
-              tipo_discapacidad: payload.new.tipo_discapacidad || undefined,
-              tipo_alergia: payload.new.tipo_alergia || undefined,
-              medicamento_enfermedad: payload.new.medicamento_enfermedad || undefined,
-              lesion_sismo_detalle: payload.new.lesion_sismo_detalle || undefined,
-              adulto_mayor_detalle: payload.new.adulto_mayor_detalle || undefined,
-              lactante_detalle: payload.new.lactante_detalle || undefined,
-              enfermedades_previas: payload.new.enfermedades_previas || undefined,
-              cirugias: payload.new.cirugias || undefined,
-              examen_subjetivo: payload.new.examen_subjetivo || undefined,
-              examen_objetivo: payload.new.examen_objetivo || undefined,
-              examen_diagnostico: payload.new.examen_diagnostico || undefined,
-              fecha_apertura: new Date(payload.new.fecha_apertura),
-              created_at: new Date(payload.new.created_at),
-              enf_cronica_1: payload.new.enf_cronica_1 || undefined,
-              tratamiento_1: payload.new.tratamiento_1 || undefined,
-              enf_cronica_2: payload.new.enf_cronica_2 || undefined,
-              tratamiento_2: payload.new.tratamiento_2 || undefined,
-              enf_cronica_3: payload.new.enf_cronica_3 || undefined,
-              tratamiento_3: payload.new.tratamiento_3 || undefined,
-              enf_cronica_4: payload.new.enf_cronica_4 || undefined,
-              tratamiento_4: payload.new.tratamiento_4 || undefined,
-              enf_cronica_5: payload.new.enf_cronica_5 || undefined,
-              tratamiento_5: payload.new.tratamiento_5 || undefined,
-              enf_cronica_6: payload.new.enf_cronica_6 || undefined,
-              tratamiento_6: payload.new.tratamiento_6 || undefined,
-              enf_cronica_7: payload.new.enf_cronica_7 || undefined,
-              tratamiento_7: payload.new.tratamiento_7 || undefined,
-              enf_cronica_8: payload.new.enf_cronica_8 || undefined,
-              tratamiento_8: payload.new.tratamiento_8 || undefined,
-              enf_cronica_9: payload.new.enf_cronica_9 || undefined,
-              tratamiento_9: payload.new.tratamiento_9 || undefined,
-              enf_cronica_10: payload.new.enf_cronica_10 || undefined,
-              tratamiento_10: payload.new.tratamiento_10 || undefined,
-            }];
-          });
-        } else if (payload.eventType === 'UPDATE') {
-          setHistoriasClinicas(prev => prev.map(h => h.id === payload.new.id ? {
-            id: payload.new.id,
-            refugiado_id: payload.new.refugiado_id,
-            tipo_discapacidad: payload.new.tipo_discapacidad || undefined,
-            tipo_alergia: payload.new.tipo_alergia || undefined,
-            medicamento_enfermedad: payload.new.medicamento_enfermedad || undefined,
-            lesion_sismo_detalle: payload.new.lesion_sismo_detalle || undefined,
-            adulto_mayor_detalle: payload.new.adulto_mayor_detalle || undefined,
-            lactante_detalle: payload.new.lactante_detalle || undefined,
-            enfermedades_previas: payload.new.enfermedades_previas || undefined,
-            cirugias: payload.new.cirugias || undefined,
-            examen_subjetivo: payload.new.examen_subjetivo || undefined,
-            examen_objetivo: payload.new.examen_objetivo || undefined,
-            examen_diagnostico: payload.new.examen_diagnostico || undefined,
-            fecha_apertura: new Date(payload.new.fecha_apertura),
-            created_at: new Date(payload.new.created_at),
-            enf_cronica_1: payload.new.enf_cronica_1 || undefined,
-            tratamiento_1: payload.new.tratamiento_1 || undefined,
-            enf_cronica_2: payload.new.enf_cronica_2 || undefined,
-            tratamiento_2: payload.new.tratamiento_2 || undefined,
-            enf_cronica_3: payload.new.enf_cronica_3 || undefined,
-            tratamiento_3: payload.new.tratamiento_3 || undefined,
-            enf_cronica_4: payload.new.enf_cronica_4 || undefined,
-            tratamiento_4: payload.new.tratamiento_4 || undefined,
-            enf_cronica_5: payload.new.enf_cronica_5 || undefined,
-            tratamiento_5: payload.new.tratamiento_5 || undefined,
-            enf_cronica_6: payload.new.enf_cronica_6 || undefined,
-            tratamiento_6: payload.new.tratamiento_6 || undefined,
-            enf_cronica_7: payload.new.enf_cronica_7 || undefined,
-            tratamiento_7: payload.new.tratamiento_7 || undefined,
-            enf_cronica_8: payload.new.enf_cronica_8 || undefined,
-            tratamiento_8: payload.new.tratamiento_8 || undefined,
-            enf_cronica_9: payload.new.enf_cronica_9 || undefined,
-            tratamiento_9: payload.new.tratamiento_9 || undefined,
-            enf_cronica_10: payload.new.enf_cronica_10 || undefined,
-            tratamiento_10: payload.new.tratamiento_10 || undefined,
-          } : h));
-        } else if (payload.eventType === 'DELETE') {
-          setHistoriasClinicas(prev => prev.filter(h => h.id !== payload.old.id));
-        }
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'atenciones_medicas' }, (payload) => {
-        if (payload.eventType === 'INSERT') {
-          setAtencionesMedicas(prev => {
-            if (prev.find(a => a.id === payload.new.id)) return prev;
-            return [...prev, {
-              id: payload.new.id,
-              historia_clinica_id: payload.new.historia_clinica_id,
-              fecha_atencion: new Date(payload.new.fecha_atencion),
-              presion_arterial: payload.new.presion_arterial || undefined,
-              temperatura: payload.new.temperatura || undefined,
-              frecuencia_cardiaca: payload.new.frecuencia_cardiaca || undefined,
-              peso: payload.new.peso || undefined,
-              talla: payload.new.talla || undefined,
-              saturacion_oxigeno: payload.new.saturacion_oxigeno || undefined,
-              observaciones: payload.new.observaciones || undefined,
-              created_at: new Date(payload.new.created_at),
-            }];
-          });
-        } else if (payload.eventType === 'DELETE') {
-          setAtencionesMedicas(prev => prev.filter(a => a.id !== payload.old.id));
-        }
-      })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'tratamientos' }, (payload) => {
-        if (payload.eventType === 'INSERT') {
-          setTratamientos(prev => {
-            if (prev.find(t => t.id === payload.new.id)) return prev;
-            return [...prev, {
-              id: payload.new.id,
-              historia_clinica_id: payload.new.historia_clinica_id,
-              medicamento: payload.new.medicamento,
-              hora: payload.new.hora,
-              dosis: payload.new.dosis || undefined,
-              created_at: new Date(payload.new.created_at),
-            }];
-          });
-        } else if (payload.eventType === 'DELETE') {
-          setTratamientos(prev => prev.filter(t => t.id !== payload.old.id));
-        }
-      })
+      
       .subscribe();
 
     return () => {
@@ -818,231 +617,107 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
     setRefugiados(prev => prev.map(r => r.id === id ? { ...actualizado, id } : r));
   };
 
-  // ── Agregar Historia Clínica ────────────────────────────────────────────────
-  const agregarHistoriaClinica = async (nueva: HistoriaClinica) => {
-    const { data, error } = await supabase
-      .from('historias_clinicas')
-      .insert({
-        refugiado_id: nueva.refugiado_id,
-        tipo_discapacidad: nueva.tipo_discapacidad || null,
-        tipo_alergia: nueva.tipo_alergia || null,
-        medicamento_enfermedad: nueva.medicamento_enfermedad || null,
-        lesion_sismo_detalle: nueva.lesion_sismo_detalle || null,
-        adulto_mayor_detalle: nueva.adulto_mayor_detalle || null,
-        lactante_detalle: nueva.lactante_detalle || null,
-        enfermedades_previas: nueva.enfermedades_previas || null,
-        cirugias: nueva.cirugias || null,
-        examen_subjetivo: nueva.examen_subjetivo || null,
-        examen_objetivo: nueva.examen_objetivo || null,
-        examen_diagnostico: nueva.examen_diagnostico || null,
-        fecha_apertura: nueva.fecha_apertura instanceof Date
-          ? toDateInput(nueva.fecha_apertura)
-          : nueva.fecha_apertura,
-        enf_cronica_1: nueva.enf_cronica_1 || null,
-        tratamiento_1: nueva.tratamiento_1 || null,
-        enf_cronica_2: nueva.enf_cronica_2 || null,
-        tratamiento_2: nueva.tratamiento_2 || null,
-        enf_cronica_3: nueva.enf_cronica_3 || null,
-        tratamiento_3: nueva.tratamiento_3 || null,
-        enf_cronica_4: nueva.enf_cronica_4 || null,
-        tratamiento_4: nueva.tratamiento_4 || null,
-        enf_cronica_5: nueva.enf_cronica_5 || null,
-        tratamiento_5: nueva.tratamiento_5 || null,
-        enf_cronica_6: nueva.enf_cronica_6 || null,
-        tratamiento_6: nueva.tratamiento_6 || null,
-        enf_cronica_7: nueva.enf_cronica_7 || null,
-        tratamiento_7: nueva.tratamiento_7 || null,
-        enf_cronica_8: nueva.enf_cronica_8 || null,
-        tratamiento_8: nueva.tratamiento_8 || null,
-        enf_cronica_9: nueva.enf_cronica_9 || null,
-        tratamiento_9: nueva.tratamiento_9 || null,
-        enf_cronica_10: nueva.enf_cronica_10 || null,
-        tratamiento_10: nueva.tratamiento_10 || null,
-      })
-      .select()
-      .single();
+  // ── Obtener Refugiados Paginados ─────────────────────────────────────────────
+  const obtenerRefugiadosPaginados = useCallback(async (
+    campamentoId: string,
+    page: number,
+    pageSize: number,
+    searchTerm?: string
+  ): Promise<{ data: Refugiado[]; count: number }> => {
+    const from = (page - 1) * pageSize;
+    const to = from + pageSize - 1;
 
-    if (error || !data) {
-      console.error('Error al crear historia clínica:', error);
-      throw new Error(error?.message || 'Error al crear historia clínica');
+    let query = supabase
+      .from('refugiados')
+      .select('*', { count: 'exact' })
+      .eq('campamento_id', campamentoId)
+      .order('created_at', { ascending: true })
+      .range(from, to);
+
+    if (searchTerm?.trim()) {
+      const term = searchTerm.trim();
+      query = query.or(
+        `nombres.ilike.%${term}%,apellidos.ilike.%${term}%,codigo.ilike.%${term}%,cedula::text.ilike.%${term}%`
+      );
     }
 
-    const hcCreada: HistoriaClinica = {
-      id: data.id,
-      refugiado_id: data.refugiado_id,
-      tipo_discapacidad: data.tipo_discapacidad || undefined,
-      tipo_alergia: data.tipo_alergia || undefined,
-      medicamento_enfermedad: data.medicamento_enfermedad || undefined,
-      lesion_sismo_detalle: data.lesion_sismo_detalle || undefined,
-      adulto_mayor_detalle: data.adulto_mayor_detalle || undefined,
-      lactante_detalle: data.lactante_detalle || undefined,
-      enfermedades_previas: data.enfermedades_previas || undefined,
-      cirugias: data.cirugias || undefined,
-      examen_subjetivo: data.examen_subjetivo || undefined,
-      examen_objetivo: data.examen_objetivo || undefined,
-      examen_diagnostico: data.examen_diagnostico || undefined,
-      fecha_apertura: new Date(data.fecha_apertura),
-      created_at: new Date(data.created_at),
-      enf_cronica_1: data.enf_cronica_1 || undefined,
-      tratamiento_1: data.tratamiento_1 || undefined,
-      enf_cronica_2: data.enf_cronica_2 || undefined,
-      tratamiento_2: data.tratamiento_2 || undefined,
-      enf_cronica_3: data.enf_cronica_3 || undefined,
-      tratamiento_3: data.tratamiento_3 || undefined,
-      enf_cronica_4: data.enf_cronica_4 || undefined,
-      tratamiento_4: data.tratamiento_4 || undefined,
-      enf_cronica_5: data.enf_cronica_5 || undefined,
-      tratamiento_5: data.tratamiento_5 || undefined,
-      enf_cronica_6: data.enf_cronica_6 || undefined,
-      tratamiento_6: data.tratamiento_6 || undefined,
-      enf_cronica_7: data.enf_cronica_7 || undefined,
-      tratamiento_7: data.tratamiento_7 || undefined,
-      enf_cronica_8: data.enf_cronica_8 || undefined,
-      tratamiento_8: data.tratamiento_8 || undefined,
-      enf_cronica_9: data.enf_cronica_9 || undefined,
-      tratamiento_9: data.tratamiento_9 || undefined,
-      enf_cronica_10: data.enf_cronica_10 || undefined,
-      tratamiento_10: data.tratamiento_10 || undefined,
-    };
-    setHistoriasClinicas(prev => [...prev, hcCreada]);
-  };
-
-  // ── Actualizar Historia Clínica ────────────────────────────────────────────
-  const actualizarHistoriaClinica = async (id: string, actualizada: HistoriaClinica) => {
-    const { error } = await supabase
-      .from('historias_clinicas')
-      .update({
-        tipo_discapacidad: actualizada.tipo_discapacidad || null,
-        tipo_alergia: actualizada.tipo_alergia || null,
-        medicamento_enfermedad: actualizada.medicamento_enfermedad || null,
-        lesion_sismo_detalle: actualizada.lesion_sismo_detalle || null,
-        adulto_mayor_detalle: actualizada.adulto_mayor_detalle || null,
-        lactante_detalle: actualizada.lactante_detalle || null,
-        enfermedades_previas: actualizada.enfermedades_previas || null,
-        cirugias: actualizada.cirugias || null,
-        examen_subjetivo: actualizada.examen_subjetivo || null,
-        examen_objetivo: actualizada.examen_objetivo || null,
-        examen_diagnostico: actualizada.examen_diagnostico || null,
-        enf_cronica_1: actualizada.enf_cronica_1 || null,
-        tratamiento_1: actualizada.tratamiento_1 || null,
-        enf_cronica_2: actualizada.enf_cronica_2 || null,
-        tratamiento_2: actualizada.tratamiento_2 || null,
-        enf_cronica_3: actualizada.enf_cronica_3 || null,
-        tratamiento_3: actualizada.tratamiento_3 || null,
-        enf_cronica_4: actualizada.enf_cronica_4 || null,
-        tratamiento_4: actualizada.tratamiento_4 || null,
-        enf_cronica_5: actualizada.enf_cronica_5 || null,
-        tratamiento_5: actualizada.tratamiento_5 || null,
-        enf_cronica_6: actualizada.enf_cronica_6 || null,
-        tratamiento_6: actualizada.tratamiento_6 || null,
-        enf_cronica_7: actualizada.enf_cronica_7 || null,
-        tratamiento_7: actualizada.tratamiento_7 || null,
-        enf_cronica_8: actualizada.enf_cronica_8 || null,
-        tratamiento_8: actualizada.tratamiento_8 || null,
-        enf_cronica_9: actualizada.enf_cronica_9 || null,
-        tratamiento_9: actualizada.tratamiento_9 || null,
-        enf_cronica_10: actualizada.enf_cronica_10 || null,
-        tratamiento_10: actualizada.tratamiento_10 || null,
-      })
-      .eq('id', id);
+    const { data, error, count } = await query;
 
     if (error) {
-      console.error('Error al actualizar historia clínica:', error);
-      throw new Error(error.message || 'Error al actualizar historia clínica');
+      console.error('Error al obtener refugiados paginados:', error);
+      return { data: [], count: 0 };
     }
 
-    setHistoriasClinicas(prev => prev.map(h => h.id === id ? { ...actualizada, id } : h));
-  };
+    const mapped = ((data || []) as Record<string, unknown>[]).map(r => ({
+      id: r.id as string,
+      campamento_id: r.campamento_id as string,
+      familia_id: (r.familia_id as string) || undefined,
+      codigo: (r.codigo as string) || '',
+      nombres: r.nombres as string,
+      apellidos: r.apellidos as string,
+      cedula: r.cedula as number | undefined,
+      genero: r.genero as boolean,
+      fecha_nacimiento: new Date(r.fecha_nacimiento as string),
+      es_jefe_familia: r.es_jefe_familia as boolean,
+      nro_cama: (r.nro_cama as string) || '',
+      procedencia: (r.procedencia as string) || '',
+      fecha_ingreso: r.fecha_ingreso ? new Date(r.fecha_ingreso as string) : undefined,
+      direccion_exacta: (r.direccion_exacta as string) || undefined,
+      discapacidad: r.discapacidad as boolean,
+      embarazo: r.embarazo as boolean,
+      tiempo_embarazo: (r.tiempo_embarazo as number) || undefined,
+      mascotas: r.mascotas as boolean,
+      tipo_mascota: (r.tipo_mascota as string) || undefined,
+      mascota_sexo: (r.mascota_sexo as boolean) ?? undefined,
+      mascota_raza: (r.mascota_raza as string) || undefined,
+      mascota_nombre: (r.mascota_nombre as string) || undefined,
+      mascota_edad: (r.mascota_edad as number) || undefined,
+      telefono: (r.telefono as number) || undefined,
+      profesion: (r.profesion as string) || undefined,
+      talla_camisa: (r.talla_camisa as string) || undefined,
+      talla_pantalon: (r.talla_pantalon as string) || undefined,
+      talla_zapatos: (r.talla_zapatos as string) || undefined,
+      alergias: r.alergias as boolean,
+      enfermedad_cronica: r.enfermedad_cronica as boolean,
+      lesion_sismo: r.lesion_sismo as boolean,
+      adulto_mayor_dependencia: r.adulto_mayor_dependencia as boolean,
+      lactante: (r.lactante as boolean) ?? undefined,
+      nivel_educativo: (r.nivel_educativo as string) || undefined,
+      condicion_vivienda: (r.condicion_vivienda as string) || undefined,
+      tenencia_vivienda: (r.tenencia_vivienda as string) || undefined,
+      ingreso_familiar: (r.ingreso_familiar as string) || undefined,
+      parentesco: (r.parentesco as string) || undefined,
+    })) as Refugiado[];
 
-  // ── Agregar Atención Médica ─────────────────────────────────────────────
-  const agregarAtencionMedica = async (nueva: AtencionMedica) => {
-    const { data, error } = await supabase
-      .from('atenciones_medicas')
-      .insert({
-        historia_clinica_id: nueva.historia_clinica_id,
-        fecha_atencion: nueva.fecha_atencion instanceof Date
-          ? toDateInput(nueva.fecha_atencion)
-          : nueva.fecha_atencion,
-        presion_arterial: nueva.presion_arterial || null,
-        temperatura: nueva.temperatura || null,
-        frecuencia_cardiaca: nueva.frecuencia_cardiaca || null,
-        peso: nueva.peso || null,
-        talla: nueva.talla || null,
-        saturacion_oxigeno: nueva.saturacion_oxigeno || null,
-        observaciones: nueva.observaciones || null,
-      })
-      .select()
-      .single();
+    return { data: mapped, count: count || 0 };
+  }, []);
 
-    if (error || !data) {
-      console.error('Error al registrar atención médica:', error);
-      throw new Error(error?.message || 'Error al registrar atención médica');
+  // ── Contar Refugiados ───────────────────────────────────────────────────────
+  const contarRefugiados = useCallback(async (campamentoId: string, genero?: boolean): Promise<number> => {
+    let query = supabase
+      .from('refugiados')
+      .select('*', { count: 'exact', head: true })
+      .eq('campamento_id', campamentoId);
+
+    if (genero !== undefined) {
+      query = query.eq('genero', genero);
     }
 
-    const atCreada: AtencionMedica = {
-      id: data.id,
-      historia_clinica_id: data.historia_clinica_id,
-      fecha_atencion: new Date(data.fecha_atencion),
-      presion_arterial: data.presion_arterial || undefined,
-      temperatura: data.temperatura || undefined,
-      frecuencia_cardiaca: data.frecuencia_cardiaca || undefined,
-      peso: data.peso || undefined,
-      talla: data.talla || undefined,
-      saturacion_oxigeno: data.saturacion_oxigeno || undefined,
-      observaciones: data.observaciones || undefined,
-      created_at: new Date(data.created_at),
-    };
-    setAtencionesMedicas(prev => [...prev, atCreada]);
-  };
-
-  // ── Agregar Tratamiento ────────────────────────────────────────────────────
-  const agregarTratamiento = async (nuevo: Tratamiento) => {
-    const { data, error } = await supabase
-      .from('tratamientos')
-      .insert({
-        historia_clinica_id: nuevo.historia_clinica_id,
-        medicamento: nuevo.medicamento,
-        hora: nuevo.hora,
-        dosis: nuevo.dosis || null,
-      })
-      .select()
-      .single();
-
-    if (error || !data) {
-      console.error('Error al agregar tratamiento:', error);
-      throw new Error(error?.message || 'Error al agregar tratamiento');
-    }
-
-    const trCreado: Tratamiento = {
-      id: data.id,
-      historia_clinica_id: data.historia_clinica_id,
-      medicamento: data.medicamento,
-      hora: data.hora,
-      dosis: data.dosis || undefined,
-      created_at: new Date(data.created_at),
-    };
-    setTratamientos(prev => [...prev, trCreado]);
-  };
-
-  // ── Eliminar Tratamiento ─────────────────────────────────────────────────
-  const eliminarTratamiento = async (id: string) => {
-    const { error } = await supabase.from('tratamientos').delete().eq('id', id);
+    const { count, error } = await query;
     if (error) {
-      console.error('Error al eliminar tratamiento:', error);
-      return;
+      console.error('Error al contar refugiados:', error);
+      return 0;
     }
-    setTratamientos(prev => prev.filter(t => t.id !== id));
-  };
+    return count || 0;
+  }, []);
 
   return (
     <CampamentoContext.Provider value={{
       campamentos, familias, refugiados,
-      historiasClinicas, atencionesMedicas, tratamientos,
       campamentoSeleccionado, loading, seleccionarCampamento,
       agregarCampamento, actualizarCampamento, eliminarCampamento,
       agregarFamilia, eliminarFamilia, agregarRefugiado, eliminarRefugiado, actualizarRefugiado,
-      agregarHistoriaClinica, actualizarHistoriaClinica,
-      agregarAtencionMedica, agregarTratamiento, eliminarTratamiento,
+      obtenerRefugiadosPaginados, contarRefugiados,
     }}>
       {children}
     </CampamentoContext.Provider>

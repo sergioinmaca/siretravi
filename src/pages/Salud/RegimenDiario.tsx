@@ -1,30 +1,54 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useCampamento } from '../../context/CampamentoContext';
 import { ArrowLeft, Pill, Clock, Plus, Trash2 } from 'lucide-react';
 import TratamientoModal from '../../components/salud/TratamientoModal';
+import { obtenerHistoriasClinicas, obtenerTratamientos, eliminarTratamiento } from '../../lib/salud';
+import type { HistoriaClinica, Tratamiento } from '../../types';
 
 export default function RegimenDiario() {
   const navigate = useNavigate();
-  const { campamentoSeleccionado, refugiados, historiasClinicas, tratamientos, eliminarTratamiento } = useCampamento();
+  const { campamentoSeleccionado, refugiados } = useCampamento();
   const { tienePermisoPorCampamento } = useAuth();
   const campId = campamentoSeleccionado?.id || '';
   const [tratamientoModalOpen, setTratamientoModalOpen] = useState(false);
   const [selectedHCId, setSelectedHCId] = useState('');
   const [selectedNombre, setSelectedNombre] = useState('');
+  const [historias, setHistorias] = useState<HistoriaClinica[]>([]);
+  const [tratamientos, setTratamientos] = useState<Tratamiento[]>([]);
+
+  useEffect(() => {
+    if (!campId) return;
+    obtenerHistoriasClinicas(campId).then(hcs => {
+      setHistorias(hcs);
+      const ids = hcs.map(h => h.id);
+      if (ids.length > 0) {
+        obtenerTratamientos(ids).then(setTratamientos);
+      }
+    });
+  }, [campId]);
 
   const campRefugiados = refugiados.filter(r => r.campamento_id === campId);
 
   const pacientesCronicos = campRefugiados.filter(r => r.enfermedad_cronica);
 
   const getHCForRefugiado = (refugiadoId: string) =>
-    historiasClinicas.find(hc => hc.refugiado_id === refugiadoId);
+    historias.find(hc => hc.refugiado_id === refugiadoId);
 
   const getTratamientosForHC = (hcId: string) =>
     tratamientos
       .filter(t => t.historia_clinica_id === hcId)
       .sort((a, b) => a.hora.localeCompare(b.hora));
+
+  const handleEliminarTratamiento = async (id: string) => {
+    try {
+      await eliminarTratamiento(id);
+      setTratamientos(prev => prev.filter(t => t.id !== id));
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const openTratamiento = (hcId: string, nombre: string) => {
     setSelectedHCId(hcId);
@@ -98,7 +122,7 @@ export default function RegimenDiario() {
                         </div>
                         {tienePermisoPorCampamento('Salud', campId, 'Eliminar') && (
                           <button
-                            onClick={() => eliminarTratamiento(tr.id)}
+                            onClick={() => handleEliminarTratamiento(tr.id)}
                             className="p-1 hover:bg-red-100 rounded-lg transition-colors"
                             title="Eliminar tratamiento"
                           >
