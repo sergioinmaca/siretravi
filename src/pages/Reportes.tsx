@@ -8,7 +8,7 @@ import html2canvas from 'html2canvas';
 import pptxgen from 'pptxgenjs';
 
 export default function Reportes() {
-  const { campamentoSeleccionado, refugiados = [], familias = [] } = useCampamento();
+  const { campamentoSeleccionado, refugiados = [], familias = [], historiasClinicas = [] } = useCampamento();
   const { tienePermisoPorCampamento } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
   const [logoKidsError, setLogoKidsError] = useState(false);
@@ -162,6 +162,45 @@ export default function Reportes() {
       totalNNA: nna_femenina + nna_masculino
     };
   }, [refugiadosDelCampamento, familiasDelCampamento]);
+
+  // ── Datos para Reporte de Discapacitados ─────────────────────────────────
+  const discapacitadosReporte = useMemo(() => {
+    const hoy = new Date();
+    return refugiadosDelCampamento
+      .filter(r => r.discapacidad)
+      .map(r => {
+        const nacimiento = new Date(r.fecha_nacimiento);
+        let edad = hoy.getFullYear() - nacimiento.getFullYear();
+        const mes = hoy.getMonth() - nacimiento.getMonth();
+        if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
+          edad--;
+        }
+        const hc = historiasClinicas.find(h => h.refugiado_id === r.id);
+        return {
+          ...r,
+          edad,
+          tipo_discapacidad: hc?.tipo_discapacidad || 'No especificada',
+        };
+      })
+      .sort((a, b) => {
+        const ca = parseInt(a.nro_cama || '9999');
+        const cb = parseInt(b.nro_cama || '9999');
+        return ca - cb;
+      });
+  }, [refugiadosDelCampamento, historiasClinicas]);
+
+  // ── Agrupación de discapacidades para gráfico de tortas ────────────────────
+  const discapacidadGrupos = useMemo(() => {
+    const COLORS = ['#EF4444', '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#06B6D4', '#EC4899', '#F97316'];
+    const map = new Map<string, number>();
+    discapacitadosReporte.forEach(r => {
+      const tipo = r.tipo_discapacidad;
+      map.set(tipo, (map.get(tipo) || 0) + 1);
+    });
+    return Array.from(map.entries())
+      .map(([nombre, count], idx) => ({ nombre, count, color: COLORS[idx % COLORS.length] }))
+      .sort((a, b) => b.count - a.count);
+  }, [discapacitadosReporte]);
 
   // SVG de borde bandera decorativa nacional para el reporte
   const BorderDecoration = () => (
@@ -435,6 +474,34 @@ export default function Reportes() {
             </button>
             <button
               onClick={() => handleExportPPTX('reporte-nna-render', `Reporte_NNA_${campamentoSeleccionado?.nombre.replace(/\s+/g, '_')}`)}
+              disabled={!campamentoSeleccionado || isGenerating}
+              className="flex-1 flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50"
+            >
+              <Presentation size={18} />
+              Exportar PowerPoint
+            </button>
+          </div>
+        </div>
+
+        {/* Card 3: Reporte de Discapacitados */}
+        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
+          <div>
+            <h3 className="text-lg font-bold text-slate-800 mb-2">Reporte de Discapacitados</h3>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Listado completo de personas con discapacidad registradas en el campamento. Incluye datos personales, ubicación de cama y tipo de discapacidad.
+            </p>
+          </div>
+          <div className="flex gap-4 mt-6 pt-4 border-t border-slate-50">
+            <button
+              onClick={() => handleExportPDF('reporte-discapacitados-render', `Reporte_Discapacitados_${campamentoSeleccionado?.nombre.replace(/\s+/g, '_')}`)}
+              disabled={!campamentoSeleccionado || isGenerating}
+              className="flex-1 flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50"
+            >
+              <FileText size={18} />
+              Exportar PDF
+            </button>
+            <button
+              onClick={() => handleExportPPTX('reporte-discapacitados-render', `Reporte_Discapacitados_${campamentoSeleccionado?.nombre.replace(/\s+/g, '_')}`)}
               disabled={!campamentoSeleccionado || isGenerating}
               className="flex-1 flex items-center justify-center gap-2 bg-orange-600 hover:bg-orange-700 text-white py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50"
             >
@@ -737,6 +804,146 @@ export default function Reportes() {
             </div>
 
           </div>
+
+          {/* REPORTE 3: DISCAPACITADOS */}
+          {(() => {
+            const ROWS_PER_PAGE = 11;
+            const total = discapacitadosReporte.length;
+            const totalPaginas = Math.max(1, Math.ceil(total / ROWS_PER_PAGE));
+            const pages = Array.from({ length: totalPaginas }, (_, i) =>
+              discapacitadosReporte.slice(i * ROWS_PER_PAGE, (i + 1) * ROWS_PER_PAGE)
+            );
+
+            const renderDonutChart = () => {
+              const cx = 110;
+              const cy = 110;
+              const outerR = 70;
+              const innerR = 42;
+              const circ = 2 * Math.PI * outerR;
+              let dashOffset = 0;
+
+              if (discapacidadGrupos.length === 0) {
+                return (
+                  <svg width="300" height="230" viewBox="0 0 300 230" className="mx-auto">
+                    <circle cx={cx} cy={cy} r={outerR} fill="transparent" stroke="#E2E8F0" strokeWidth={outerR - innerR} />
+                    <circle cx={cx} cy={cy} r={innerR} fill="white" />
+                    <text x={cx} y={cy - 5} textAnchor="middle" className="text-[11px] font-bold fill-slate-500">Sin datos</text>
+                  </svg>
+                );
+              }
+
+              const segments = discapacidadGrupos.map(g => {
+                const pct = g.count / total;
+                const dashLen = pct * circ;
+                const seg = { ...g, dashLen, dashOffset };
+                dashOffset -= dashLen;
+                return seg;
+              });
+
+              return (
+                <svg width="300" height="230" viewBox="0 0 300 230" className="mx-auto">
+                  {segments.map((seg, i) => (
+                    <circle
+                      key={i}
+                      cx={cx}
+                      cy={cy}
+                      r={outerR}
+                      fill="transparent"
+                      stroke={seg.color}
+                      strokeWidth={outerR - innerR}
+                      strokeDasharray={`${seg.dashLen} ${circ - seg.dashLen}`}
+                      strokeDashoffset={seg.dashOffset}
+                      transform={`rotate(-90 ${cx} ${cy})`}
+                    />
+                  ))}
+                  <circle cx={cx} cy={cy} r={innerR} fill="white" />
+                  <text x={cx} y={cy - 6} textAnchor="middle" style={{ fontSize: '22px', fontWeight: 800, fill: '#1E293B' }}>{total}</text>
+                  <text x={cx} y={cy + 10} textAnchor="middle" style={{ fontSize: '9px', fontWeight: 600, fill: '#64748B' }}>TOTAL</text>
+                </svg>
+              );
+            };
+
+            const renderDonutLegend = () => (
+              <div className="flex flex-wrap gap-x-6 gap-y-1.5 max-w-[400px]">
+                {discapacidadGrupos.map((g, i) => (
+                  <div key={i} className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: g.color }} />
+                    <span className="text-[11px] text-slate-600">{g.nombre}</span>
+                    <span className="text-[11px] font-bold text-slate-800">{g.count}</span>
+                  </div>
+                ))}
+              </div>
+            );
+
+            return (
+              <div id="reporte-discapacitados-render" className="flex flex-col">
+                {pages.map((chunk, pageIdx) => (
+                  <div key={pageIdx} className="report-page w-[1120px] h-[790px] bg-white relative flex flex-col justify-between pt-8 px-12 pb-[43px] overflow-hidden">
+                    <BorderDecoration />
+
+                    <div className="text-center mt-0 z-10">
+                      <h2 className="text-[22px] font-black text-slate-800 uppercase tracking-wide">
+                        {campamentoSeleccionado.nombre}
+                      </h2>
+                      <h3 className="text-[13px] font-bold text-slate-600 uppercase tracking-wider mt-1.5">
+                        Reporte de Personas con Discapacidad{' '}
+                        <span className="text-slate-400">—</span>{' '}
+                        Total: <span className="font-black text-[#C21807]">{total}</span>
+                        {totalPaginas > 1 ? <span className="text-xs text-slate-400 ml-2">· Página {pageIdx + 1} de {totalPaginas}</span> : null}
+                      </h3>
+                    </div>
+
+                    <div className="px-8 mt-2 z-10">
+                      <table className="w-full border-collapse border border-slate-300 text-slate-800">
+                        <thead>
+                          <tr className="bg-slate-50 border-b border-slate-300">
+                            <th className="p-2.5 text-[11px] font-black tracking-wide text-slate-700 border-r border-slate-300 w-[100px]">CÓDIGO</th>
+                            <th className="p-2.5 text-[11px] font-black tracking-wide text-slate-700 border-r border-slate-300">NOMBRES Y APELLIDOS</th>
+                            <th className="p-2.5 text-[11px] font-black tracking-wide text-slate-700 border-r border-slate-300 w-[130px]">CÉDULA</th>
+                            <th className="p-2.5 text-[11px] font-black tracking-wide text-slate-700 border-r border-slate-300 w-[50px]">EDAD</th>
+                            <th className="p-2.5 text-[11px] font-black tracking-wide text-slate-700 border-r border-slate-300 w-[70px]">CAMA</th>
+                            <th className="p-2.5 text-[11px] font-black tracking-wide text-slate-700 w-[220px]">TIPO DISCAPACIDAD</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {chunk.map((r, idx) => (
+                            <tr key={r.id} className={`border-b border-slate-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                              <td className="p-2 text-xs font-mono text-center border-r border-slate-200">{r.codigo || '—'}</td>
+                              <td className="p-2 text-xs border-r border-slate-200">{r.nombres} {r.apellidos}</td>
+                              <td className="p-2 text-xs text-center border-r border-slate-200">{r.cedula ? r.cedula.toLocaleString() : '—'}</td>
+                              <td className="p-2 text-xs text-center border-r border-slate-200">{r.edad}</td>
+                              <td className="p-2 text-xs font-mono text-center border-r border-slate-200">{r.nro_cama || '—'}</td>
+                              <td className="p-2 text-xs">{r.tipo_discapacidad}</td>
+                            </tr>
+                          ))}
+                          {chunk.length < ROWS_PER_PAGE && Array.from({ length: ROWS_PER_PAGE - chunk.length }).map((_, i) => (
+                            <tr key={`empty-${i}`} className="border-b border-slate-200 h-[28px]">
+                              <td colSpan={6} className="border-r border-slate-200">&nbsp;</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="flex items-center justify-center gap-16 px-8 mt-3 z-10">
+                      <div className="shrink-0">
+                        {renderDonutChart()}
+                      </div>
+                      <div className="flex-1">
+                        {renderDonutLegend()}
+                      </div>
+                    </div>
+
+                    <div className="flex items-end justify-between px-10 z-10 shrink-0">
+                      <img src="/logorepublica.png" alt="Logo República" className="h-12 w-auto object-contain" />
+                      <img src="/logovererojo.png" alt="Logo Venezuela" className="h-12 w-auto object-contain" />
+                      <img src="/logoalcadia.png" alt="Logo Alcaldía" className="h-12 w-auto object-contain" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
 
         </div>
       )}

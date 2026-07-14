@@ -1,8 +1,9 @@
-import { useState, useMemo } from 'react';
-import { Users, BedDouble, Tent, Home, Baby, Heart, Sparkles, ShieldOff } from 'lucide-react';
+import { useState, useMemo, useRef, useCallback } from 'react';
+import { Users, BedDouble, Tent, Home, Baby, Heart, Sparkles, ShieldOff, FileDown, Loader2 } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
 import CroquisViewer, { countElements } from '../components/constructor/CroquisViewer';
+import jsPDF from 'jspdf';
 
 export default function Inicio() {
   const { campamentoSeleccionado, refugiados = [], familias = [] } = useCampamento();
@@ -22,10 +23,10 @@ export default function Inicio() {
     );
   }
 
-  const refugiadosDelCampamento = campamentoSeleccionado 
+  const refugiadosDelCampamento = campamentoSeleccionado
     ? refugiados.filter(r => r.campamento_id === campamentoSeleccionado.id)
     : [];
-  
+
   const occupiedBeds = useMemo(() => {
     return refugiadosDelCampamento
       .map(r => r.nro_cama)
@@ -46,7 +47,7 @@ export default function Inicio() {
   const totalRefugiados = refugiadosDelCampamento.length;
   const totalHombres = refugiadosDelCampamento.filter(r => r.genero === true).length;
   const totalMujeres = refugiadosDelCampamento.filter(r => r.genero === false).length;
-  
+
   const totalFamilias = campamentoSeleccionado
     ? familias.filter(f => f.campamento_id === campamentoSeleccionado.id).length
     : 0;
@@ -148,6 +149,113 @@ export default function Inicio() {
     { literas: 0, individuales: 0, duplex: 0 }
   );
 
+  const [exportandoPDF, setExportandoPDF] = useState(false);
+  const croquisCanvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
+
+  // ── Exportar PDF de Distribución ──────────────────────────────────────────
+  const handleExportCroquisPDF = useCallback(async () => {
+    setExportandoPDF(true);
+    try {
+      const pdf = new jsPDF('l', 'mm', 'a4');
+      const pageW = 297;
+      const pageH = 210;
+      const margin = 15;
+      const usableW = pageW - margin * 2;
+      const imgPadding = 2;
+      const imgMaxW = usableW - imgPadding * 2;
+      const now = new Date();
+      const fecha = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
+      const nombreCamp = campamentoSeleccionado?.nombre || 'Campamento';
+      const totalCamas = tipoContabilizacion === 'cama'
+        ? totalesCroquis.literas * 2 + totalesCroquis.individuales + totalesCroquis.duplex
+        : totalesCroquis.literas + totalesCroquis.individuales + totalesCroquis.duplex;
+      const totalOcupadas = occupiedBeds.length;
+      const pctOcup = totalCamas > 0 ? Math.round((totalOcupadas / totalCamas) * 100) : 0;
+
+      const drawStatsHeader = (isFirstPage: boolean) => {
+        if (isFirstPage) {
+          pdf.setFontSize(14);
+          pdf.setTextColor(30, 41, 59);
+          pdf.text(`Distribuci\u00f3n \u2014 ${nombreCamp}`, margin, margin + 6);
+          pdf.setFontSize(9);
+          pdf.setTextColor(107, 114, 128);
+          pdf.text(`Emitido: ${fecha}`, pageW - margin, margin + 6, { align: 'right' });
+
+          pdf.setDrawColor(229, 231, 235);
+          pdf.setLineWidth(0.5);
+          pdf.line(margin, margin + 10, pageW - margin, margin + 10);
+        } else {
+          pdf.setDrawColor(229, 231, 235);
+          pdf.setLineWidth(0.3);
+          pdf.line(margin, margin + 4, pageW - margin, margin + 4);
+        }
+
+        const statsY = isFirstPage ? margin + 16 : margin + 10;
+        const colW = usableW / 5;
+        const statItems = [
+          { label: 'Literas', value: String(totalesCroquis.literas), sub: tipoContabilizacion === 'cama' ? `(${totalesCroquis.literas * 2} camas)` : `(${totalesCroquis.literas} elem.)`, color: '#3B82F6' },
+          { label: 'Individuales', value: String(totalesCroquis.individuales), sub: `(${totalesCroquis.individuales} camas)`, color: '#10B981' },
+          { label: 'Duplex', value: String(totalesCroquis.duplex), sub: `(${totalesCroquis.duplex} camas)`, color: '#F59E0B' },
+          { label: 'Total Camas', value: String(totalCamas), sub: '', color: '#6B7280' },
+          { label: 'Ocupadas', value: `${totalOcupadas} (${pctOcup}%)`, sub: '', color: '#EF4444' },
+        ];
+
+        statItems.forEach((item, i) => {
+          const cx = margin + colW * i + colW / 2;
+          pdf.setFillColor(item.color);
+          pdf.circle(cx - 1, statsY + 1.5, 2.5, 'F');
+          pdf.setFontSize(13);
+          pdf.setTextColor(30, 41, 59);
+          pdf.text(item.value, cx + 4, statsY + 2.5);
+          pdf.setFontSize(7);
+          pdf.setTextColor(107, 114, 128);
+          const valueW = pdf.getTextWidth(item.value);
+          pdf.text(item.label, cx + 4, statsY + 6);
+          if (item.sub) {
+            pdf.setFontSize(6.5);
+            pdf.setTextColor(156, 163, 175);
+            pdf.text(item.sub, cx + 4 + valueW + 3, statsY + 2.5);
+          }
+        });
+
+        return statsY + 10;
+      };
+
+      let croquisStartY = drawStatsHeader(true);
+
+      for (let i = 0; i < carpas.length; i++) {
+        if (i > 0) {
+          pdf.addPage();
+          croquisStartY = drawStatsHeader(false);
+        }
+
+        // Nombre de la carpa
+        pdf.setFontSize(10);
+        pdf.setTextColor(55, 65, 81);
+        pdf.text(`Carpa: ${carpas[i].nombre}`, margin, croquisStartY);
+        const labelBottom = croquisStartY + 3;
+
+        const cvs = croquisCanvasRefs.current[i];
+        if (cvs) {
+          const imgData = cvs.toDataURL('image/png');
+          const imgH = (cvs.height / cvs.width) * imgMaxW;
+          const croquisY = labelBottom + 4;
+          const availableH = pageH - croquisY - margin;
+          const finalH = Math.min(imgH, availableH);
+          const finalW = finalH < imgH ? (finalH / cvs.height) * cvs.width : imgMaxW;
+          const imgX = margin + imgPadding + (imgMaxW - finalW) / 2;
+          pdf.addImage(imgData, 'PNG', imgX, croquisY, finalW, finalH);
+        }
+      }
+
+      pdf.save(`distribucion-${nombreCamp.replace(/\s+/g, '-')}-${fecha}.pdf`);
+    } catch (err) {
+      console.error('Error generando PDF de distribuci\u00f3n:', err);
+    } finally {
+      setExportandoPDF(false);
+    }
+  }, [campamentoSeleccionado, totalesCroquis, occupiedBeds, tipoContabilizacion, carpas]);
+
   return (
     <div className="space-y-6">
       <div className="mb-8">
@@ -185,7 +293,7 @@ export default function Inicio() {
             </p>
           </div>
         </div>
-        
+
         {/* Capacidad / Camas */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow">
           <div className="p-4 bg-caracas-green/10 rounded-xl text-caracas-green shrink-0">
@@ -265,7 +373,7 @@ export default function Inicio() {
           </p>
         </div>
       </div>
-      
+
       {/* Ranking de Procedencias */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
         <div className="flex items-center gap-2 mb-6">
@@ -325,6 +433,22 @@ export default function Inicio() {
         <h2 className="text-lg font-semibold text-gray-800 mb-2">
           Distribución del Campamento ({campamentoSeleccionado?.nombre || 'Ninguno'})
         </h2>
+        <button
+          type="button"
+          onClick={handleExportCroquisPDF}
+          disabled={exportandoPDF}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm mb-4 ${exportandoPDF
+            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+            : 'bg-caracas-red hover:bg-red-800 text-white'
+            }`}
+        >
+          {exportandoPDF ? (
+            <Loader2 size={16} className="animate-spin" />
+          ) : (
+            <FileDown size={16} />
+          )}
+          {exportandoPDF ? 'Generando...' : 'Exportar PDF Impresión'}
+        </button>
         {/* Resumen real desde croquis */}
         {(totalesCroquis.literas > 0 || totalesCroquis.individuales > 0 || totalesCroquis.duplex > 0) && (
           <div className="flex items-center gap-4 text-sm text-gray-500 mb-6 pb-4 border-b border-gray-100">
@@ -345,8 +469,9 @@ export default function Inicio() {
 
         {carpasConOffset.length > 0 ? (
           <div className="space-y-8">
-            {carpasConOffset.map(({ carpa, offset }) => (
+            {carpasConOffset.map(({ carpa, offset }, index) => (
               <CroquisViewer
+                ref={(el) => { croquisCanvasRefs.current[index] = el; }}
                 key={carpa.id}
                 croquisData={carpa.croquis_data || '{}'}
                 carpaNombre={carpa.nombre}
