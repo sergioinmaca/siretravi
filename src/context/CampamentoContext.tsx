@@ -13,6 +13,7 @@ interface CampamentoContextType {
   tratamientos: Tratamiento[];
   campamentoSeleccionado: Campamento | null;
   loading: boolean;
+  errorCarga: string | null;
   seleccionarCampamento: (id: string) => void;
   agregarCampamento: (nuevo: Campamento) => Promise<void>;
   actualizarCampamento: (id: string, actualizado: Campamento) => Promise<void>;
@@ -68,157 +69,191 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
   const [tratamientos, setTratamientos] = useState<Tratamiento[]>([]);
   const [campamentoSeleccionado, setCampamentoSeleccionado] = useState<Campamento | null>(null);
   const [loading, setLoading] = useState(true);
+  const [errorCarga, setErrorCarga] = useState<string | null>(null);
 
   // ── Carga inicial de datos desde Supabase ──────────────────────────────────
   useEffect(() => {
-    async function cargarDatos() {
+    let cancelado = false;
+
+    async function ejecutarQueries() {
+      const results = await Promise.all([
+        supabase.from('campamentos').select('*').order('created_at', { ascending: true }),
+        supabase.from('carpas').select('*').order('orden', { ascending: true }),
+        supabase.from('familias').select('*').order('created_at', { ascending: true }),
+        supabase.from('refugiados').select('*').order('created_at', { ascending: true }),
+        supabase.from('historias_clinicas').select('*').order('created_at', { ascending: true }),
+        supabase.from('atenciones_medicas').select('*').order('fecha_atencion', { ascending: false }),
+        supabase.from('tratamientos').select('*').order('hora', { ascending: true }),
+      ]);
+
+      const errores = results.filter(r => r.error !== null);
+      return { results, errores };
+    }
+
+    async function cargarDatos(intento: number = 1) {
+      if (cancelado) return;
       setLoading(true);
-      try {
-        // Traer campamentos y carpas en paralelo
-        const [{ data: campsData }, { data: carpasData }, { data: famData }, { data: refData }, { data: hcData }, { data: atData }, { data: trData }] = await Promise.all([
-          supabase.from('campamentos').select('*').order('created_at', { ascending: true }),
-          supabase.from('carpas').select('*').order('orden', { ascending: true }),
-          supabase.from('familias').select('*').order('created_at', { ascending: true }),
-          supabase.from('refugiados').select('*').order('created_at', { ascending: true }),
-          supabase.from('historias_clinicas').select('*').order('created_at', { ascending: true }),
-          supabase.from('atenciones_medicas').select('*').order('fecha_atencion', { ascending: false }),
-          supabase.from('tratamientos').select('*').order('hora', { ascending: true }),
-        ]);
+      setErrorCarga(null);
 
-        const campsRows = (campsData || []) as Record<string, unknown>[];
-        const carpasRows = (carpasData || []) as Record<string, unknown>[];
-        const famRows = (famData || []) as Record<string, unknown>[];
-        const refRows = (refData || []) as Record<string, unknown>[];
-        const hcRows = (hcData || []) as Record<string, unknown>[];
-        const atRows = (atData || []) as Record<string, unknown>[];
-        const trRows = (trData || []) as Record<string, unknown>[];
+      let { results, errores } = await ejecutarQueries();
 
-        const campamentosMapped = campsRows.map(c => mapCampamento(c, carpasRows));
-
-        const familiasMapped: Familia[] = famRows.map(f => ({
-          id: f.id as string,
-          campamento_id: f.campamento_id as string,
-          nombre: f.nombre as string,
-        }));
-
-        const refugiadosMapped: Refugiado[] = refRows.map(r => ({
-          id: r.id as string,
-          campamento_id: r.campamento_id as string,
-          familia_id: (r.familia_id as string) || undefined,
-          codigo: (r.codigo as string) || '',
-          nombres: r.nombres as string,
-          apellidos: r.apellidos as string,
-          cedula: r.cedula as number | undefined,
-          genero: r.genero as boolean,
-          fecha_nacimiento: new Date(r.fecha_nacimiento as string),
-          es_jefe_familia: r.es_jefe_familia as boolean,
-          nro_cama: (r.nro_cama as string) || '',
-          procedencia: (r.procedencia as string) || '',
-          fecha_ingreso: r.fecha_ingreso ? new Date(r.fecha_ingreso as string) : undefined,
-          direccion_exacta: (r.direccion_exacta as string) || undefined,
-          discapacidad: r.discapacidad as boolean,
-          embarazo: r.embarazo as boolean,
-          tiempo_embarazo: r.tiempo_embarazo as number | undefined,
-          mascotas: r.mascotas as boolean,
-          tipo_mascota: (r.tipo_mascota as string) || undefined,
-          mascota_sexo: r.mascota_sexo as boolean | undefined,
-          mascota_raza: (r.mascota_raza as string) || undefined,
-          mascota_nombre: (r.mascota_nombre as string) || undefined,
-          mascota_edad: r.mascota_edad as number | undefined,
-          telefono: r.telefono as number | undefined,
-          profesion: (r.profesion as string) || undefined,
-          talla_camisa: (r.talla_camisa as string) || undefined,
-          talla_pantalon: (r.talla_pantalon as string) || undefined,
-          talla_zapatos: (r.talla_zapatos as string) || undefined,
-          alergias: r.alergias as boolean,
-          enfermedad_cronica: r.enfermedad_cronica as boolean,
-          lesion_sismo: r.lesion_sismo as boolean,
-          adulto_mayor_dependencia: r.adulto_mayor_dependencia as boolean,
-          lactante: r.lactante as boolean | undefined,
-          nivel_educativo: (r.nivel_educativo as string) || undefined,
-          condicion_vivienda: (r.condicion_vivienda as string) || undefined,
-          tenencia_vivienda: (r.tenencia_vivienda as string) || undefined,
-          ingreso_familiar: (r.ingreso_familiar as string) || undefined,
-          parentesco: (r.parentesco as string) || undefined,
-        }));
-
-        setCampamentos(campamentosMapped);
-        setFamilias(familiasMapped);
-        setRefugiados(refugiadosMapped);
-
-        const hcMapped: HistoriaClinica[] = hcRows.map(h => ({
-          id: h.id as string,
-          refugiado_id: h.refugiado_id as string,
-          tipo_discapacidad: (h.tipo_discapacidad as string) || undefined,
-          tipo_alergia: (h.tipo_alergia as string) || undefined,
-          medicamento_enfermedad: (h.medicamento_enfermedad as string) || undefined,
-          lesion_sismo_detalle: (h.lesion_sismo_detalle as string) || undefined,
-          adulto_mayor_detalle: (h.adulto_mayor_detalle as string) || undefined,
-          lactante_detalle: (h.lactante_detalle as string) || undefined,
-          enfermedades_previas: (h.enfermedades_previas as string) || undefined,
-          cirugias: (h.cirugias as string) || undefined,
-          examen_subjetivo: (h.examen_subjetivo as string) || undefined,
-          examen_objetivo: (h.examen_objetivo as string) || undefined,
-          examen_diagnostico: (h.examen_diagnostico as string) || undefined,
-          fecha_apertura: new Date(h.fecha_apertura as string),
-          created_at: new Date(h.created_at as string),
-          enf_cronica_1: (h.enf_cronica_1 as string) || undefined,
-          tratamiento_1: (h.tratamiento_1 as string) || undefined,
-          enf_cronica_2: (h.enf_cronica_2 as string) || undefined,
-          tratamiento_2: (h.tratamiento_2 as string) || undefined,
-          enf_cronica_3: (h.enf_cronica_3 as string) || undefined,
-          tratamiento_3: (h.tratamiento_3 as string) || undefined,
-          enf_cronica_4: (h.enf_cronica_4 as string) || undefined,
-          tratamiento_4: (h.tratamiento_4 as string) || undefined,
-          enf_cronica_5: (h.enf_cronica_5 as string) || undefined,
-          tratamiento_5: (h.tratamiento_5 as string) || undefined,
-          enf_cronica_6: (h.enf_cronica_6 as string) || undefined,
-          tratamiento_6: (h.tratamiento_6 as string) || undefined,
-          enf_cronica_7: (h.enf_cronica_7 as string) || undefined,
-          tratamiento_7: (h.tratamiento_7 as string) || undefined,
-          enf_cronica_8: (h.enf_cronica_8 as string) || undefined,
-          tratamiento_8: (h.tratamiento_8 as string) || undefined,
-          enf_cronica_9: (h.enf_cronica_9 as string) || undefined,
-          tratamiento_9: (h.tratamiento_9 as string) || undefined,
-          enf_cronica_10: (h.enf_cronica_10 as string) || undefined,
-          tratamiento_10: (h.tratamiento_10 as string) || undefined,
-        }));
-        setHistoriasClinicas(hcMapped);
-
-        const atMapped: AtencionMedica[] = atRows.map(a => ({
-          id: a.id as string,
-          historia_clinica_id: a.historia_clinica_id as string,
-          fecha_atencion: new Date(a.fecha_atencion as string),
-          presion_arterial: (a.presion_arterial as string) || undefined,
-          temperatura: a.temperatura as number | undefined,
-          frecuencia_cardiaca: a.frecuencia_cardiaca as number | undefined,
-          peso: a.peso as number | undefined,
-          talla: a.talla as number | undefined,
-          saturacion_oxigeno: a.saturacion_oxigeno as number | undefined,
-          observaciones: (a.observaciones as string) || undefined,
-          created_at: new Date(a.created_at as string),
-        }));
-        setAtencionesMedicas(atMapped);
-
-        const trMapped: Tratamiento[] = trRows.map(t => ({
-          id: t.id as string,
-          historia_clinica_id: t.historia_clinica_id as string,
-          medicamento: t.medicamento as string,
-          hora: t.hora as string,
-          dosis: (t.dosis as string) || undefined,
-          created_at: new Date(t.created_at as string),
-        }));
-        setTratamientos(trMapped);
-
-        // Auto-seleccionar el primero si existe
-        if (campamentosMapped.length > 0) {
-          setCampamentoSeleccionado(campamentosMapped[0]);
-        }
-      } catch (err) {
-        console.error('Error cargando datos:', err);
-      } finally {
-        setLoading(false);
+      if (errores.length > 0 && intento === 1) {
+        console.warn(`[CampamentoContext] ${errores.length} query(s) fallaron (intento 1), reintentando en 500ms...`, errores.map(e => e.error));
+        await new Promise(resolve => setTimeout(resolve, 500));
+        if (cancelado) return;
+        ({ results, errores } = await ejecutarQueries());
       }
+
+      if (errores.length > 0) {
+        console.error('[CampamentoContext] Las queries fallaron tras reintento:', errores.map(e => e.error));
+        if (!cancelado) {
+          setErrorCarga('Error al cargar los datos. Verifica tu conexión e intenta de nuevo.');
+          setLoading(false);
+        }
+        return;
+      }
+
+      if (cancelado) return;
+
+      const campsData = results[0].data;
+      const carpasData = results[1].data;
+      const famData = results[2].data;
+      const refData = results[3].data;
+      const hcData = results[4].data;
+      const atData = results[5].data;
+      const trData = results[6].data;
+
+      const campsRows = (campsData || []) as Record<string, unknown>[];
+      const carpasRows = (carpasData || []) as Record<string, unknown>[];
+      const famRows = (famData || []) as Record<string, unknown>[];
+      const refRows = (refData || []) as Record<string, unknown>[];
+      const hcRows = (hcData || []) as Record<string, unknown>[];
+      const atRows = (atData || []) as Record<string, unknown>[];
+      const trRows = (trData || []) as Record<string, unknown>[];
+
+      const campamentosMapped = campsRows.map(c => mapCampamento(c, carpasRows));
+
+      const familiasMapped: Familia[] = famRows.map(f => ({
+        id: f.id as string,
+        campamento_id: f.campamento_id as string,
+        nombre: f.nombre as string,
+      }));
+
+      const refugiadosMapped: Refugiado[] = refRows.map(r => ({
+        id: r.id as string,
+        campamento_id: r.campamento_id as string,
+        familia_id: (r.familia_id as string) || undefined,
+        codigo: (r.codigo as string) || '',
+        nombres: r.nombres as string,
+        apellidos: r.apellidos as string,
+        cedula: r.cedula as number | undefined,
+        genero: r.genero as boolean,
+        fecha_nacimiento: new Date(r.fecha_nacimiento as string),
+        es_jefe_familia: r.es_jefe_familia as boolean,
+        nro_cama: (r.nro_cama as string) || '',
+        procedencia: (r.procedencia as string) || '',
+        fecha_ingreso: r.fecha_ingreso ? new Date(r.fecha_ingreso as string) : undefined,
+        direccion_exacta: (r.direccion_exacta as string) || undefined,
+        discapacidad: r.discapacidad as boolean,
+        embarazo: r.embarazo as boolean,
+        tiempo_embarazo: r.tiempo_embarazo as number | undefined,
+        mascotas: r.mascotas as boolean,
+        tipo_mascota: (r.tipo_mascota as string) || undefined,
+        mascota_sexo: r.mascota_sexo as boolean | undefined,
+        mascota_raza: (r.mascota_raza as string) || undefined,
+        mascota_nombre: (r.mascota_nombre as string) || undefined,
+        mascota_edad: r.mascota_edad as number | undefined,
+        telefono: r.telefono as number | undefined,
+        profesion: (r.profesion as string) || undefined,
+        talla_camisa: (r.talla_camisa as string) || undefined,
+        talla_pantalon: (r.talla_pantalon as string) || undefined,
+        talla_zapatos: (r.talla_zapatos as string) || undefined,
+        alergias: r.alergias as boolean,
+        enfermedad_cronica: r.enfermedad_cronica as boolean,
+        lesion_sismo: r.lesion_sismo as boolean,
+        adulto_mayor_dependencia: r.adulto_mayor_dependencia as boolean,
+        lactante: r.lactante as boolean | undefined,
+        nivel_educativo: (r.nivel_educativo as string) || undefined,
+        condicion_vivienda: (r.condicion_vivienda as string) || undefined,
+        tenencia_vivienda: (r.tenencia_vivienda as string) || undefined,
+        ingreso_familiar: (r.ingreso_familiar as string) || undefined,
+        parentesco: (r.parentesco as string) || undefined,
+      }));
+
+      setCampamentos(campamentosMapped);
+      setFamilias(familiasMapped);
+      setRefugiados(refugiadosMapped);
+
+      const hcMapped: HistoriaClinica[] = hcRows.map(h => ({
+        id: h.id as string,
+        refugiado_id: h.refugiado_id as string,
+        tipo_discapacidad: (h.tipo_discapacidad as string) || undefined,
+        tipo_alergia: (h.tipo_alergia as string) || undefined,
+        medicamento_enfermedad: (h.medicamento_enfermedad as string) || undefined,
+        lesion_sismo_detalle: (h.lesion_sismo_detalle as string) || undefined,
+        adulto_mayor_detalle: (h.adulto_mayor_detalle as string) || undefined,
+        lactante_detalle: (h.lactante_detalle as string) || undefined,
+        enfermedades_previas: (h.enfermedades_previas as string) || undefined,
+        cirugias: (h.cirugias as string) || undefined,
+        examen_subjetivo: (h.examen_subjetivo as string) || undefined,
+        examen_objetivo: (h.examen_objetivo as string) || undefined,
+        examen_diagnostico: (h.examen_diagnostico as string) || undefined,
+        fecha_apertura: new Date(h.fecha_apertura as string),
+        created_at: new Date(h.created_at as string),
+        enf_cronica_1: (h.enf_cronica_1 as string) || undefined,
+        tratamiento_1: (h.tratamiento_1 as string) || undefined,
+        enf_cronica_2: (h.enf_cronica_2 as string) || undefined,
+        tratamiento_2: (h.tratamiento_2 as string) || undefined,
+        enf_cronica_3: (h.enf_cronica_3 as string) || undefined,
+        tratamiento_3: (h.tratamiento_3 as string) || undefined,
+        enf_cronica_4: (h.enf_cronica_4 as string) || undefined,
+        tratamiento_4: (h.tratamiento_4 as string) || undefined,
+        enf_cronica_5: (h.enf_cronica_5 as string) || undefined,
+        tratamiento_5: (h.tratamiento_5 as string) || undefined,
+        enf_cronica_6: (h.enf_cronica_6 as string) || undefined,
+        tratamiento_6: (h.tratamiento_6 as string) || undefined,
+        enf_cronica_7: (h.enf_cronica_7 as string) || undefined,
+        tratamiento_7: (h.tratamiento_7 as string) || undefined,
+        enf_cronica_8: (h.enf_cronica_8 as string) || undefined,
+        tratamiento_8: (h.tratamiento_8 as string) || undefined,
+        enf_cronica_9: (h.enf_cronica_9 as string) || undefined,
+        tratamiento_9: (h.tratamiento_9 as string) || undefined,
+        enf_cronica_10: (h.enf_cronica_10 as string) || undefined,
+        tratamiento_10: (h.tratamiento_10 as string) || undefined,
+      }));
+      setHistoriasClinicas(hcMapped);
+
+      const atMapped: AtencionMedica[] = atRows.map(a => ({
+        id: a.id as string,
+        historia_clinica_id: a.historia_clinica_id as string,
+        fecha_atencion: new Date(a.fecha_atencion as string),
+        presion_arterial: (a.presion_arterial as string) || undefined,
+        temperatura: a.temperatura as number | undefined,
+        frecuencia_cardiaca: a.frecuencia_cardiaca as number | undefined,
+        peso: a.peso as number | undefined,
+        talla: a.talla as number | undefined,
+        saturacion_oxigeno: a.saturacion_oxigeno as number | undefined,
+        observaciones: (a.observaciones as string) || undefined,
+        created_at: new Date(a.created_at as string),
+      }));
+      setAtencionesMedicas(atMapped);
+
+      const trMapped: Tratamiento[] = trRows.map(t => ({
+        id: t.id as string,
+        historia_clinica_id: t.historia_clinica_id as string,
+        medicamento: t.medicamento as string,
+        hora: t.hora as string,
+        dosis: (t.dosis as string) || undefined,
+        created_at: new Date(t.created_at as string),
+      }));
+      setTratamientos(trMapped);
+
+      // Auto-seleccionar el primero si existe
+      if (campamentosMapped.length > 0) {
+        setCampamentoSeleccionado(campamentosMapped[0]);
+      }
+
+      setLoading(false);
     }
     cargarDatos();
 
@@ -1038,7 +1073,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
     <CampamentoContext.Provider value={{
       campamentos, familias, refugiados,
       historiasClinicas, atencionesMedicas, tratamientos,
-      campamentoSeleccionado, loading, seleccionarCampamento,
+      campamentoSeleccionado, loading, errorCarga, seleccionarCampamento,
       agregarCampamento, actualizarCampamento, eliminarCampamento,
       agregarFamilia, eliminarFamilia, agregarRefugiado, eliminarRefugiado, actualizarRefugiado,
       agregarHistoriaClinica, actualizarHistoriaClinica,

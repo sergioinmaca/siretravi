@@ -15,6 +15,7 @@ import {
   UserCircle,
   HeartPulse,
   Calendar,
+  Loader2,
 } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
@@ -45,7 +46,7 @@ export default function MainLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
-  const { campamentos, campamentoSeleccionado, seleccionarCampamento } = useCampamento();
+  const { campamentos, campamentoSeleccionado, seleccionarCampamento, loading, errorCarga } = useCampamento();
   const { usuarioActual, tienePermiso, obtenerCampamentosPermitidos, logout } = useAuth();
 
   // Filtrar menú según permisos (MASTER ve todo)
@@ -80,6 +81,33 @@ export default function MainLayout() {
     logout();
     navigate('/login');
   };
+
+  if (loading || errorCarga) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-caracas-light">
+        <div className="text-center">
+          {loading && (
+            <>
+              <Loader2 className="animate-spin text-caracas-red mx-auto" size={48} />
+              <p className="mt-4 text-gray-500 font-medium">Cargando datos...</p>
+            </>
+          )}
+          {errorCarga && (
+            <div className="bg-red-50 border border-red-200 text-red-700 p-6 rounded-2xl max-w-md">
+              <p className="font-semibold text-lg mb-1">Error al cargar datos</p>
+              <p className="text-sm">{errorCarga}</p>
+              <button
+                onClick={() => window.location.reload()}
+                className="mt-4 px-4 py-2 bg-caracas-red text-white rounded-lg text-sm font-medium hover:bg-red-800 transition-colors"
+              >
+                Reintentar
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-caracas-light overflow-hidden">

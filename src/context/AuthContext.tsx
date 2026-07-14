@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import type { Usuario, Permiso } from '../types';
@@ -34,42 +34,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [usuarioActual, setUsuarioActual] = useState<Usuario | null>(null);
   const [permisos, setPermisos] = useState<Permiso[]>([]);
   const [cargando, setCargando] = useState(true);
+  const authIniciado = useRef(false);
+
+  const cargarDatosUsuario = useCallback(async (userId: string): Promise<boolean> => {
+    const { data: usuario } = await supabase
+      .from('usuarios')
+      .select('*')
+      .eq('auth_id', userId)
+      .single();
+
+    if (usuario && usuario.activo) {
+      setUsuarioActual(usuario as Usuario);
+      const { data: permisosData } = await supabase
+        .from('permisos')
+        .select('*')
+        .eq('usuario_id', usuario.id);
+      setPermisos((permisosData || []) as Permiso[]);
+      return true;
+    } else {
+      await supabase.auth.signOut();
+      return false;
+    }
+  }, []);
 
   useEffect(() => {
     const initAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        const { data: usuario } = await supabase
-          .from('usuarios')
-          .select('*')
-          .eq('auth_id', session.user.id)
-          .single();
-          
-        if (usuario && usuario.activo) {
-          setUsuarioActual(usuario as Usuario);
-          const { data: permisosData } = await supabase
-            .from('permisos')
-            .select('*')
-            .eq('usuario_id', usuario.id);
-          setPermisos((permisosData || []) as Permiso[]);
-        } else {
-          await supabase.auth.signOut();
-        }
+        await cargarDatosUsuario(session.user.id);
       }
+      authIniciado.current = true;
       setCargando(false);
     };
-    
+
     initAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!session) {
         setUsuarioActual(null);
         setPermisos([]);
+      } else if (event === 'TOKEN_REFRESHED' && authIniciado.current) {
+        await cargarDatosUsuario(session.user.id);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [cargarDatosUsuario]);
 
   const login = useCallback(async (nickname: string, clave: string): Promise<{ exito: boolean; error?: string }> => {
     try {
