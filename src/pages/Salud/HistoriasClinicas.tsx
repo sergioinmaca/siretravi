@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useCampamento } from '../../context/CampamentoContext';
@@ -7,10 +7,11 @@ import HistoriaClinicaModal from '../../components/salud/HistoriaClinicaModal';
 import AtencionMedicaModal from '../../components/salud/AtencionMedicaModal';
 import type { HistoriaClinica } from '../../types';
 import { toDisplayDate } from '../../lib/formatDate';
+import { obtenerHistoriasClinicas } from '../../lib/salud';
 
 export default function HistoriasClinicas() {
   const navigate = useNavigate();
-  const { campamentoSeleccionado, refugiados, historiasClinicas } = useCampamento();
+  const { campamentoSeleccionado, refugiados } = useCampamento();
   const { tienePermisoPorCampamento } = useAuth();
   const campId = campamentoSeleccionado?.id || '';
   const [search, setSearch] = useState('');
@@ -21,19 +22,23 @@ export default function HistoriasClinicas() {
   const [atencionHCId, setAtencionHCId] = useState('');
   const [atencionNombre, setAtencionNombre] = useState('');
   const [contextMenuOpen, setContextMenuOpen] = useState<string | null>(null);
+  const [historias, setHistorias] = useState<HistoriaClinica[]>([]);
   const perPage = 15;
 
+  useEffect(() => {
+    if (campId) {
+      obtenerHistoriasClinicas(campId).then(setHistorias);
+    }
+  }, [campId]);
+
   const campRefugiados = refugiados.filter(r => r.campamento_id === campId);
-  const campHistorias = historiasClinicas.filter(hc =>
-    campRefugiados.some(r => r.id === hc.refugiado_id)
-  );
 
   const hcConRefugiado = useMemo(() => {
-    return campHistorias.map(hc => {
+    return historias.map(hc => {
       const ref = campRefugiados.find(r => r.id === hc.refugiado_id);
       return { historia: hc, refugiado: ref };
     });
-  }, [campHistorias, campRefugiados]);
+  }, [historias, campRefugiados]);
 
   const filtered = hcConRefugiado.filter(item => {
     if (!search) return true;

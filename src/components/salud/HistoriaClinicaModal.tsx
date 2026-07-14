@@ -1,9 +1,11 @@
 import { useState, useEffect, useCallback } from 'react';
+import { supabase } from '../../lib/supabase';
 import { useCampamento } from '../../context/CampamentoContext';
 import { X, Save, Search, User, Users, MapPin, Stethoscope, Accessibility, AlertCircle } from 'lucide-react';
 import type { Refugiado, HistoriaClinica } from '../../types';
 import { formatAge } from '../../lib/formatAge';
 import { toDateInput, toDisplayDate } from '../../lib/formatDate';
+import { agregarHistoriaClinica, actualizarHistoriaClinica } from '../../lib/salud';
 
 interface HistoriaClinicaModalProps {
   isOpen: boolean;
@@ -80,7 +82,7 @@ function rellenarEnfCronicasDesdeHC(hc: HistoriaClinica): { lista: { enfermedad:
 }
 
 export default function HistoriaClinicaModal({ isOpen, onClose, historiaToEdit, refugiadoPreseleccionado }: HistoriaClinicaModalProps) {
-  const { campamentoSeleccionado, refugiados, familias, historiasClinicas, agregarHistoriaClinica, actualizarHistoriaClinica, actualizarRefugiado } = useCampamento();
+  const { campamentoSeleccionado, refugiados, familias, actualizarRefugiado } = useCampamento();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -159,7 +161,7 @@ export default function HistoriaClinicaModal({ isOpen, onClose, historiaToEdit, 
     }
   }, [isOpen, historiaToEdit, refugiadoPreseleccionado, refugiados, resetForm]);
 
-  const buscarRefugiado = () => {
+  const buscarRefugiado = async () => {
     if (!cedulaBusqueda.trim()) return;
     const busqueda = cedulaBusqueda.trim();
     const esNumerico = /^\d+$/.test(busqueda);
@@ -173,8 +175,11 @@ export default function HistoriaClinicaModal({ isOpen, onClose, historiaToEdit, 
         );
 
     if (encontrado) {
-      const yaTieneHC = historiasClinicas.some(hc => hc.refugiado_id === encontrado.id);
-      if (yaTieneHC && !isEditing) {
+      const { count } = await supabase
+        .from('historias_clinicas')
+        .select('*', { count: 'exact', head: true })
+        .eq('refugiado_id', encontrado.id);
+      if (count && count > 0 && !isEditing) {
         alert('Este integrante ya tiene una historia clinica abierta.');
         return;
       }

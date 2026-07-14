@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Search, UserPlus, FileText, Pencil, Trash2, ShieldOff, Eye } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
@@ -8,7 +8,7 @@ import FichaRefugiadoModal from '../components/refugiados/FichaRefugiadoModal';
 import { formatAge } from '../lib/formatAge';
 
 export default function Refugiados() {
-  const { campamentoSeleccionado, refugiados = [], familias = [], eliminarRefugiado } = useCampamento();
+  const { campamentoSeleccionado, familias = [], eliminarRefugiado, obtenerRefugiadosPaginados } = useCampamento();
   const { tienePermisoPorCampamento } = useAuth();
 
   const tieneAcceso = campamentoSeleccionado
@@ -24,62 +24,84 @@ export default function Refugiados() {
       </div>
     );
   }
+
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchInput, setSearchInput] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [editandoRefugiado, setEditandoRefugiado] = useState<Refugiado | null>(null);
   const [fichaRefugiado, setFichaRefugiado] = useState<Refugiado | null>(null);
   const [isFichaOpen, setIsFichaOpen] = useState(false);
-
-  const filteredRefugiados = useMemo(() => {
-    if (!campamentoSeleccionado) return [];
-    
-    const term = searchTerm.toUpperCase();
-    return refugiados
-      .filter(r => r.campamento_id === campamentoSeleccionado.id)
-      .filter(r => 
-        r.nombres.includes(term) || 
-        r.apellidos.includes(term) || 
-        (r.cedula?.toString() || '').includes(term) ||
-        (r.codigo || '').toUpperCase().includes(term)
-      )
-      .map(r => {
-        let jerarquiaStr = 'Jefe de Familia';
-        if (!r.es_jefe_familia && r.familia_id) {
-          const familia = familias.find(f => f.id === r.familia_id);
-          jerarquiaStr = `Miembro (${familia?.nombre || 'Familia Desconocida'})`;
-        }
-
-        return {
-          id: r.id,
-          codigo: r.codigo || '-',
-          cedula: r.cedula?.toString() || 'S/N',
-          nombres: r.nombres,
-          apellidos: r.apellidos,
-          edad: formatAge(r.fecha_nacimiento),
-          jerarquia: jerarquiaStr,
-          cama: r.nro_cama,
-          refugiado: r
-        };
-      });
-  }, [searchTerm, refugiados, campamentoSeleccionado, familias]);
-
-  // Lógica de Paginación
-  const REGISTROS_POR_PAGINA = 20;
+  const [paginados, setPaginados] = useState<Refugiado[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loadingPaginados, setLoadingPaginados] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = Math.ceil(filteredRefugiados.length / REGISTROS_POR_PAGINA);
-  const paginatedRefugiados = filteredRefugiados.slice(
-    (currentPage - 1) * REGISTROS_POR_PAGINA,
-    currentPage * REGISTROS_POR_PAGINA
-  );
+  const REGISTROS_POR_PAGINA = 20;
 
-  // Reiniciar a la primera página cuando cambia la búsqueda
+  // Debounce búsqueda 400ms
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchInput);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Resetear página al cambiar búsqueda
   useEffect(() => {
     setCurrentPage(1);
-  }, [searchTerm]);
+  }, [debouncedSearch]);
 
-  const handleEliminar = (id: string) => {
+  // Fetch paginado
+  const refetch = useCallback(async () => {
+    if (!campamentoSeleccionado) return;
+    setLoadingPaginados(true);
+    try {
+      const { data, count } = await obtenerRefugiadosPaginados(
+        campamentoSeleccionado.id,
+        currentPage,
+        REGISTROS_POR_PAGINA,
+        debouncedSearch
+      );
+      setPaginados(data);
+      setTotalCount(count);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingPaginados(false);
+    }
+  }, [campamentoSeleccionado, currentPage, debouncedSearch, obtenerRefugiadosPaginados]);
+
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
+
+  // Filas a mostrar con jerarquía resuelta
+  const displayedRows = useMemo(() => {
+    return paginados.map(r => {
+      let jerarquiaStr = 'Jefe de Familia';
+      if (!r.es_jefe_familia && r.familia_id) {
+        const familia = familias.find(f => f.id === r.familia_id);
+        jerarquiaStr = `Miembro (${familia?.nombre || 'Familia Desconocida'})`;
+      }
+      return {
+        id: r.id,
+        codigo: r.codigo || '-',
+        cedula: r.cedula?.toString() || 'S/N',
+        nombres: r.nombres,
+        apellidos: r.apellidos,
+        edad: formatAge(r.fecha_nacimiento),
+        jerarquia: jerarquiaStr,
+        cama: r.nro_cama,
+        refugiado: r,
+      };
+    });
+  }, [paginados, familias]);
+
+  const totalPages = Math.ceil(totalCount / REGISTROS_POR_PAGINA);
+
+  const handleEliminar = async (id: string) => {
     if (window.confirm('¿Estás seguro de que deseas eliminar este integrante? Esta acción no se puede deshacer.')) {
-      eliminarRefugiado(id);
+      await eliminarRefugiado(id);
+      refetch();
     }
   };
 
@@ -88,9 +110,15 @@ export default function Refugiados() {
     setIsModalOpen(true);
   };
 
+  const handleModalClose = () => {
+    setIsModalOpen(false);
+    setEditandoRefugiado(null);
+    refetch();
+  };
+
   return (
     <div className="space-y-6">
-      
+
       {/* Cabecera */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
@@ -100,7 +128,7 @@ export default function Refugiados() {
           </p>
         </div>
         {campamentoSeleccionado && tienePermisoPorCampamento('Integrantes', campamentoSeleccionado.id, 'Crear') && (
-          <button 
+          <button
             onClick={() => {
               setEditandoRefugiado(null);
               setIsModalOpen(true);
@@ -115,7 +143,7 @@ export default function Refugiados() {
 
       {/* Tarjeta Principal */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col min-h-[500px]">
-        
+
         {/* Barra de Herramientas (Búsqueda) */}
         <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
           <div className="relative w-full max-w-md">
@@ -125,13 +153,13 @@ export default function Refugiados() {
             <input
               type="text"
               placeholder="Buscar por cédula, nombre o apellido..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value.toUpperCase())}
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value.toUpperCase())}
               className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all text-sm uppercase"
             />
           </div>
           <div className="text-sm text-gray-500 font-medium">
-            Mostrando {filteredRefugiados.length} registros
+            {loadingPaginados ? 'Buscando...' : `Mostrando ${totalCount} registros`}
           </div>
         </div>
 
@@ -150,8 +178,16 @@ export default function Refugiados() {
               </tr>
             </thead>
             <tbody>
-              {paginatedRefugiados.length > 0 ? (
-                paginatedRefugiados.map((refugiado) => (
+              {loadingPaginados ? (
+                <tr>
+                  <td colSpan={7} className="py-12 text-center text-gray-500">
+                    <div className="flex flex-col items-center justify-center">
+                      <p className="text-lg font-medium text-gray-600">Cargando...</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : displayedRows.length > 0 ? (
+                displayedRows.map((refugiado) => (
                   <tr key={refugiado.id} className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors group">
                     <td className="py-3 px-6 text-sm font-medium text-caracas-blue">{refugiado.codigo || '-'}</td>
                     <td className="py-3 px-6 text-sm font-medium text-gray-700">{refugiado.cedula}</td>
@@ -162,8 +198,8 @@ export default function Refugiados() {
                     <td className="py-3 px-6 text-sm text-gray-600">{refugiado.edad}</td>
                     <td className="py-3 px-3 max-w-[180px]">
                       <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium whitespace-normal break-words ${
-                        refugiado.jerarquia === 'Jefe de Familia' 
-                          ? 'bg-caracas-blue/10 text-caracas-blue' 
+                        refugiado.jerarquia === 'Jefe de Familia'
+                          ? 'bg-caracas-blue/10 text-caracas-blue'
                           : 'bg-gray-100 text-gray-600'
                       }`}>
                         {refugiado.jerarquia}
@@ -223,13 +259,13 @@ export default function Refugiados() {
             </tbody>
           </table>
         </div>
-        
+
         {/* Controles de Paginación */}
         {totalPages > 1 && (
           <div className="p-4 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between">
-            <button 
+            <button
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
+              disabled={currentPage === 1 || loadingPaginados}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Anterior
@@ -237,9 +273,9 @@ export default function Refugiados() {
             <span className="text-sm text-gray-500">
               Página {currentPage} de {totalPages}
             </span>
-            <button 
+            <button
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
+              disabled={currentPage === totalPages || loadingPaginados}
               className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Siguiente
@@ -251,10 +287,7 @@ export default function Refugiados() {
       {/* Modal de Registro / Edición */}
       <RegistroModal
         isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditandoRefugiado(null);
-        }}
+        onClose={handleModalClose}
         refugiadoToEdit={editandoRefugiado}
       />
 

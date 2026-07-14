@@ -8,7 +8,7 @@ import html2canvas from 'html2canvas';
 import pptxgen from 'pptxgenjs';
 
 export default function Reportes() {
-  const { campamentoSeleccionado, refugiados = [], familias = [], historiasClinicas = [] } = useCampamento();
+  const { campamentoSeleccionado, refugiados = [], familias = [] } = useCampamento();
   const { tienePermisoPorCampamento } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
   const [logoKidsError, setLogoKidsError] = useState(false);
@@ -175,11 +175,10 @@ export default function Reportes() {
         if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
           edad--;
         }
-        const hc = historiasClinicas.find(h => h.refugiado_id === r.id);
         return {
           ...r,
           edad,
-          tipo_discapacidad: hc?.tipo_discapacidad || 'No especificada',
+          tipo_discapacidad: 'No especificada',
         };
       })
       .sort((a, b) => {
@@ -187,7 +186,7 @@ export default function Reportes() {
         const cb = parseInt(b.nro_cama || '9999');
         return ca - cb;
       });
-  }, [refugiadosDelCampamento, historiasClinicas]);
+  }, [refugiadosDelCampamento]);
 
   // ── Agrupación de discapacidades para gráfico de tortas ────────────────────
   const discapacidadGrupos = useMemo(() => {

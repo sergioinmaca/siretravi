@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { useCampamento } from '../../context/CampamentoContext';
 import { X, Save, Activity } from 'lucide-react';
 import { toDateInput } from '../../lib/formatDate';
+import { agregarAtencionMedica } from '../../lib/salud';
 
 interface AtencionMedicaModalProps {
   isOpen: boolean;
@@ -11,7 +11,6 @@ interface AtencionMedicaModalProps {
 }
 
 export default function AtencionMedicaModal({ isOpen, onClose, historiaClinicaId, refugiadoNombre }: AtencionMedicaModalProps) {
-  const { agregarAtencionMedica } = useCampamento();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [formData, setFormData] = useState({
