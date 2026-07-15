@@ -140,7 +140,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
       }
 
       if (refugiado) {
-        await actualizarRefugiado(refugiado.id, { ...refugiado, foto_url: null });
+        await actualizarRefugiado(refugiado.id, { ...refugiado, foto_url: undefined });
       }
 
       onActualizarFoto(null);

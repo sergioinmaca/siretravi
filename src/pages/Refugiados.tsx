@@ -527,7 +527,7 @@ export default function Refugiados() {
         }}
         refugiado={fichaRefugiado}
         onActualizarFoto={(foto_url) => {
-          setFichaRefugiado(prev => prev ? { ...prev, foto_url } : null);
+          setFichaRefugiado(prev => prev ? { ...prev, foto_url: foto_url ?? undefined } : null);
         }}
       />
 
