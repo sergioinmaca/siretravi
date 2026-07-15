@@ -13,9 +13,11 @@ interface RegistroModalProps {
 }
 
 export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: RegistroModalProps) {
-  const { campamentoSeleccionado, familias = [], refugiados = [], agregarFamilia, agregarRefugiado, actualizarRefugiado } = useCampamento();
+  const { campamentoSeleccionado, familias = [], refugiados = [], agregarFamilia, agregarRefugiado, actualizarRefugiado, eliminarFamilia } = useCampamento();
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showError, setShowError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [fotoFile, setFotoFile] = useState<File | null>(null);
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
   const [isUploadingFoto, setIsUploadingFoto] = useState(false);
@@ -64,7 +66,17 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
 
   // Precargar datos cuando se edita
   useEffect(() => {
-    if (isOpen && refugiadoToEdit) {
+    if (!isOpen) return;
+
+    if (submitTimerRef.current) {
+      clearTimeout(submitTimerRef.current);
+      submitTimerRef.current = null;
+    }
+    setIsSubmitting(false);
+    setShowSuccess(false);
+    setShowError(false);
+
+    if (refugiadoToEdit) {
       setFotoPreview(refugiadoToEdit.foto_url || null);
       setFotoFile(null);
       const birth = new Date(refugiadoToEdit.fecha_nacimiento);
@@ -110,7 +122,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
         observaciones: refugiadoToEdit.observaciones || '',
         parentesco: refugiadoToEdit.parentesco || '',
       });
-    } else if (isOpen && !refugiadoToEdit) {
+    } else {
       setFotoPreview(null);
       setFotoFile(null);
       setFormData({
@@ -135,6 +147,11 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
         parentesco: '',
       });
     }
+    return () => {
+      if (submitTimerRef.current) {
+        clearTimeout(submitTimerRef.current);
+      }
+    };
   }, [isOpen, refugiadoToEdit]);
 
   useEffect(() => {
@@ -143,7 +160,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     }
   }, [formData.fechaNacimiento]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
@@ -192,15 +209,18 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!campamentoSeleccionado) return;
+    if (!campamentoSeleccionado || isSubmitting) return;
 
     if (isEditing) {
       const confirmar = window.confirm('¿Estás seguro de que deseas modificar este registro?');
       if (!confirmar) return;
     }
 
+    setShowError(false);
+    setShowSuccess(false);
     setIsSubmitting(true);
 
+    let familiaCreadaEnEsteSubmit: string | null = null;
     let finalFamiliaId = formData.familiaId;
 
     if (formData.esJefeFamilia) {
@@ -208,12 +228,25 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
         finalFamiliaId = refugiadoToEdit.familia_id;
       } else {
         const nombreFamilia = `FAMILIA ${formData.nombres} ${formData.apellidos}`;
-        const familiaCreada = await agregarFamilia({
-          id: '',
-          campamento_id: campamentoSeleccionado.id,
-          nombre: nombreFamilia
-        });
-        finalFamiliaId = familiaCreada?.id || '';
+        const existente = familias.find(
+          f => f.campamento_id === campamentoSeleccionado.id && f.nombre === nombreFamilia
+        );
+        if (existente) {
+          finalFamiliaId = existente.id;
+        } else {
+          const familiaCreada = await agregarFamilia({
+            id: '',
+            campamento_id: campamentoSeleccionado.id,
+            nombre: nombreFamilia
+          });
+          if (!familiaCreada) {
+            setShowError(true);
+            setIsSubmitting(false);
+            return;
+          }
+          finalFamiliaId = familiaCreada.id;
+          familiaCreadaEnEsteSubmit = familiaCreada.id;
+        }
       }
     }
 
@@ -260,30 +293,40 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       foto_url: fotoFile ? undefined : (refugiadoToEdit?.foto_url || undefined),
     };
 
+    let guardadoExitoso = false;
+
     if (isEditing && refugiadoToEdit) {
-      await actualizarRefugiado(refugiadoToEdit.id, payload);
-      if (fotoFile) {
-        const foto_url = await uploadFoto(refugiadoToEdit.id, campamentoSeleccionado.id);
-        if (foto_url) {
-          await actualizarRefugiado(refugiadoToEdit.id, { ...payload, foto_url });
-        }
-      }
+      guardadoExitoso = await actualizarRefugiado(refugiadoToEdit.id, payload);
     } else {
       const refugiadoCreado = await agregarRefugiado(payload);
-      if (refugiadoCreado && fotoFile) {
-        const foto_url = await uploadFoto(refugiadoCreado.id, campamentoSeleccionado.id);
-        if (foto_url) {
-          await actualizarRefugiado(refugiadoCreado.id, { ...refugiadoCreado, foto_url });
-        }
+      guardadoExitoso = !!refugiadoCreado;
+    }
+
+    if (!guardadoExitoso) {
+      if (familiaCreadaEnEsteSubmit) {
+        await eliminarFamilia(familiaCreadaEnEsteSubmit);
+      }
+      setShowError(true);
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (fotoFile && refugiadoToEdit) {
+      const foto_url = await uploadFoto(refugiadoToEdit.id, campamentoSeleccionado.id);
+      if (foto_url) {
+        await actualizarRefugiado(refugiadoToEdit.id, { ...payload, foto_url });
       }
     }
 
-    setIsSubmitting(false);
     setShowSuccess(true);
     setTimeout(() => {
       setShowSuccess(false);
       onClose();
     }, 1500);
+
+    submitTimerRef.current = setTimeout(() => {
+      setIsSubmitting(false);
+    }, 3000);
   };
 
   if (!isOpen) return null;
@@ -322,6 +365,13 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
             <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-xl flex items-center gap-3 mb-6 shadow-sm">
               <CheckCircle2 size={20} className="text-green-600" />
               <p className="font-medium">{isEditing ? '¡Integrante modificado exitosamente!' : '¡Integrante registrado exitosamente!'}</p>
+            </div>
+          )}
+
+          {showError && (
+            <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-xl flex items-center gap-3 mb-6 shadow-sm">
+              <AlertCircle size={20} className="text-red-600" />
+              <p className="font-medium">Error al guardar. Inténtalo de nuevo o contacta al administrador.</p>
             </div>
           )}
 
@@ -798,8 +848,12 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
           <button onClick={onClose} type="button" className="px-6 py-2.5 rounded-xl text-gray-600 font-medium hover:bg-gray-200 transition-colors">
             Cancelar
           </button>
-          <button form="registro-form" type="submit" disabled={!campamentoSeleccionado || isSubmitting} className="flex items-center gap-2 bg-caracas-red hover:bg-red-800 text-white px-8 py-2.5 rounded-xl font-medium transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
-            <Save size={18} />
+          <button form="registro-form" type="submit" disabled={!campamentoSeleccionado || isSubmitting} className="flex items-center gap-2 bg-caracas-red hover:bg-red-800 text-white px-8 py-2.5 rounded-xl font-medium transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed min-w-[180px] justify-center">
+            {isSubmitting ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <Save size={18} />
+            )}
             {isSubmitting ? 'Guardando...' : isEditing ? 'Guardar Cambios' : 'Guardar Registro'}
           </button>
         </div>

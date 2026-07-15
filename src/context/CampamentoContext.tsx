@@ -16,10 +16,10 @@ interface CampamentoContextType {
   actualizarCampamento: (id: string, actualizado: Campamento) => Promise<void>;
   eliminarCampamento: (id: string) => Promise<void>;
   agregarFamilia: (nueva: Familia) => Promise<Familia | null>;
-  eliminarFamilia: (id: string) => Promise<void>;
+  eliminarFamilia: (id: string) => Promise<boolean>;
   agregarRefugiado: (nuevo: Refugiado) => Promise<Refugiado | null>;
   eliminarRefugiado: (id: string) => Promise<void>;
-  actualizarRefugiado: (id: string, actualizado: Refugiado) => Promise<void>;
+  actualizarRefugiado: (id: string, actualizado: Refugiado) => Promise<boolean>;
   obtenerRefugiadosPaginados: (campamentoId: string, page: number, pageSize: number, searchTerm?: string) => Promise<{ data: Refugiado[]; count: number }>;
   contarRefugiados: (campamentoId: string, genero?: boolean) => Promise<number>;
 }
@@ -405,14 +405,21 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
   };
 
   // ── Eliminar Familia ─────────────────────────────────────────────────────
-  const eliminarFamilia = async (id: string) => {
+  const eliminarFamilia = async (id: string): Promise<boolean> => {
+    const jefe = refugiados.find(r => r.familia_id === id && r.es_jefe_familia);
+    if (jefe) {
+      alert(`No se puede eliminar esta familia porque ${jefe.nombres} ${jefe.apellidos} es su Jefe de Familia.${jefe.nro_cama ? ` Cama: ${jefe.nro_cama}.` : ''}`);
+      return false;
+    }
+
     const { error } = await supabase.from('familias').delete().eq('id', id);
     if (error) {
       console.error('Error al eliminar familia:', error);
-      return;
+      return false;
     }
     setFamilias(prev => prev.filter(f => f.id !== id));
     setRefugiados(prev => prev.map(r => r.familia_id === id ? { ...r, familia_id: undefined } : r));
+    return true;
   };
 
   // ── Agregar Refugiado ──────────────────────────────────────────────────────
@@ -581,7 +588,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
   };
 
   // ── Actualizar Refugiado ───────────────────────────────────────────────
-  const actualizarRefugiado = async (id: string, actualizado: Refugiado) => {
+  const actualizarRefugiado = async (id: string, actualizado: Refugiado): Promise<boolean> => {
     const { error } = await supabase
       .from('refugiados')
       .update({
@@ -632,10 +639,11 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
 
     if (error) {
       console.error('Error al actualizar refugiado:', error);
-      return;
+      return false;
     }
 
     setRefugiados(prev => prev.map(r => r.id === id ? { ...actualizado, id } : r));
+    return true;
   };
 
   // ── Obtener Refugiados Paginados ─────────────────────────────────────────────
