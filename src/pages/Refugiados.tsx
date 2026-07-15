@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import type { Refugiado } from '../types';
 import RegistroModal from '../components/refugiados/RegistroModal';
 import FichaRefugiadoModal from '../components/refugiados/FichaRefugiadoModal';
-import { formatAge } from '../lib/formatAge';
+import { formatAge, formatAgeParts } from '../lib/formatAge';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 
@@ -90,6 +90,7 @@ export default function Refugiados() {
         id: r.id,
         codigo: r.codigo || '-',
         cedula: r.cedula?.toString() || 'S/N',
+        genero: r.genero,
         nombres: r.nombres,
         apellidos: r.apellidos,
         edad: formatAge(r.fecha_nacimiento),
@@ -261,12 +262,15 @@ export default function Refugiados() {
             const familia = familias.find(f => f.id === r.familia_id);
             jerarquiaStr = `Miembro (${familia?.nombre || 'Desconocida'})`;
           }
+          const ageParts = formatAgeParts(r.fecha_nacimiento);
           return {
             'Código': r.codigo || '-',
             'Cédula': r.cedula?.toString() || 'S/N',
+            'Género': r.genero ? 'M' : 'F',
             'Apellidos': r.apellidos,
             'Nombres': r.nombres,
-            'Edad': formatAge(r.fecha_nacimiento),
+            'Edad (Valor)': ageParts?.valor ?? '',
+            'Edad (Unidad)': ageParts?.unidad ?? '',
             'Jerarquía': jerarquiaStr,
             'Cama': r.nro_cama || '-',
           };
@@ -276,9 +280,11 @@ export default function Refugiados() {
       const colWidths = [
         { wch: 10 },
         { wch: 12 },
+        { wch: 8 },
         { wch: 22 },
         { wch: 22 },
         { wch: 12 },
+        { wch: 14 },
         { wch: 30 },
         { wch: 8 },
       ];
@@ -378,6 +384,7 @@ export default function Refugiados() {
               <tr className="bg-white border-b border-gray-100">
                 <th className="py-4 px-6 font-semibold text-sm text-gray-500">Código</th>
                 <th className="py-4 px-6 font-semibold text-sm text-gray-500">Cédula</th>
+                <th className="py-4 px-6 font-semibold text-sm text-gray-500">Género</th>
                 <th className="py-4 px-6 font-semibold text-sm text-gray-500">Apellidos y Nombres</th>
                 <th className="py-4 px-6 font-semibold text-sm text-gray-500">Edad</th>
                 <th className="py-4 px-6 font-semibold text-sm text-gray-500">Jerarquía</th>
@@ -388,7 +395,7 @@ export default function Refugiados() {
             <tbody>
               {loadingPaginados ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-gray-500">
+                  <td colSpan={8} className="py-12 text-center text-gray-500">
                     <div className="flex flex-col items-center justify-center">
                       <p className="text-lg font-medium text-gray-600">Cargando...</p>
                     </div>
@@ -399,6 +406,7 @@ export default function Refugiados() {
                   <tr key={refugiado.id} className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors group">
                     <td className="py-3 px-6 text-sm font-medium text-caracas-blue">{refugiado.codigo || '-'}</td>
                     <td className="py-3 px-6 text-sm font-medium text-gray-700">{refugiado.cedula}</td>
+                    <td className="py-3 px-6 text-sm text-gray-600">{refugiado.genero ? 'M' : 'F'}</td>
                     <td className="py-3 px-6">
                       <div className="text-sm font-bold text-gray-800">{refugiado.apellidos}</div>
                       <div className="text-xs text-gray-500">{refugiado.nombres}</div>
@@ -455,7 +463,7 @@ export default function Refugiados() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-gray-500">
+                  <td colSpan={8} className="py-12 text-center text-gray-500">
                     <div className="flex flex-col items-center justify-center">
                       <Search size={48} className="text-gray-300 mb-4" />
                       <p className="text-lg font-medium text-gray-600">No se encontraron resultados</p>
