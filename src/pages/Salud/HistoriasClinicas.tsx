@@ -46,6 +46,7 @@ export default function HistoriasClinicas() {
     return (
       item.refugiado?.nombres?.toUpperCase().includes(q) ||
       item.refugiado?.apellidos?.toUpperCase().includes(q) ||
+      item.refugiado?.codigo?.toUpperCase().includes(q) ||
       item.refugiado?.cedula?.toString().includes(q)
     );
   });
@@ -88,7 +89,7 @@ export default function HistoriasClinicas() {
             type="text"
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            placeholder="Buscar por nombre, apellido o cedula..."
+            placeholder="Buscar Integrante..."
             className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all"
           />
         </div>

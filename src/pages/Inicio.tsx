@@ -44,6 +44,8 @@ export default function Inicio() {
     return map;
   }, [refugiadosDelCampamento]);
 
+  const uniqueOccupiedBedsSet = useMemo(() => new Set(occupiedBeds), [occupiedBeds]);
+
   const totalRefugiados = refugiadosDelCampamento.length;
   const totalHombres = refugiadosDelCampamento.filter(r => r.genero === true).length;
   const totalMujeres = refugiadosDelCampamento.filter(r => r.genero === false).length;
@@ -149,6 +151,11 @@ export default function Inicio() {
     { literas: 0, individuales: 0, duplex: 0 }
   );
 
+  const totalCamasCroquis = tipoContabilizacion === 'cama'
+    ? totalesCroquis.literas * 2 + totalesCroquis.individuales + totalesCroquis.duplex
+    : totalesCroquis.literas + totalesCroquis.individuales + totalesCroquis.duplex;
+  const disponiblesCroquis = Math.max(0, totalCamasCroquis - uniqueOccupiedBedsSet.size);
+
   const [exportandoPDF, setExportandoPDF] = useState(false);
   const croquisCanvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
 
@@ -233,7 +240,26 @@ export default function Inicio() {
         pdf.setFontSize(10);
         pdf.setTextColor(55, 65, 81);
         pdf.text(`Carpa: ${carpas[i].nombre}`, margin, croquisStartY);
-        const labelBottom = croquisStartY + 3;
+
+        // Indicadores por carpa
+        const tiposCarpa = contarTiposDesdeCroquis(carpas[i].croquis_data || '');
+        const tipoY = croquisStartY + 5;
+        pdf.setFontSize(7);
+
+        pdf.setFillColor('#3B82F6');
+        pdf.circle(margin + 5, tipoY, 2, 'F');
+        pdf.setTextColor(107, 114, 128);
+        pdf.text(`${tiposCarpa.literas} Literas`, margin + 9, tipoY + 1.5);
+
+        pdf.setFillColor('#10B981');
+        pdf.circle(margin + 60, tipoY, 2, 'F');
+        pdf.text(`${tiposCarpa.individuales} Individuales`, margin + 64, tipoY + 1.5);
+
+        pdf.setFillColor('#F59E0B');
+        pdf.circle(margin + 115, tipoY, 2, 'F');
+        pdf.text(`${tiposCarpa.duplex} Duplex`, margin + 119, tipoY + 1.5);
+
+        const labelBottom = tipoY + 5;
 
         const cvs = croquisCanvasRefs.current[i];
         if (cvs) {
@@ -455,6 +481,9 @@ export default function Inicio() {
             <span className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded bg-[#3B82F6]" />
               <span className="font-medium">{totalesCroquis.literas}</span> Literas
+              <span className="text-xs text-gray-400">
+                {tipoContabilizacion === 'cama' ? `(${totalesCroquis.literas * 2} camas)` : `(${totalesCroquis.literas} elem.)`}
+              </span>
             </span>
             <span className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded bg-[#10B981]" />
@@ -464,12 +493,30 @@ export default function Inicio() {
               <span className="w-3 h-3 rounded bg-[#F59E0B]" />
               <span className="font-medium">{totalesCroquis.duplex}</span> Duplex
             </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded bg-[#6B7280]" />
+              <span className="font-medium">{disponiblesCroquis}</span> Disponibles
+            </span>
           </div>
         )}
 
         {carpasConOffset.length > 0 ? (
           <div className="space-y-8">
-            {carpasConOffset.map(({ carpa, offset }, index) => (
+            {carpasConOffset.map(({ carpa, offset }, index) => {
+              const tiposCarpa = contarTiposDesdeCroquis(carpa.croquis_data || '');
+              const totalCamasCarpa = tipoContabilizacion === 'cama'
+                ? tiposCarpa.literas * 2 + tiposCarpa.individuales + tiposCarpa.duplex
+                : tiposCarpa.literas + tiposCarpa.individuales + tiposCarpa.duplex;
+              const elementosCarpa = countElements(carpa.croquis_data || '', tipoContabilizacion);
+              const minCamaCarpa = offset + 1;
+              const maxCamaCarpa = offset + elementosCarpa;
+              let ocupadasCarpa = 0;
+              uniqueOccupiedBedsSet.forEach(b => {
+                const n = parseInt(b, 10);
+                if (n >= minCamaCarpa && n <= maxCamaCarpa) ocupadasCarpa++;
+              });
+              const disponiblesCarpa = Math.max(0, totalCamasCarpa - ocupadasCarpa);
+              return (
               <CroquisViewer
                 ref={(el) => { croquisCanvasRefs.current[index] = el; }}
                 key={carpa.id}
@@ -481,8 +528,13 @@ export default function Inicio() {
                 tipoContabilizacion={tipoContabilizacion}
                 occupiedBeds={occupiedBeds}
                 bedOccupants={bedOccupants}
+                literasCount={tiposCarpa.literas}
+                individualesCount={tiposCarpa.individuales}
+                duplexCount={tiposCarpa.duplex}
+                disponiblesCarpa={disponiblesCarpa}
               />
-            ))}
+              );
+            })}
           </div>
         ) : (
           <div className="border-2 border-dashed border-gray-200 rounded-2xl h-72 flex flex-col items-center justify-center text-gray-400 bg-gray-50 hover:bg-gray-100 transition-colors">

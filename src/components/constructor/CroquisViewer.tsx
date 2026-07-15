@@ -54,9 +54,13 @@ interface CroquisViewerProps {
   tipoContabilizacion?: 'cama' | 'elemento';
   occupiedBeds?: string[];
   bedOccupants?: Record<string, string[]>;
+  literasCount?: number;
+  individualesCount?: number;
+  duplexCount?: number;
+  disponiblesCarpa?: number;
 }
 
-const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function CroquisViewer({ croquisData, carpaNombre, width = 700, height = 600, elementNumberOffset = 0, tipoContabilizacion = 'elemento', occupiedBeds = [], bedOccupants = {} }, ref) {
+const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function CroquisViewer({ croquisData, carpaNombre, width = 700, height = 600, elementNumberOffset = 0, tipoContabilizacion = 'elemento', occupiedBeds = [], bedOccupants = {}, literasCount, individualesCount, duplexCount, disponiblesCarpa }, ref) {
   const internalCanvasRef = useRef<HTMLCanvasElement>(null);
   const bedsRenderRef = useRef<BedRenderInfo[]>([]);
   const [hoveredBed, setHoveredBed] = useState<HoveredBed | null>(null);
@@ -186,6 +190,31 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
         <div className="h-8 w-1 bg-caracas-red rounded-full" />
         <h4 className="font-semibold text-gray-800">{carpaNombre}</h4>
       </div>
+      {literasCount !== undefined && individualesCount !== undefined && duplexCount !== undefined && (
+        <div className="flex items-center gap-4 text-sm text-gray-500 pl-5">
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded bg-[#3B82F6]" />
+            <span className="font-medium">{literasCount}</span> Literas
+            <span className="text-xs text-gray-400">
+              {tipoContabilizacion === 'cama' ? `(${literasCount * 2} camas)` : `(${literasCount} elem.)`}
+            </span>
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded bg-[#10B981]" />
+            <span className="font-medium">{individualesCount}</span> Individuales
+          </span>
+          <span className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded bg-[#F59E0B]" />
+            <span className="font-medium">{duplexCount}</span> Duplex
+          </span>
+          {disponiblesCarpa !== undefined && (
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded bg-[#6B7280]" />
+              <span className="font-medium">{disponiblesCarpa}</span> Disponibles
+            </span>
+          )}
+        </div>
+      )}
       <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
         <div className="relative">
           <canvas

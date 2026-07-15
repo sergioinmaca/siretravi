@@ -646,7 +646,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
     if (searchTerm?.trim()) {
       const term = searchTerm.trim();
       query = query.or(
-        `nombres.ilike.%${term}%,apellidos.ilike.%${term}%,codigo.ilike.%${term}%,cedula::text.ilike.%${term}%`
+        `nombres.ilike.*${term}*,apellidos.ilike.*${term}*,codigo.ilike.*${term}*,cedula::text.ilike.*${term}*`
       );
     }
 

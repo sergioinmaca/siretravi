@@ -197,7 +197,7 @@ export default function HistoriaClinicaModal({ isOpen, onClose, historiaToEdit, 
         tiempoEmbarazo: encontrado.tiempo_embarazo?.toString() || '',
       }));
     } else {
-      alert('No se encontro ningun integrante con esa cedula en este campamento.');
+      alert('No se encontro ningun integrante con esa cedula o codigo en este campamento.');
       setRefugiadoEncontrado(null);
     }
   };
@@ -205,7 +205,7 @@ export default function HistoriaClinicaModal({ isOpen, onClose, historiaToEdit, 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!refugiadoEncontrado && !isEditing) {
-      alert('Debe buscar un integrante por cedula primero.');
+      alert('Debe buscar un integrante por cedula o codigo primero.');
       return;
     }
 
@@ -374,7 +374,7 @@ export default function HistoriaClinicaModal({ isOpen, onClose, historiaToEdit, 
                     <div className="flex-1">
                       <label className="block text-sm font-medium text-gray-700 mb-1">Cedula o Codigo del Integrante</label>
                       <input
-                        type="number"
+                        type="text"
                         value={cedulaBusqueda}
                         onChange={(e) => setCedulaBusqueda(e.target.value)}
                         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); buscarRefugiado(); } }}
@@ -726,7 +726,7 @@ export default function HistoriaClinicaModal({ isOpen, onClose, historiaToEdit, 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Tiempo de Embarazo (semanas)</label>
                         <input
-                          type="number"
+                        type="text"
                           min={1}
                           max={42}
                           value={formData.tiempoEmbarazo}

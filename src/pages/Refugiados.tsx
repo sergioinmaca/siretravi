@@ -1,14 +1,15 @@
 import { useState, useMemo, useEffect, useCallback } from 'react';
-import { Search, UserPlus, FileText, Pencil, Trash2, ShieldOff, Eye } from 'lucide-react';
+import { Search, UserPlus, FileText, Pencil, Trash2, ShieldOff, Eye, FileDown, Loader2 } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
 import type { Refugiado } from '../types';
 import RegistroModal from '../components/refugiados/RegistroModal';
 import FichaRefugiadoModal from '../components/refugiados/FichaRefugiadoModal';
 import { formatAge } from '../lib/formatAge';
+import jsPDF from 'jspdf';
 
 export default function Refugiados() {
-  const { campamentoSeleccionado, familias = [], eliminarRefugiado, obtenerRefugiadosPaginados } = useCampamento();
+  const { campamentoSeleccionado, refugiados = [], familias = [], eliminarRefugiado, obtenerRefugiadosPaginados } = useCampamento();
   const { tienePermisoPorCampamento } = useAuth();
 
   const tieneAcceso = campamentoSeleccionado
@@ -35,6 +36,7 @@ export default function Refugiados() {
   const [totalCount, setTotalCount] = useState(0);
   const [loadingPaginados, setLoadingPaginados] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [exportandoPDF, setExportandoPDF] = useState(false);
   const REGISTROS_POR_PAGINA = 20;
 
   // Debounce búsqueda 400ms
@@ -116,6 +118,133 @@ export default function Refugiados() {
     refetch();
   };
 
+  const handleExportPDF = useCallback(async () => {
+    setExportandoPDF(true);
+    try {
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageW = 210;
+      const pageH = 297;
+      const margin = 10;
+      const now = new Date();
+      const fecha = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
+      const nombreCamp = campamentoSeleccionado?.nombre || 'Campamento';
+
+      const data = refugiados
+        .filter(r => r.campamento_id === campamentoSeleccionado?.id)
+        .map(r => {
+          let jerarquiaStr = 'Jefe de Familia';
+          if (!r.es_jefe_familia && r.familia_id) {
+            const familia = familias.find(f => f.id === r.familia_id);
+            jerarquiaStr = `Miembro (${familia?.nombre || 'Desconocida'})`;
+          }
+          return {
+            codigo: r.codigo || '-',
+            cedula: r.cedula?.toString() || 'S/N',
+            nombre: `${r.apellidos} ${r.nombres}`,
+            edad: formatAge(r.fecha_nacimiento),
+            jerarquia: jerarquiaStr,
+            cama: r.nro_cama || '-',
+          };
+        });
+
+      const cols = [
+        { key: 'codigo', header: 'C\u00f3digo', w: 20 },
+        { key: 'cedula', header: 'C\u00e9dula', w: 18 },
+        { key: 'nombre', header: 'Apellidos y Nombres', w: 62 },
+        { key: 'edad', header: 'Edad', w: 12 },
+        { key: 'jerarquia', header: 'Jerarqu\u00eda', w: 58 },
+        { key: 'cama', header: 'Cama', w: 16 },
+      ];
+
+      const headerHeight = 9;
+      const rowHeight = 6.5;
+      const topArea = margin + 26;
+      const rowsPerPage = Math.floor((pageH - topArea - margin) / rowHeight);
+      const totalPages = Math.max(1, Math.ceil(data.length / rowsPerPage));
+
+      const drawHeader = () => {
+        pdf.setFontSize(11);
+        pdf.setTextColor(30, 41, 59);
+        pdf.text(`Listado de Integrantes \u2014 ${nombreCamp}`, margin, margin + 6);
+        pdf.setFontSize(8);
+        pdf.setTextColor(107, 114, 128);
+        pdf.text(`Emitido: ${fecha}`, pageW - margin, margin + 6, { align: 'right' });
+        pdf.setDrawColor(229, 231, 235);
+        pdf.line(margin, margin + 9, pageW - margin, margin + 9);
+
+        let hx = margin;
+        pdf.setFillColor(243, 244, 246);
+        pdf.rect(margin, topArea - headerHeight + 1, cols.reduce((s, c) => s + c.w, 0), headerHeight, 'F');
+        cols.forEach(col => {
+          pdf.setFontSize(6.5);
+          pdf.setTextColor(107, 114, 128);
+          pdf.text(col.header, hx + 1.5, topArea - 2.5);
+          hx += col.w;
+        });
+      };
+
+      let pageNum = 1;
+      drawHeader();
+      let rowY = topArea + 1;
+      let rowCount = 0;
+
+      data.forEach((row, i) => {
+        if (rowCount >= rowsPerPage) {
+          pdf.addPage();
+          pageNum++;
+          drawHeader();
+          rowY = topArea + 1;
+          rowCount = 0;
+        }
+
+        if (i % 2 === 0) {
+          pdf.setFillColor(249, 250, 251);
+          pdf.rect(margin, rowY, cols.reduce((s, c) => s + c.w, 0), rowHeight, 'F');
+        }
+
+        let cx = margin;
+        cols.forEach(col => {
+          pdf.setDrawColor(229, 231, 235);
+          pdf.setLineWidth(0.2);
+          pdf.rect(cx, rowY, col.w, rowHeight, 'S');
+
+          const value = String(row[col.key as keyof typeof row] || '');
+          pdf.setFontSize(6);
+          pdf.setTextColor(55, 65, 81);
+
+          let display = value;
+          const maxW = col.w - 3;
+          if (pdf.getTextWidth(display) > maxW) {
+            while (display.length > 1 && pdf.getTextWidth(display + '\u2026') > maxW) {
+              display = display.slice(0, -1);
+            }
+            display += '\u2026';
+          }
+          pdf.text(display, cx + 1.5, rowY + rowHeight - 2);
+
+          cx += col.w;
+        });
+
+        rowY += rowHeight;
+        rowCount++;
+      });
+
+      // Page numbers
+      for (let p = 1; p <= pageNum; p++) {
+        pdf.setPage(p);
+        pdf.setFontSize(7);
+        pdf.setTextColor(156, 163, 175);
+        pdf.text(`P\u00e1gina ${p} de ${pageNum}`, pageW - margin, pageH - 6, { align: 'right' });
+      }
+
+      pdf.save(`integrantes-${nombreCamp.replace(/\s+/g, '-')}-${fecha}.pdf`);
+    } catch (err) {
+      console.error('Error generando PDF de integrantes:', err);
+    } finally {
+      setExportandoPDF(false);
+    }
+  }, [campamentoSeleccionado, refugiados, familias]);
+
   return (
     <div className="space-y-6">
 
@@ -127,18 +256,34 @@ export default function Refugiados() {
             Gestionando registros del <span className="font-semibold text-caracas-red">{campamentoSeleccionado?.nombre || 'Ninguno'}</span>
           </p>
         </div>
-        {campamentoSeleccionado && tienePermisoPorCampamento('Integrantes', campamentoSeleccionado.id, 'Crear') && (
-          <button
-            onClick={() => {
-              setEditandoRefugiado(null);
-              setIsModalOpen(true);
-            }}
-            className="flex items-center justify-center gap-2 bg-caracas-red hover:bg-red-800 text-white px-6 py-3 rounded-xl font-medium transition-all shadow-lg shadow-caracas-red/20 transform hover:-translate-y-0.5"
-          >
-            <UserPlus size={20} />
-            Registrar Nuevo Integrante
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {campamentoSeleccionado && (
+            <button
+              onClick={handleExportPDF}
+              disabled={exportandoPDF}
+              className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium transition-all shadow-sm ${
+                exportandoPDF
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-caracas-red hover:bg-red-800 text-white shadow-caracas-red/20 transform hover:-translate-y-0.5'
+              }`}
+            >
+              {exportandoPDF ? <Loader2 size={18} className="animate-spin" /> : <FileDown size={18} />}
+              {exportandoPDF ? 'Generando...' : 'Exportar PDF'}
+            </button>
+          )}
+          {campamentoSeleccionado && tienePermisoPorCampamento('Integrantes', campamentoSeleccionado.id, 'Crear') && (
+            <button
+              onClick={() => {
+                setEditandoRefugiado(null);
+                setIsModalOpen(true);
+              }}
+              className="flex items-center justify-center gap-2 bg-caracas-red hover:bg-red-800 text-white px-6 py-3 rounded-xl font-medium transition-all shadow-lg shadow-caracas-red/20 transform hover:-translate-y-0.5"
+            >
+              <UserPlus size={20} />
+              Registrar Nuevo Integrante
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tarjeta Principal */}
@@ -152,7 +297,7 @@ export default function Refugiados() {
             </div>
             <input
               type="text"
-              placeholder="Buscar por cédula, nombre o apellido..."
+              placeholder="Buscar por código, cédula, nombre o apellido..."
               value={searchInput}
               onChange={(e) => setSearchInput(e.target.value.toUpperCase())}
               className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all text-sm uppercase"
