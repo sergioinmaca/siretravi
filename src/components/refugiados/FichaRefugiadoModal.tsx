@@ -183,7 +183,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
         {/* Header */}
         <div className="px-8 py-5 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white">
           <div className="flex-1 text-center ml-8">
-            <h2 className="text-xl font-bold text-gray-800">Ficha del Refugiado</h2>
+            <h2 className="text-xl font-bold text-gray-800">Ficha del Integrante</h2>
             <p className="text-sm text-gray-500 mt-0.5">
               {refugiado.apellidos}, {refugiado.nombres} — Cód. {refugiado.codigo || '—'}
             </p>
@@ -237,6 +237,9 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
                   )}
                   {uploadError && (
                     <p className="text-xs text-red-500 mt-1 text-center leading-tight">{uploadError}</p>
+                  )}
+                  {storageUrl && (
+                    <p className="text-xs text-amber-600 mt-1 text-center leading-tight font-medium">Debe guardar para mantener los cambios</p>
                   )}
                   {canDelete && (
                     <button
@@ -428,6 +431,21 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
               <FichaField label="Talla de Zapatos" value={refugiado.talla_zapatos || '—'} />
             </div>
           </div>
+
+          {/* Tarjeta 6: Observaciones */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
+              <div className="p-2 bg-gray-100 rounded-lg">
+                <FileText size={18} className="text-gray-600" />
+              </div>
+              <h3 className="font-semibold text-gray-800">Observaciones</h3>
+            </div>
+            <div className="p-6">
+              <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                {refugiado.observaciones || '—'}
+              </p>
+            </div>
+          </div>
         </div>
 
         {/* Footer */}
@@ -465,7 +483,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
       {/* PDF Generation Off-Screen Template */}
       <div
         id="ficha-refugiado-pdf"
-        className="absolute left-[-9999px] top-[-9999px] bg-white text-black font-sans w-[800px] h-[1130px] p-12 flex flex-col justify-between select-none"
+        className="absolute left-[-9999px] top-[-9999px] bg-white text-black font-sans w-[800px] h-[1130px] pt-4 px-12 pb-12 flex flex-col justify-between select-none"
         style={{
           boxSizing: 'border-box',
           lineHeight: '1.25'
@@ -751,6 +769,18 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
                   {refugiado.talla_zapatos || '—'}
                 </span>
               </div>
+            </div>
+          </div>
+
+          {/* 6. OBSERVACIONES */}
+          <div className="space-y-3">
+            <h3 className="text-xs font-black uppercase tracking-wider bg-gray-100 p-1 border-l-4 border-red-600">
+              6. Observaciones
+            </h3>
+            <div className="p-2 border border-gray-300 rounded min-h-[60px]">
+              <p className="text-xs text-black leading-relaxed whitespace-pre-wrap">
+                {refugiado.observaciones || '—'}
+              </p>
             </div>
           </div>
         </div>

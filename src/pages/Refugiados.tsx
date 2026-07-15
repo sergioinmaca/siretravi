@@ -517,7 +517,7 @@ export default function Refugiados() {
         refugiadoToEdit={editandoRefugiado}
       />
 
-      {/* Modal de Ficha del Refugiado */}
+      {/* Modal de Ficha del Integrante */}
       <FichaRefugiadoModal
         isOpen={isFichaOpen}
         onClose={() => {
