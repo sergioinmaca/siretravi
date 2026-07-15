@@ -465,3 +465,22 @@ export function countElements(croquisData: string, modo: 'cama' | 'elemento' = '
     return 0;
   }
 }
+
+export function contarTiposDesdeCroquis(croquisData: string): { literas: number; individuales: number; duplex: number } {
+  try {
+    const parsed = JSON.parse(croquisData || '{}');
+    const rawObjects: Record<string, unknown>[] = parsed.objects || parsed.beds || [];
+    const beds = rawObjects
+      .filter(o => o.kind === 'bed' || !o.kind)
+      .map(o => ({
+        type: (o.bedType as string) || (o.type as string) || 'individual',
+      }));
+    return {
+      literas: beds.filter(b => b.type === 'litera').length,
+      individuales: beds.filter(b => b.type === 'individual').length,
+      duplex: beds.filter(b => b.type === 'duplex').length,
+    };
+  } catch {
+    return { literas: 0, individuales: 0, duplex: 0 };
+  }
+}

@@ -1,8 +1,8 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
-import { Users, BedDouble, Tent, Home, Baby, Heart, Sparkles, ShieldOff, FileDown, Loader2 } from 'lucide-react';
+import { Users, BedDouble, Tent, Home, Baby, Heart, Sparkles, ShieldOff, FileDown, Loader2, Milk, UserCheck } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
-import CroquisViewer, { countElements } from '../components/constructor/CroquisViewer';
+import CroquisViewer, { countElements, contarTiposDesdeCroquis } from '../components/constructor/CroquisViewer';
 import jsPDF from 'jspdf';
 
 export default function Inicio() {
@@ -54,10 +54,6 @@ export default function Inicio() {
     ? familias.filter(f => f.campamento_id === campamentoSeleccionado.id).length
     : 0;
 
-  const capacidad = campamentoSeleccionado?.capacidad_maxima || 0;
-  const ocupadas = totalRefugiados;
-  const disponibles = Math.max(0, capacidad - ocupadas);
-
   // Optimización: calcular las edades de los refugiados una sola vez usando useMemo
   const refugiadosConEdad = useMemo(() => {
     const hoy = new Date();
@@ -84,6 +80,21 @@ export default function Inicio() {
   const adultoMayor = refugiadosConEdad.filter(r => (r.genero === true && r.edad >= 60) || (r.genero === false && r.edad >= 55));
   const adultoMayorH = adultoMayor.filter(r => r.genero === true).length;
   const adultoMayorM = adultoMayor.filter(r => r.genero === false).length;
+
+  const lactantes = refugiadosConEdad.filter(r => r.edad >= 0 && r.edad <= 3);
+  const lactantesH = lactantes.filter(r => r.genero === true).length;
+  const lactantesM = lactantes.filter(r => r.genero === false).length;
+
+  const noLactantes = refugiadosConEdad.filter(r => r.edad >= 4 && r.edad <= 12);
+  const noLactantesH = noLactantes.filter(r => r.genero === true).length;
+  const noLactantesM = noLactantes.filter(r => r.genero === false).length;
+
+  const adultos = refugiadosConEdad.filter(r =>
+    (r.genero === true && r.edad >= 18 && r.edad < 60) ||
+    (r.genero === false && r.edad >= 18 && r.edad < 55)
+  );
+  const adultosH = adultos.filter(r => r.genero === true).length;
+  const adultosM = adultos.filter(r => r.genero === false).length;
 
   // Calcular ranking de procedencias
   const procedenciasMap = new Map<string, number>();
@@ -116,29 +127,6 @@ export default function Inicio() {
     }
     return { carpa, offset };
   });
-
-  // Contar tipos de cama reales desde el croquis de cada carpa
-  const contarTiposDesdeCroquis = (croquisData: string) => {
-    try {
-      const parsed = JSON.parse(croquisData || '{}');
-      const rawObjects: Record<string, unknown>[] = parsed.objects || parsed.beds || [];
-      const literas = rawObjects.filter(o => {
-        const bt = (o as any).bedType || (o as any).type;
-        return ((o as any).kind === 'bed' || !(o as any).kind) && bt === 'litera';
-      }).length;
-      const individuales = rawObjects.filter(o => {
-        const bt = (o as any).bedType || (o as any).type;
-        return ((o as any).kind === 'bed' || !(o as any).kind) && bt === 'individual';
-      }).length;
-      const duplex = rawObjects.filter(o => {
-        const bt = (o as any).bedType || (o as any).type;
-        return ((o as any).kind === 'bed' || !(o as any).kind) && bt === 'duplex';
-      }).length;
-      return { literas, individuales, duplex };
-    } catch {
-      return { literas: 0, individuales: 0, duplex: 0 };
-    }
-  };
 
   const totalesCroquis = carpas.reduce(
     (acc, carpa) => {
@@ -327,9 +315,9 @@ export default function Inicio() {
           </div>
           <div className="overflow-hidden">
             <p className="text-sm font-medium text-gray-500 truncate">Camas Disponibles</p>
-            <p className="text-3xl font-bold text-gray-900">{disponibles}</p>
+            <p className="text-3xl font-bold text-gray-900">{disponiblesCroquis}</p>
             <p className="text-xs text-gray-400 mt-1">
-              <span className="text-caracas-red font-medium">{ocupadas}</span> Ocupadas / {capacidad} Totales
+              <span className="text-caracas-red font-medium">{uniqueOccupiedBedsSet.size}</span> Ocupadas / {totalCamasCroquis} Totales
             </p>
           </div>
         </div>
@@ -350,8 +338,8 @@ export default function Inicio() {
       </div>
 
       {/* Indicadores Demográficos Detallados */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Niños (0-12) */}
+      <div className="space-y-6">
+        {/* Niños (0-12) - card padre */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
           <div className="flex items-center gap-3 mb-4">
             <div className="p-3 bg-orange-100 rounded-xl text-orange-500">
@@ -367,36 +355,90 @@ export default function Inicio() {
           </p>
         </div>
 
-        {/* Adolescentes (13-17) */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-3 bg-yellow-100 rounded-xl text-yellow-600">
-              <Sparkles size={28} />
+        {/* Sub-cards de Niñez */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Niños Lactantes (0-3) */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-orange-400 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-sky-100 rounded-xl text-sky-500">
+                <Milk size={28} />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">Niños Lactantes</p>
+                <p className="text-2xl font-bold text-gray-900">{lactantes.length}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Adolescentes</p>
-              <p className="text-2xl font-bold text-gray-900">{adolescentes.length}</p>
-            </div>
+            <p className="text-xs text-gray-400">
+              0 a 3 años · <span className="text-blue-600 font-medium">{lactantesH} H</span> · <span className="text-pink-600 font-medium">{lactantesM} M</span>
+            </p>
           </div>
-          <p className="text-xs text-gray-400">
-            13 a 17 años · <span className="text-blue-600 font-medium">{adolescentesH} H</span> · <span className="text-pink-600 font-medium">{adolescentesM} M</span>
-          </p>
+
+          {/* No Lactantes (4-12) */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-orange-300 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-amber-100 rounded-xl text-amber-600">
+                <Baby size={28} />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">No Lactantes</p>
+                <p className="text-2xl font-bold text-gray-900">{noLactantes.length}</p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-400">
+              4 a 12 años · <span className="text-blue-600 font-medium">{noLactantesH} H</span> · <span className="text-pink-600 font-medium">{noLactantesM} M</span>
+            </p>
+          </div>
         </div>
 
-        {/* Adulto Mayor */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-3 bg-rose-100 rounded-xl text-rose-500">
-              <Heart size={28} />
+        {/* Adolescentes, Adultos, Adulto Mayor */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Adolescentes (13-17) */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-yellow-100 rounded-xl text-yellow-600">
+                <Sparkles size={28} />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">Adolescentes</p>
+                <p className="text-2xl font-bold text-gray-900">{adolescentes.length}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Adulto Mayor</p>
-              <p className="text-2xl font-bold text-gray-900">{adultoMayor.length}</p>
-            </div>
+            <p className="text-xs text-gray-400">
+              13 a 17 años · <span className="text-blue-600 font-medium">{adolescentesH} H</span> · <span className="text-pink-600 font-medium">{adolescentesM} M</span>
+            </p>
           </div>
-          <p className="text-xs text-gray-400">
-            H &ge;60 / M &ge;55 · <span className="text-blue-600 font-medium">{adultoMayorH} H</span> · <span className="text-pink-600 font-medium">{adultoMayorM} M</span>
-          </p>
+
+          {/* Adultos (18-59 H / 18-54 M) */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-emerald-100 rounded-xl text-emerald-600">
+                <UserCheck size={28} />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">Adultos</p>
+                <p className="text-2xl font-bold text-gray-900">{adultos.length}</p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-400">
+              H 18-59 / M 18-54 · <span className="text-blue-600 font-medium">{adultosH} H</span> · <span className="text-pink-600 font-medium">{adultosM} M</span>
+            </p>
+          </div>
+
+          {/* Adulto Mayor */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-rose-100 rounded-xl text-rose-500">
+                <Heart size={28} />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">Adulto Mayor</p>
+                <p className="text-2xl font-bold text-gray-900">{adultoMayor.length}</p>
+              </div>
+            </div>
+            <p className="text-xs text-gray-400">
+              H &ge;60 / M &ge;55 · <span className="text-blue-600 font-medium">{adultoMayorH} H</span> · <span className="text-pink-600 font-medium">{adultoMayorM} M</span>
+            </p>
+          </div>
         </div>
       </div>
 

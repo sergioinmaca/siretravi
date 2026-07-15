@@ -3,7 +3,7 @@ import { X, Save, ChevronDown, ChevronUp, Tent, MapPin, Trash2 } from 'lucide-re
 import { useCampamento } from '../../context/CampamentoContext';
 import type { Carpa, Campamento } from '../../types';
 import CroquisEditor from './CroquisEditor';
-import { countElements } from './CroquisViewer';
+import { countElements, contarTiposDesdeCroquis } from './CroquisViewer';
 
 interface CarpaDraft {
   nombre: string;
@@ -88,7 +88,7 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
 
   const calcularCapacidadTotal = () => {
     return carpas.reduce((total, c) => {
-      return total + (c.literas * 2) + c.camas_individuales + (c.camas_duplex * 2);
+      return total + countElements(c.croquis_data, tipoContabilizacion);
     }, 0);
   };
 
@@ -287,16 +287,21 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
                     <div className="p-2 bg-caracas-blue/10 rounded-lg">
                       <Tent size={18} className="text-caracas-blue" />
                     </div>
-                    <div className="text-left">
-                      <h3 className="font-semibold text-gray-800">{carpa.nombre || `Carpa ${index + 1}`}</h3>
-                      <p className="text-xs text-gray-500">
-                        {carpa.literas} literas · {carpa.camas_individuales} individuales · {carpa.camas_duplex} duplex
-                        {' · '}
-                        <span className="font-semibold text-caracas-red">
-                          {(carpa.literas * 2) + carpa.camas_individuales + (carpa.camas_duplex * 2)} camas total
-                        </span>
-                      </p>
-                    </div>
+                      <div className="text-left">
+                        <h3 className="font-semibold text-gray-800">{carpa.nombre || `Carpa ${index + 1}`}</h3>
+                        {(() => {
+                          const tipos = contarTiposDesdeCroquis(carpa.croquis_data || '');
+                          return (
+                            <p className="text-xs text-gray-500">
+                              {tipos.literas} literas · {tipos.individuales} individuales · {tipos.duplex} duplex
+                              {' · '}
+                              <span className="font-semibold text-caracas-red">
+                                {countElements(carpa.croquis_data || '', tipoContabilizacion)} camas total
+                              </span>
+                            </p>
+                          );
+                        })()}
+                      </div>
                   </div>
                   {carpa.expanded ? <ChevronUp size={20} className="text-gray-400" /> : <ChevronDown size={20} className="text-gray-400" />}
                 </button>
@@ -363,7 +368,13 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
                         maxDuplex={carpa.camas_duplex}
                         tipoContabilizacion={tipoContabilizacion}
                         initialData={campamentoToEdit ? carpa.croquis_data : undefined}
-                        onChange={(data) => updateCarpa(index, 'croquis_data', data)}
+                        onChange={(data) => {
+                          updateCarpa(index, 'croquis_data', data);
+                          const tipos = contarTiposDesdeCroquis(data);
+                          updateCarpa(index, 'literas', tipos.literas);
+                          updateCarpa(index, 'camas_individuales', tipos.individuales);
+                          updateCarpa(index, 'camas_duplex', tipos.duplex);
+                        }}
                         elementNumberOffset={(() => {
                           let offset = 0;
                           for (let i = 0; i < index; i++) {
