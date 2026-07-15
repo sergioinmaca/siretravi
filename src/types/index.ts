@@ -115,6 +115,7 @@ export interface Refugiado {
   condicion_vivienda?: string;
   tenencia_vivienda?: string;
   ingreso_familiar?: string;
+  observaciones?: string;
   parentesco?: string;
 }
 
