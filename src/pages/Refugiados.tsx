@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react';
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Search, UserPlus, FileText, Pencil, Trash2, ShieldOff, Eye, FileDown, Loader2 } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
@@ -49,19 +49,20 @@ export default function Refugiados() {
     return () => clearTimeout(timer);
   }, [searchInput]);
 
-  // Resetear página al cambiar búsqueda
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [debouncedSearch]);
-
   // Fetch paginado
+  const currentPageRef = useRef(currentPage);
+  useEffect(() => {
+    currentPageRef.current = currentPage;
+  }, [currentPage]);
+
   const refetch = useCallback(async () => {
     if (!campamentoSeleccionado) return;
     setLoadingPaginados(true);
     try {
+      const page = currentPageRef.current;
       const { data, count } = await obtenerRefugiadosPaginados(
         campamentoSeleccionado.id,
-        currentPage,
+        page,
         REGISTROS_POR_PAGINA,
         debouncedSearch
       );
@@ -72,11 +73,20 @@ export default function Refugiados() {
     } finally {
       setLoadingPaginados(false);
     }
-  }, [campamentoSeleccionado, currentPage, debouncedSearch, obtenerRefugiadosPaginados]);
+  }, [campamentoSeleccionado, debouncedSearch, obtenerRefugiadosPaginados]);
 
   useEffect(() => {
     refetch();
-  }, [refetch]);
+  }, [currentPage, refetch]);
+
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    } else {
+      refetch();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSearch]);
 
   // Filas a mostrar con jerarquía resuelta
   const displayedRows = useMemo(() => {
@@ -505,8 +515,12 @@ export default function Refugiados() {
         onClose={() => {
           setIsFichaOpen(false);
           setFichaRefugiado(null);
+          refetch();
         }}
         refugiado={fichaRefugiado}
+        onActualizarFoto={(foto_url) => {
+          setFichaRefugiado(prev => prev ? { ...prev, foto_url } : null);
+        }}
       />
 
     </div>

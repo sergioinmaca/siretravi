@@ -657,9 +657,13 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
 
     if (searchTerm?.trim()) {
       const term = searchTerm.trim();
-      query = query.or(
-        `nombres.ilike.*${term}*,apellidos.ilike.*${term}*,codigo.ilike.*${term}*,cedula::text.ilike.*${term}*`
-      );
+      const textFields = `nombres.ilike.*${term}*,apellidos.ilike.*${term}*,codigo.ilike.*${term}*,nro_cama.ilike.*${term}*,procedencia.ilike.*${term}*`;
+      const numTerm = parseInt(term);
+      if (!isNaN(numTerm) && String(numTerm) === term) {
+        query = query.or(`${textFields},cedula.eq.${numTerm}`);
+      } else {
+        query = query.or(textFields);
+      }
     }
 
     const { data, error, count } = await query;

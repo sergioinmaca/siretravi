@@ -3,6 +3,7 @@ import {
   X, User, Users, MapPin, Accessibility, Shirt,
   Calendar, Phone, Briefcase, GraduationCap, Heart,
   PawPrint, AlertTriangle, Baby, Stethoscope, FileText, Loader2, Camera,
+  Save, Trash2,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -17,24 +18,35 @@ interface FichaRefugiadoModalProps {
   isOpen: boolean;
   onClose: () => void;
   refugiado: Refugiado | null;
+  onActualizarFoto: (foto_url: string | null) => void;
 }
 
-export default function FichaRefugiadoModal({ isOpen, onClose, refugiado }: FichaRefugiadoModalProps) {
+export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActualizarFoto }: FichaRefugiadoModalProps) {
   const { familias = [], actualizarRefugiado } = useCampamento();
   const [isExporting, setIsExporting] = useState(false);
-  const [fotoUrl, setFotoUrl] = useState<string | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [storageUrl, setStorageUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const canUpload = !refugiado?.foto_url && !storageUrl;
+  const canSave = !!storageUrl;
+  const canDelete = !!refugiado?.foto_url || !!storageUrl;
+
   useEffect(() => {
     if (isOpen) {
-      setFotoUrl(refugiado?.foto_url || null);
+      const saved = refugiado?.foto_url || null;
+      setPreviewUrl(saved);
+      setStorageUrl(null);
+      setUploadError(null);
     } else {
-      setFotoUrl(null);
+      setPreviewUrl(null);
+      setStorageUrl(null);
       setUploadError(null);
     }
-  }, [isOpen, refugiado]);
+  }, [isOpen, refugiado?.foto_url]);
 
   if (!isOpen || !refugiado) return null;
 
@@ -61,7 +73,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado }: Fich
     }
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSelectAndUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !refugiado) return;
 
@@ -69,7 +81,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado }: Fich
     setUploadError(null);
 
     const reader = new FileReader();
-    reader.onload = () => setFotoUrl(reader.result as string);
+    reader.onload = () => setPreviewUrl(reader.result as string);
     reader.readAsDataURL(file);
 
     try {
@@ -86,21 +98,64 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado }: Fich
         .from('fotos-integrantes')
         .getPublicUrl(path);
 
-      const foto_url = urlData.publicUrl;
-
-      await actualizarRefugiado(refugiado.id, { ...refugiado, foto_url });
+      const publicUrl = urlData.publicUrl;
+      setStorageUrl(publicUrl);
+      setPreviewUrl(publicUrl);
     } catch (err) {
       console.error('Error subiendo foto:', err);
-      setUploadError('No se pudo guardar la foto. Intente de nuevo.');
-      setFotoUrl(refugiado.foto_url || null);
+      setUploadError('No se pudo subir la foto. Intente de nuevo.');
+      setPreviewUrl(refugiado.foto_url || null);
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
+  const handleGuardar = async () => {
+    if (!storageUrl || !refugiado) return;
+    setIsSaving(true);
+    try {
+      await actualizarRefugiado(refugiado.id, { ...refugiado, foto_url: storageUrl });
+      onActualizarFoto(storageUrl);
+      setPreviewUrl(storageUrl);
+      setStorageUrl(null);
+    } catch (err) {
+      console.error('Error guardando foto:', err);
+      setUploadError('No se pudo guardar la foto en la ficha.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleEliminar = async () => {
+    if (!window.confirm('¿Estás seguro de que deseas eliminar la foto?')) return;
+
+    try {
+      const urlToDelete = storageUrl || refugiado?.foto_url;
+      if (urlToDelete && refugiado) {
+        const pathMatch = urlToDelete.match(/\/fotos-integrantes\/(.+)$/);
+        if (pathMatch) {
+          await supabase.storage.from('fotos-integrantes').remove([pathMatch[1]]);
+        }
+      }
+
+      if (refugiado) {
+        await actualizarRefugiado(refugiado.id, { ...refugiado, foto_url: null });
+      }
+
+      onActualizarFoto(null);
+      setStorageUrl(null);
+      setPreviewUrl(null);
+      setUploadError(null);
+    } catch (err) {
+      console.error('Error eliminando foto:', err);
+      setUploadError('No se pudo eliminar la foto. Intente de nuevo.');
+    }
+  };
+
   const handleClose = () => {
-    setFotoUrl(null);
+    setPreviewUrl(null);
+    setStorageUrl(null);
     setUploadError(null);
     onClose();
   };
@@ -122,7 +177,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado }: Fich
           type="file"
           accept="image/*"
           className="hidden"
-          onChange={handleFileChange}
+          onChange={handleSelectAndUpload}
         />
 
         {/* Header */}
@@ -152,30 +207,20 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado }: Fich
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2 flex items-start gap-6">
                 <div className="shrink-0">
-                  {fotoUrl ? (
+                  {previewUrl ? (
                     <div className="relative group">
                       <img
-                        src={fotoUrl}
+                        src={previewUrl}
                         alt="Foto del integrante"
                         className="w-28 h-32 object-cover rounded-xl border-2 border-gray-200"
                       />
-                      <button
-                        onClick={() => {
-                          setFotoUrl(null);
-                          fileInputRef.current?.click();
-                        }}
-                        className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"
-                        title="Cambiar foto"
-                      >
-                        <Camera size={24} className="text-white" />
-                      </button>
                     </div>
                   ) : (
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      disabled={isUploading}
-                      className="w-28 h-32 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-caracas-red hover:text-caracas-red hover:bg-red-50/30 transition-colors disabled:opacity-50"
-                      title="Subir foto"
+                      disabled={!canUpload || isUploading}
+                      className="w-28 h-32 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-caracas-red hover:text-caracas-red hover:bg-red-50/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={canUpload ? 'Subir foto' : 'La foto ya está guardada'}
                     >
                       {isUploading ? (
                         <>
@@ -192,6 +237,16 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado }: Fich
                   )}
                   {uploadError && (
                     <p className="text-xs text-red-500 mt-1 text-center leading-tight">{uploadError}</p>
+                  )}
+                  {canDelete && (
+                    <button
+                      onClick={handleEliminar}
+                      disabled={isUploading}
+                      className="w-28 mt-2 px-2 py-1.5 rounded-lg text-xs font-medium text-red-600 border border-red-200 hover:bg-red-50 transition-colors flex items-center justify-center gap-1 disabled:opacity-50"
+                    >
+                      <Trash2 size={12} />
+                      Eliminar foto
+                    </button>
                   )}
                 </div>
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -378,6 +433,18 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado }: Fich
         {/* Footer */}
         <div className="px-8 py-5 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
           <button
+            onClick={handleGuardar}
+            disabled={!canSave || isSaving}
+            className="flex items-center justify-center gap-2 bg-caracas-blue hover:bg-blue-800 text-white px-6 py-2.5 rounded-xl font-medium transition-all shadow-lg disabled:opacity-50"
+          >
+            {isSaving ? (
+              <Loader2 className="animate-spin" size={18} />
+            ) : (
+              <Save size={18} />
+            )}
+            {isSaving ? 'Guardando...' : 'Guardar'}
+          </button>
+          <button
             onClick={handleExportPDF}
             disabled={isExporting}
             className="flex items-center justify-center gap-2 bg-caracas-red hover:bg-red-800 text-white px-6 py-2.5 rounded-xl font-medium transition-all shadow-lg shadow-caracas-red/20 disabled:opacity-50"
@@ -429,9 +496,9 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado }: Fich
                 {refugiado.codigo || '—'}
               </span>
             </div>
-            {fotoUrl ? (
+            {refugiado.foto_url ? (
               <img
-                src={fotoUrl}
+                src={refugiado.foto_url}
                 alt="Foto integrante"
                 className="w-[90px] h-[110px] object-cover border border-gray-400"
               />
