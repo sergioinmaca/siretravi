@@ -92,6 +92,7 @@ export default function HistoriaClinicaModal({ isOpen, onClose, historiaToEdit, 
   const [enfCronicasList, setEnfCronicasList] = useState(buildEmptyEnfCronicas());
   const [cantidadEnfCronicas, setCantidadEnfCronicas] = useState(1);
   const [edadCalculada, setEdadCalculada] = useState('');
+  const [resultadosBusqueda, setResultadosBusqueda] = useState<Refugiado[]>([]);
 
   const isEditing = !!historiaToEdit;
 
@@ -101,6 +102,7 @@ export default function HistoriaClinicaModal({ isOpen, onClose, historiaToEdit, 
     setCantidadEnfCronicas(1);
     setEdadCalculada('');
     setErrorMsg('');
+    setResultadosBusqueda([]);
   }, []);
 
   useEffect(() => {
@@ -161,51 +163,59 @@ export default function HistoriaClinicaModal({ isOpen, onClose, historiaToEdit, 
     }
   }, [isOpen, historiaToEdit, refugiadoPreseleccionado, refugiados, resetForm]);
 
-  const buscarRefugiado = async () => {
+  const seleccionarRefugiado = async (refugiado: Refugiado) => {
+    const { count } = await supabase
+      .from('historias_clinicas')
+      .select('*', { count: 'exact', head: true })
+      .eq('refugiado_id', refugiado.id);
+    if (count && count > 0 && !isEditing) {
+      alert('Este integrante ya tiene una historia clinica abierta.');
+      return false;
+    }
+    setRefugiadoEncontrado(refugiado);
+    setEdadCalculada(formatAge(new Date(refugiado.fecha_nacimiento)));
+    setFormData(prev => ({
+      ...prev,
+      discapacidad: refugiado.discapacidad,
+      alergias: refugiado.alergias,
+      enfermedadCronica: refugiado.enfermedad_cronica,
+      lesionSismo: refugiado.lesion_sismo,
+      adultoMayorDependencia: refugiado.adulto_mayor_dependencia,
+      lactante: refugiado.lactante || false,
+      embarazo: refugiado.embarazo,
+      tiempoEmbarazo: refugiado.tiempo_embarazo?.toString() || '',
+    }));
+    setResultadosBusqueda([]);
+    return true;
+  };
+
+  const buscarRefugiado = () => {
     if (!cedulaBusqueda.trim()) return;
-    const busqueda = cedulaBusqueda.trim();
-    const esNumerico = /^\d+$/.test(busqueda);
+    const busqueda = cedulaBusqueda.trim().toUpperCase();
+    const resultados = refugiados.filter(r => {
+      if (r.campamento_id !== campamentoSeleccionado?.id) return false;
+      const nombres = (r.nombres || '').toUpperCase();
+      const apellidos = (r.apellidos || '').toUpperCase();
+      const cedulaStr = r.cedula?.toString() || '';
+      return nombres.includes(busqueda) || apellidos.includes(busqueda) || cedulaStr.includes(busqueda);
+    });
 
-    const encontrado = esNumerico
-      ? refugiados.find(
-          r => r.cedula === parseInt(busqueda) && r.campamento_id === campamentoSeleccionado?.id
-        )
-      : refugiados.find(
-          r => r.codigo.toUpperCase() === busqueda.toUpperCase() && r.campamento_id === campamentoSeleccionado?.id
-        );
-
-    if (encontrado) {
-      const { count } = await supabase
-        .from('historias_clinicas')
-        .select('*', { count: 'exact', head: true })
-        .eq('refugiado_id', encontrado.id);
-      if (count && count > 0 && !isEditing) {
-        alert('Este integrante ya tiene una historia clinica abierta.');
-        return;
-      }
-      setRefugiadoEncontrado(encontrado);
-      setEdadCalculada(formatAge(new Date(encontrado.fecha_nacimiento)));
-      setFormData(prev => ({
-        ...prev,
-        discapacidad: encontrado.discapacidad,
-        alergias: encontrado.alergias,
-        enfermedadCronica: encontrado.enfermedad_cronica,
-        lesionSismo: encontrado.lesion_sismo,
-        adultoMayorDependencia: encontrado.adulto_mayor_dependencia,
-        lactante: encontrado.lactante || false,
-        embarazo: encontrado.embarazo,
-        tiempoEmbarazo: encontrado.tiempo_embarazo?.toString() || '',
-      }));
-    } else {
-      alert('No se encontro ningun integrante con esa cedula o codigo en este campamento.');
+    if (resultados.length === 0) {
+      alert('No se encontro ningun integrante con ese criterio de busqueda en este campamento.');
       setRefugiadoEncontrado(null);
+      setResultadosBusqueda([]);
+    } else if (resultados.length === 1) {
+      setResultadosBusqueda([]);
+      seleccionarRefugiado(resultados[0]);
+    } else {
+      setResultadosBusqueda(resultados);
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!refugiadoEncontrado && !isEditing) {
-      alert('Debe buscar un integrante por cedula o codigo primero.');
+      alert('Debe buscar un integrante por cedula, nombre o apellido primero.');
       return;
     }
 
@@ -362,7 +372,7 @@ export default function HistoriaClinicaModal({ isOpen, onClose, historiaToEdit, 
 
           <form id="hc-form" onSubmit={handleSubmit} className="space-y-6">
             {!isEditing && (
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-visible">
                 <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
                   <div className="p-2 bg-caracas-blue/10 rounded-lg">
                     <Search size={18} className="text-caracas-blue" />
@@ -371,16 +381,34 @@ export default function HistoriaClinicaModal({ isOpen, onClose, historiaToEdit, 
                 </div>
                 <div className="p-6">
                   <div className="flex gap-4 items-end">
-                    <div className="flex-1">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Cedula o Codigo del Integrante</label>
+                    <div className="flex-1 relative">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Buscar por cedula, nombre o apellido</label>
                       <input
                         type="text"
                         value={cedulaBusqueda}
-                        onChange={(e) => setCedulaBusqueda(e.target.value)}
+                        onChange={(e) => { setCedulaBusqueda(e.target.value); setResultadosBusqueda([]); }}
                         onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); buscarRefugiado(); } }}
                         className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all"
-                        placeholder="Escriba la cedula o codigo y presione Enter"
+                        placeholder="Escriba la cedula, nombre o apellido"
                       />
+                      {resultadosBusqueda.length > 1 && (
+                        <div className="absolute z-50 left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto">
+                          {resultadosBusqueda.map((r) => (
+                            <button
+                              key={r.id}
+                              type="button"
+                              onClick={() => seleccionarRefugiado(r)}
+                              className="w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
+                            >
+                              <p className="font-semibold text-gray-800">{r.nombres} {r.apellidos}</p>
+                              <p className="text-xs text-gray-500">
+                                {r.codigo && <span>Codigo: {r.codigo} | </span>}
+                                C.I: {r.cedula || 'N/A'} | Cama: {r.nro_cama || 'N/A'}
+                              </p>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                     <button type="button" onClick={buscarRefugiado} className="px-6 py-2.5 bg-caracas-blue text-white rounded-xl font-medium hover:bg-blue-800 transition-colors">
                       Buscar
