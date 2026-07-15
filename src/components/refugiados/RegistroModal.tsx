@@ -160,13 +160,17 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     let finalFamiliaId = formData.familiaId;
 
     if (formData.esJefeFamilia) {
-      const nombreFamilia = `FAMILIA ${formData.nombres} ${formData.apellidos}`;
-      const familiaCreada = await agregarFamilia({
-        id: '',
-        campamento_id: campamentoSeleccionado.id,
-        nombre: nombreFamilia
-      });
-      finalFamiliaId = familiaCreada?.id || '';
+      if (isEditing && refugiadoToEdit?.familia_id) {
+        finalFamiliaId = refugiadoToEdit.familia_id;
+      } else {
+        const nombreFamilia = `FAMILIA ${formData.nombres} ${formData.apellidos}`;
+        const familiaCreada = await agregarFamilia({
+          id: '',
+          campamento_id: campamentoSeleccionado.id,
+          nombre: nombreFamilia
+        });
+        finalFamiliaId = familiaCreada?.id || '';
+      }
     }
 
     const payload: Refugiado = {
