@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useCampamento } from '../../context/CampamentoContext';
-import { ArrowLeft, Stethoscope, Search, Plus, MoreVertical } from 'lucide-react';
+import { ArrowLeft, Stethoscope, Search, Plus, Pencil } from 'lucide-react';
 import HistoriaClinicaModal from '../../components/salud/HistoriaClinicaModal';
 import AtencionMedicaModal from '../../components/salud/AtencionMedicaModal';
 import type { HistoriaClinica } from '../../types';
@@ -21,7 +21,6 @@ export default function HistoriasClinicas() {
   const [historiaToEdit, setHistoriaToEdit] = useState<HistoriaClinica | null>(null);
   const [atencionHCId, setAtencionHCId] = useState('');
   const [atencionNombre, setAtencionNombre] = useState('');
-  const [contextMenuOpen, setContextMenuOpen] = useState<string | null>(null);
   const [historias, setHistorias] = useState<HistoriaClinica[]>([]);
   const perPage = 15;
 
@@ -114,7 +113,7 @@ export default function HistoriasClinicas() {
                 <th className="px-6 py-4 font-semibold text-gray-600">Apellidos y Nombres</th>
                 <th className="px-6 py-4 font-semibold text-gray-600">Cama</th>
                 <th className="px-6 py-4 font-semibold text-gray-600">Fecha Apertura</th>
-                <th className="px-6 py-4 font-semibold text-gray-600 text-center">Acciones</th>
+                <th className="px-6 py-4 font-semibold text-gray-600 text-right">Acciones</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -145,37 +144,30 @@ export default function HistoriasClinicas() {
                   <td className="px-6 py-4 text-gray-600">
                     {toDisplayDate(historia.fecha_apertura)}
                   </td>
-                  <td className="px-6 py-4 text-center relative">
-                    <button
-                      onClick={() => setContextMenuOpen(contextMenuOpen === historia.id ? null : historia.id)}
-                      className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                      <MoreVertical size={18} className="text-gray-500" />
-                    </button>
-                    {contextMenuOpen === historia.id && (
-                      <div className="absolute right-6 top-12 z-20 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[180px]">
-                        {tienePermisoPorCampamento('Salud', campId, 'Modificar') && (
-                          <button
-                            onClick={() => {
-                              setHistoriaToEdit(historia);
-                              setHistoriaModalOpen(true);
-                              setContextMenuOpen(null);
-                            }}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            Modificar Historia
-                          </button>
-                        )}
-                        {tienePermisoPorCampamento('Salud', campId, 'Modificar') && (
-                          <button
-                            onClick={() => openAtencion(historia.id, `${refugiado?.apellidos || ''}, ${refugiado?.nombres || ''}`)}
-                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            Atencion Medica
-                          </button>
-                        )}
-                      </div>
-                    )}
+                  <td className="px-6 py-4">
+                    <div className="flex items-center justify-end gap-1">
+                      {tienePermisoPorCampamento('Salud', campId, 'Modificar') && (
+                        <button
+                          onClick={() => {
+                            setHistoriaToEdit(historia);
+                            setHistoriaModalOpen(true);
+                          }}
+                          className="p-2 text-gray-400 hover:text-caracas-blue hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Modificar Historia"
+                        >
+                          <Pencil size={18} />
+                        </button>
+                      )}
+                      {tienePermisoPorCampamento('Salud', campId, 'Modificar') && (
+                        <button
+                          onClick={() => openAtencion(historia.id, `${refugiado?.apellidos || ''}, ${refugiado?.nombres || ''}`)}
+                          className="p-2 text-gray-400 hover:text-caracas-blue hover:bg-blue-50 rounded-lg transition-colors"
+                          title="Atención Médica"
+                        >
+                          <Stethoscope size={18} />
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
