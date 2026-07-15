@@ -17,7 +17,7 @@ interface CampamentoContextType {
   eliminarCampamento: (id: string) => Promise<void>;
   agregarFamilia: (nueva: Familia) => Promise<Familia | null>;
   eliminarFamilia: (id: string) => Promise<void>;
-  agregarRefugiado: (nuevo: Refugiado) => Promise<void>;
+  agregarRefugiado: (nuevo: Refugiado) => Promise<Refugiado | null>;
   eliminarRefugiado: (id: string) => Promise<void>;
   actualizarRefugiado: (id: string, actualizado: Refugiado) => Promise<void>;
   obtenerRefugiadosPaginados: (campamentoId: string, page: number, pageSize: number, searchTerm?: string) => Promise<{ data: Refugiado[]; count: number }>;
@@ -128,6 +128,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
           ingreso_familiar: (r.ingreso_familiar as string) || undefined,
           observaciones: (r.observaciones as string) || undefined,
           parentesco: (r.parentesco as string) || undefined,
+          foto_url: (r.foto_url as string) || undefined,
         }));
 
         setCampamentos(campamentosMapped);
@@ -189,6 +190,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         ingreso_familiar: r.ingreso_familiar || undefined,
         observaciones: r.observaciones || undefined,
         parentesco: r.parentesco || undefined,
+        foto_url: r.foto_url || undefined,
       });
 
       const channel = supabase.channel('campamentos-realtime')
@@ -509,13 +511,14 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         ingreso_familiar: nuevo.ingreso_familiar || null,
         observaciones: nuevo.observaciones || null,
         parentesco: nuevo.parentesco || null,
+        foto_url: nuevo.foto_url || null,
       })
       .select()
       .single();
 
     if (error || !data) {
       console.error('Error al registrar refugiado:', error);
-      return;
+      return null;
     }
 
     const refugiadoCreado: Refugiado = {
@@ -558,11 +561,13 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       ingreso_familiar: data.ingreso_familiar || undefined,
       observaciones: data.observaciones || undefined,
       parentesco: data.parentesco || undefined,
+      foto_url: (data.foto_url as string) || undefined,
     };
     setRefugiados(prev => {
       if (prev.find(r => r.id === refugiadoCreado.id)) return prev;
       return [...prev, refugiadoCreado];
     });
+    return refugiadoCreado;
   };
 
   // ── Eliminar Refugiado ─────────────────────────────────────────────────
@@ -621,6 +626,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         ingreso_familiar: actualizado.ingreso_familiar || null,
         observaciones: actualizado.observaciones || null,
         parentesco: actualizado.parentesco || null,
+        foto_url: actualizado.foto_url || null,
       })
       .eq('id', id);
 
@@ -703,6 +709,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       ingreso_familiar: (r.ingreso_familiar as string) || undefined,
       observaciones: (r.observaciones as string) || undefined,
       parentesco: (r.parentesco as string) || undefined,
+      foto_url: (r.foto_url as string) || undefined,
     })) as Refugiado[];
 
     return { data: mapped, count: count || 0 };

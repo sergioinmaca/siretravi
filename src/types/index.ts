@@ -117,6 +117,7 @@ export interface Refugiado {
   ingreso_familiar?: string;
   observaciones?: string;
   parentesco?: string;
+  foto_url?: string;
 }
 
 export interface HistoriaClinica {

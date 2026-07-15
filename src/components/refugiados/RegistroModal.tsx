@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useCampamento } from '../../context/CampamentoContext';
-import { User, Users, MapPin, Save, AlertCircle, CheckCircle2, X, Accessibility, Shirt } from 'lucide-react';
+import { User, Users, MapPin, Save, AlertCircle, CheckCircle2, X, Accessibility, Shirt, Loader2, Camera } from 'lucide-react';
+import { supabase } from '../../lib/supabase';
 import type { Refugiado } from '../../types';
 import { formatAge } from '../../lib/formatAge';
 import { toDateInput } from '../../lib/formatDate';
@@ -15,6 +16,10 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
   const { campamentoSeleccionado, familias = [], refugiados = [], agregarFamilia, agregarRefugiado, actualizarRefugiado } = useCampamento();
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [fotoFile, setFotoFile] = useState<File | null>(null);
+  const [fotoPreview, setFotoPreview] = useState<string | null>(null);
+  const [isUploadingFoto, setIsUploadingFoto] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const isEditing = !!refugiadoToEdit;
 
   const [formData, setFormData] = useState({
@@ -60,6 +65,8 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
   // Precargar datos cuando se edita
   useEffect(() => {
     if (isOpen && refugiadoToEdit) {
+      setFotoPreview(refugiadoToEdit.foto_url || null);
+      setFotoFile(null);
       const birth = new Date(refugiadoToEdit.fecha_nacimiento);
 
       setFormData({
@@ -104,6 +111,8 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
         parentesco: refugiadoToEdit.parentesco || '',
       });
     } else if (isOpen && !refugiadoToEdit) {
+      setFotoPreview(null);
+      setFotoFile(null);
       setFormData({
         nombres: '', apellidos: '', cedula: '', genero: 'M',
         fechaNacimiento: '', edad: '', esJefeFamilia: true, familiaId: '',
@@ -144,6 +153,41 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
+  };
+
+  const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFotoFile(file);
+
+    const reader = new FileReader();
+    reader.onload = () => setFotoPreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const uploadFoto = async (refugiadoId: string, campamentoId: string): Promise<string | undefined> => {
+    if (!fotoFile) return undefined;
+
+    setIsUploadingFoto(true);
+    const ext = fotoFile.name.split('.').pop();
+    const path = `${campamentoId}/${refugiadoId}/${Date.now()}.${ext}`;
+
+    const { error } = await supabase.storage
+      .from('fotos-integrantes')
+      .upload(path, fotoFile, { upsert: true, contentType: fotoFile.type });
+
+    setIsUploadingFoto(false);
+
+    if (error) {
+      console.error('Error subiendo foto:', error);
+      return undefined;
+    }
+
+    const { data } = supabase.storage
+      .from('fotos-integrantes')
+      .getPublicUrl(path);
+
+    return data.publicUrl;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -213,12 +257,25 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       ingreso_familiar: formData.ingresoFamiliar || undefined,
       observaciones: formData.observaciones || undefined,
       parentesco: formData.parentesco || undefined,
+      foto_url: fotoFile ? undefined : (refugiadoToEdit?.foto_url || undefined),
     };
 
     if (isEditing && refugiadoToEdit) {
       await actualizarRefugiado(refugiadoToEdit.id, payload);
+      if (fotoFile) {
+        const foto_url = await uploadFoto(refugiadoToEdit.id, campamentoSeleccionado.id);
+        if (foto_url) {
+          await actualizarRefugiado(refugiadoToEdit.id, { ...payload, foto_url });
+        }
+      }
     } else {
-      await agregarRefugiado(payload);
+      const refugiadoCreado = await agregarRefugiado(payload);
+      if (refugiadoCreado && fotoFile) {
+        const foto_url = await uploadFoto(refugiadoCreado.id, campamentoSeleccionado.id);
+        if (foto_url) {
+          await actualizarRefugiado(refugiadoCreado.id, { ...refugiadoCreado, foto_url });
+        }
+      }
     }
 
     setIsSubmitting(false);
@@ -279,6 +336,41 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                 <h3 className="font-semibold text-gray-800">1. Datos Personales</h3>
               </div>
               <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Foto</label>
+                  <div className="flex items-start gap-4">
+                    {fotoPreview ? (
+                      <div className="relative group shrink-0">
+                        <img src={fotoPreview} alt="Preview" className="w-24 h-28 object-cover rounded-xl border-2 border-gray-200" />
+                        <button
+                          type="button"
+                          onClick={() => { setFotoPreview(null); setFotoFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
+                          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 shadow"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploadingFoto}
+                        className="w-24 h-28 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-caracas-red hover:text-caracas-red hover:bg-red-50/30 transition-colors disabled:opacity-50"
+                      >
+                        <Camera size={20} />
+                        <span className="text-[9px] font-medium">Foto</span>
+                      </button>
+                    )}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleFotoChange}
+                    />
+                    <p className="text-xs text-gray-400 mt-1">Formatos JPG, PNG o WEBP. Máx. 5 MB.</p>
+                  </div>
+                </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Nombres <span className="text-caracas-red">*</span></label>
                   <input required type="text" name="nombres" value={formData.nombres} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase" placeholder="EJ. MARÍA ALEJANDRA" />
