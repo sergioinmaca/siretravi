@@ -359,6 +359,12 @@ function drawBedsWithNumbers(
       const bottomOcc = occupiedNumbers.includes(actualNumbers[1]);
 
       if (topOcc || bottomOcc) {
+        const swapped = bed.rotation === 90 || bed.rotation === 180;
+        const topY = swapped ? 0 : -h / 2;
+        const topH = swapped ? h / 2 : h / 2;
+        const bottomY = swapped ? -h / 2 : 0;
+        const bottomH = swapped ? h / 2 : h / 2;
+
         ctx.beginPath();
         ctx.roundRect(-w / 2, -h / 2, w, h, 4);
         ctx.save();
@@ -366,11 +372,11 @@ function drawBedsWithNumbers(
 
         if (topOcc) {
           ctx.fillStyle = '#EF4444';
-          ctx.fillRect(-w / 2, -h / 2, w, h / 2);
+          ctx.fillRect(-w / 2, topY, w, topH);
         }
         if (bottomOcc) {
           ctx.fillStyle = '#EF4444';
-          ctx.fillRect(-w / 2, 0, w, h / 2);
+          ctx.fillRect(-w / 2, bottomY, w, bottomH);
         }
 
         ctx.restore();

@@ -303,17 +303,17 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
         if (tipoContabilizacionRef.current === 'cama') {
           if (obj.bedType === 'individual' || obj.bedType === 'duplex') {
             objectCounter++;
-            ctx.fillText(String(objectCounter).padStart(2, '0'), 0, 0);
+            ctx.fillText(String(objectCounter).padStart(3, '0'), 0, 0);
           } else {
             const num1 = objectCounter + 1;
             const num2 = objectCounter + 2;
             objectCounter += 2;
             if (isHorizontal) {
-              ctx.fillText(String(num1).padStart(2, '0'), -14, 0);
-              ctx.fillText(String(num2).padStart(2, '0'), 14, 0);
+              ctx.fillText(String(num1).padStart(3, '0'), -14, 0);
+              ctx.fillText(String(num2).padStart(3, '0'), 14, 0);
             } else {
-              ctx.fillText(String(num1).padStart(2, '0'), 0, -14);
-              ctx.fillText(String(num2).padStart(2, '0'), 0, 14);
+              ctx.fillText(String(num1).padStart(3, '0'), 0, -14);
+              ctx.fillText(String(num2).padStart(3, '0'), 0, 14);
             }
           }
         } else {
@@ -321,14 +321,14 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
           const objNumber = objectCounter;
           if (obj.bedType === 'litera') {
             if (isHorizontal) {
-              ctx.fillText(String(objNumber).padStart(2, '0'), -14, 0);
-              ctx.fillText(String(objNumber).padStart(2, '0'), 14, 0);
+              ctx.fillText(String(objNumber).padStart(3, '0'), -14, 0);
+              ctx.fillText(String(objNumber).padStart(3, '0'), 14, 0);
             } else {
-              ctx.fillText(String(objNumber).padStart(2, '0'), 0, -14);
-              ctx.fillText(String(objNumber).padStart(2, '0'), 0, 14);
+              ctx.fillText(String(objNumber).padStart(3, '0'), 0, -14);
+              ctx.fillText(String(objNumber).padStart(3, '0'), 0, 14);
             }
           } else {
-            ctx.fillText(String(objNumber).padStart(2, '0'), 0, 0);
+            ctx.fillText(String(objNumber).padStart(3, '0'), 0, 0);
           }
         }
       } else if (obj.kind === 'text') {
