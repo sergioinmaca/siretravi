@@ -393,7 +393,10 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       campamento_id: data.campamento_id,
       nombre: data.nombre,
     };
-    setFamilias(prev => [...prev, familiaCreada]);
+    setFamilias(prev => {
+      if (prev.find(f => f.id === familiaCreada.id)) return prev;
+      return [...prev, familiaCreada];
+    });
     return familiaCreada;
   };
 
@@ -552,7 +555,10 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       ingreso_familiar: data.ingreso_familiar || undefined,
       parentesco: data.parentesco || undefined,
     };
-    setRefugiados(prev => [...prev, refugiadoCreado]);
+    setRefugiados(prev => {
+      if (prev.find(r => r.id === refugiadoCreado.id)) return prev;
+      return [...prev, refugiadoCreado];
+    });
   };
 
   // ── Eliminar Refugiado ─────────────────────────────────────────────────
