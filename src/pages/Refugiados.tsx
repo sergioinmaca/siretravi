@@ -7,6 +7,7 @@ import RegistroModal from '../components/refugiados/RegistroModal';
 import FichaRefugiadoModal from '../components/refugiados/FichaRefugiadoModal';
 import { formatAge } from '../lib/formatAge';
 import jsPDF from 'jspdf';
+import * as XLSX from 'xlsx';
 
 export default function Refugiados() {
   const { campamentoSeleccionado, refugiados = [], familias = [], eliminarRefugiado, obtenerRefugiadosPaginados } = useCampamento();
@@ -37,6 +38,7 @@ export default function Refugiados() {
   const [loadingPaginados, setLoadingPaginados] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [exportandoPDF, setExportandoPDF] = useState(false);
+  const [exportandoXLSX, setExportandoXLSX] = useState(false);
   const REGISTROS_POR_PAGINA = 20;
 
   // Debounce búsqueda 400ms
@@ -160,7 +162,6 @@ export default function Refugiados() {
       const rowHeight = 6.5;
       const topArea = margin + 26;
       const rowsPerPage = Math.floor((pageH - topArea - margin) / rowHeight);
-      const totalPages = Math.max(1, Math.ceil(data.length / rowsPerPage));
 
       const drawHeader = () => {
         pdf.setFontSize(11);
@@ -245,6 +246,54 @@ export default function Refugiados() {
     }
   }, [campamentoSeleccionado, refugiados, familias]);
 
+  const handleExportXLSX = useCallback(async () => {
+    setExportandoXLSX(true);
+    try {
+      const nombreCamp = campamentoSeleccionado?.nombre || 'Campamento';
+      const now = new Date();
+      const fecha = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
+
+      const data = refugiados
+        .filter(r => r.campamento_id === campamentoSeleccionado?.id)
+        .map(r => {
+          let jerarquiaStr = 'Jefe de Familia';
+          if (!r.es_jefe_familia && r.familia_id) {
+            const familia = familias.find(f => f.id === r.familia_id);
+            jerarquiaStr = `Miembro (${familia?.nombre || 'Desconocida'})`;
+          }
+          return {
+            'Código': r.codigo || '-',
+            'Cédula': r.cedula?.toString() || 'S/N',
+            'Apellidos': r.apellidos,
+            'Nombres': r.nombres,
+            'Edad': formatAge(r.fecha_nacimiento),
+            'Jerarquía': jerarquiaStr,
+            'Cama': r.nro_cama || '-',
+          };
+        });
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      const colWidths = [
+        { wch: 10 },
+        { wch: 12 },
+        { wch: 22 },
+        { wch: 22 },
+        { wch: 12 },
+        { wch: 30 },
+        { wch: 8 },
+      ];
+      ws['!cols'] = colWidths;
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Integrantes');
+      XLSX.writeFile(wb, `integrantes-${nombreCamp.replace(/\s+/g, '-')}-${fecha}.xlsx`);
+    } catch (err) {
+      console.error('Error generando XLSX de integrantes:', err);
+    } finally {
+      setExportandoXLSX(false);
+    }
+  }, [campamentoSeleccionado, refugiados, familias]);
+
   return (
     <div className="space-y-6">
 
@@ -258,18 +307,32 @@ export default function Refugiados() {
         </div>
         <div className="flex items-center gap-3">
           {campamentoSeleccionado && (
-            <button
-              onClick={handleExportPDF}
-              disabled={exportandoPDF}
-              className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium transition-all shadow-sm ${
-                exportandoPDF
-                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-caracas-red hover:bg-red-800 text-white shadow-caracas-red/20 transform hover:-translate-y-0.5'
-              }`}
-            >
-              {exportandoPDF ? <Loader2 size={18} className="animate-spin" /> : <FileDown size={18} />}
-              {exportandoPDF ? 'Generando...' : 'Exportar PDF'}
-            </button>
+            <>
+              <button
+                onClick={handleExportPDF}
+                disabled={exportandoPDF}
+                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium transition-all shadow-sm ${
+                  exportandoPDF
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-caracas-red hover:bg-red-800 text-white shadow-caracas-red/20 transform hover:-translate-y-0.5'
+                }`}
+              >
+                {exportandoPDF ? <Loader2 size={18} className="animate-spin" /> : <FileDown size={18} />}
+                {exportandoPDF ? 'Generando...' : 'Exportar PDF'}
+              </button>
+              <button
+                onClick={handleExportXLSX}
+                disabled={exportandoXLSX}
+                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium transition-all shadow-sm ${
+                  exportandoXLSX
+                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                    : 'bg-green-600 hover:bg-green-700 text-white shadow-green-600/20 transform hover:-translate-y-0.5'
+                }`}
+              >
+                {exportandoXLSX ? <Loader2 size={18} className="animate-spin" /> : <FileDown size={18} />}
+                {exportandoXLSX ? 'Generando...' : 'Exportar XLSX'}
+              </button>
+            </>
           )}
           {campamentoSeleccionado && tienePermisoPorCampamento('Integrantes', campamentoSeleccionado.id, 'Crear') && (
             <button
