@@ -1,11 +1,12 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   X, User, Users, MapPin, Accessibility, Shirt,
   Calendar, Phone, Briefcase, GraduationCap, Heart,
-  PawPrint, AlertTriangle, Baby, Stethoscope, FileText, Loader2, Camera, Image,
+  PawPrint, AlertTriangle, Baby, Stethoscope, FileText, Loader2, Camera,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { supabase } from '../../lib/supabase';
 import { useCampamento } from '../../context/CampamentoContext';
 import { formatAge } from '../../lib/formatAge';
 import { toDisplayDate } from '../../lib/formatDate';
@@ -19,17 +20,26 @@ interface FichaRefugiadoModalProps {
 }
 
 export default function FichaRefugiadoModal({ isOpen, onClose, refugiado }: FichaRefugiadoModalProps) {
-  const { familias = [] } = useCampamento();
+  const { familias = [], actualizarRefugiado } = useCampamento();
   const [isExporting, setIsExporting] = useState(false);
   const [fotoUrl, setFotoUrl] = useState<string | null>(null);
-  const [showFotoChoice, setShowFotoChoice] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setFotoUrl(refugiado?.foto_url || null);
+    } else {
+      setFotoUrl(null);
+      setUploadError(null);
+    }
+  }, [isOpen, refugiado]);
 
   if (!isOpen || !refugiado) return null;
 
   const handleExportPDF = async () => {
     setIsExporting(true);
-    setShowFotoChoice(false);
     try {
       const container = document.getElementById('ficha-refugiado-pdf');
       if (!container) return;
@@ -51,33 +61,47 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado }: Fich
     }
   };
 
-  const handleExportClick = () => {
-    setShowFotoChoice(true);
-  };
-
-  const handleSinImagen = () => {
-    handleExportPDF();
-  };
-
-  const handleConImagen = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file || !refugiado) return;
+
+    setIsUploading(true);
+    setUploadError(null);
 
     const reader = new FileReader();
-    reader.onload = () => {
-      setFotoUrl(reader.result as string);
-      handleExportPDF();
-    };
+    reader.onload = () => setFotoUrl(reader.result as string);
     reader.readAsDataURL(file);
+
+    try {
+      const ext = file.name.split('.').pop();
+      const path = `${refugiado.campamento_id}/${refugiado.id}/${Date.now()}.${ext}`;
+
+      const { error: uploadErr } = await supabase.storage
+        .from('fotos-integrantes')
+        .upload(path, file, { upsert: true, contentType: file.type });
+
+      if (uploadErr) throw uploadErr;
+
+      const { data: urlData } = supabase.storage
+        .from('fotos-integrantes')
+        .getPublicUrl(path);
+
+      const foto_url = urlData.publicUrl;
+
+      await actualizarRefugiado(refugiado.id, { ...refugiado, foto_url });
+    } catch (err) {
+      console.error('Error subiendo foto:', err);
+      setUploadError('No se pudo guardar la foto. Intente de nuevo.');
+      setFotoUrl(refugiado.foto_url || null);
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const handleClose = () => {
     setFotoUrl(null);
-    setShowFotoChoice(false);
+    setUploadError(null);
     onClose();
   };
 
@@ -149,12 +173,25 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado }: Fich
                   ) : (
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      className="w-28 h-32 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-caracas-red hover:text-caracas-red hover:bg-red-50/30 transition-colors"
+                      disabled={isUploading}
+                      className="w-28 h-32 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-caracas-red hover:text-caracas-red hover:bg-red-50/30 transition-colors disabled:opacity-50"
                       title="Subir foto"
                     >
-                      <Camera size={24} />
-                      <span className="text-[10px] font-medium text-center leading-tight">Subir<br />foto</span>
+                      {isUploading ? (
+                        <>
+                          <Loader2 size={24} className="animate-spin" />
+                          <span className="text-[10px] font-medium text-center leading-tight">Subiendo...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Camera size={24} />
+                          <span className="text-[10px] font-medium text-center leading-tight">Subir<br />foto</span>
+                        </>
+                      )}
                     </button>
+                  )}
+                  {uploadError && (
+                    <p className="text-xs text-red-500 mt-1 text-center leading-tight">{uploadError}</p>
                   )}
                 </div>
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -338,40 +375,10 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado }: Fich
           </div>
         </div>
 
-        {/* Photo Choice Dialog */}
-        {showFotoChoice && (
-          <div className="absolute inset-0 z-20 flex items-center justify-center bg-white/80 backdrop-blur-sm rounded-3xl">
-            <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 p-8 max-w-sm w-full mx-4 text-center animate-fade-in-up">
-              <div className="p-3 bg-caracas-blue/10 rounded-full w-fit mx-auto mb-4">
-                <Camera size={32} className="text-caracas-blue" />
-              </div>
-              <h3 className="text-lg font-bold text-gray-800 mb-2">¿Incluir foto del integrante?</h3>
-              <p className="text-sm text-gray-500 mb-6">
-                Podés incluir una foto en el reporte PDF. La imagen no se almacenará en el sistema.
-              </p>
-              <div className="flex gap-3 justify-center">
-                <button
-                  onClick={handleSinImagen}
-                  className="px-5 py-2.5 rounded-xl text-gray-600 font-medium border border-gray-300 hover:bg-gray-100 transition-colors"
-                >
-                  Sin imagen
-                </button>
-                <button
-                  onClick={handleConImagen}
-                  className="px-5 py-2.5 rounded-xl bg-caracas-red hover:bg-red-800 text-white font-medium transition-colors shadow-md flex items-center gap-2"
-                >
-                  <Image size={18} />
-                  Con imagen
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Footer */}
         <div className="px-8 py-5 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
           <button
-            onClick={handleExportClick}
+            onClick={handleExportPDF}
             disabled={isExporting}
             className="flex items-center justify-center gap-2 bg-caracas-red hover:bg-red-800 text-white px-6 py-2.5 rounded-xl font-medium transition-all shadow-lg shadow-caracas-red/20 disabled:opacity-50"
           >
