@@ -789,14 +789,15 @@ export default function Reportes() {
           {/* REPORTE 2: NIÑOS, NIÑAS Y ADOLESCENTES (1 PÁGINA) */}
           <div id="reporte-nna-render" className="flex flex-col">
 
-            <div className="report-page w-[1120px] h-[790px] bg-white relative flex flex-col justify-between p-12 overflow-hidden">
-              <BorderDecoration />
+            <div className="report-page w-[1120px] h-[790px] bg-white relative flex flex-col justify-between px-12 pb-[40px] pt-[30px] overflow-hidden">
+              <img src="/marcaagua.png" alt="" className="absolute right-0 bottom-0 pointer-events-none z-0 opacity-100" style={{ maxWidth: '48%', maxHeight: '48%' }} />
+              <img src="/bordedeco.png" alt="" className="absolute inset-0 w-full h-full pointer-events-none z-[1]" />
 
               {/* Header */}
               <div className="text-center z-10 relative">
                 <div className="flex items-center justify-center gap-4">
                   <h1 className="text-[20px] font-black text-slate-800 uppercase tracking-wider">
-                    REPORTE GENERAL DEMOGRÁFICO
+                    REPORTE NIÑOS, NIÑAS Y ADOLESCENTES
                   </h1>
                   <p className="text-[16px] text-slate-500">
                     Fecha: {fecha}
@@ -805,12 +806,15 @@ export default function Reportes() {
                 <h2 className="text-[28px] font-bold text-caracas-red uppercase tracking-wide mt-1">
                   {campamentoSeleccionado.nombre}
                 </h2>
+                <h3 className="text-center text-[13px] font-black text-slate-700 uppercase tracking-wide mt-3 z-10 relative">
+                  NIÑAS, NIÑOS Y ADOLESCENTES LA GUAIRA - CARACAS
+                </h3>
               </div>
 
               {/* Content body */}
               <div className="flex-1 flex items-center justify-between px-16 gap-8 z-10 relative">
                 {/* Tablas izquierdas */}
-                <div className="w-[450px] space-y-5">
+                <div className="w-[450px] space-y-6">
                   <table className="w-full border-collapse border border-slate-300 text-slate-800">
                     <thead>
                       <tr className="bg-slate-50 border-b border-slate-300">
@@ -821,44 +825,44 @@ export default function Reportes() {
                     </thead>
                     <tbody>
                       <tr className="border-b border-slate-300">
-                        <td className="p-2 text-xs font-bold tracking-wide">0-3 AÑOS</td>
-                        <td className="p-2 text-md font-black text-center text-[#C21807] w-24">
+                        <td className="p-3 text-base font-bold tracking-wide">0-3 AÑOS</td>
+                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
                           {String(datosReporte.nna_0_3).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="border-b border-slate-300">
-                        <td className="p-2 text-xs font-bold tracking-wide">4-6 AÑOS</td>
-                        <td className="p-2 text-md font-black text-center text-[#C21807] w-24">
+                        <td className="p-3 text-base font-bold tracking-wide">4-6 AÑOS</td>
+                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
                           {String(datosReporte.nna_4_6).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="border-b border-slate-300">
-                        <td className="p-2 text-xs font-bold tracking-wide">7-12 AÑOS</td>
-                        <td className="p-2 text-md font-black text-center text-[#C21807] w-24">
+                        <td className="p-3 text-base font-bold tracking-wide">7-12 AÑOS</td>
+                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
                           {String(datosReporte.nna_7_12).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="border-b border-slate-300">
-                        <td className="p-2 text-xs font-bold tracking-wide">ADOLESCENTES</td>
-                        <td className="p-2 text-md font-black text-center text-[#C21807] w-24">
+                        <td className="p-3 text-base font-bold tracking-wide">ADOLESCENTES</td>
+                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
                           {String(datosReporte.nna_adolescentes).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="border-b border-slate-300">
-                        <td className="p-2 text-xs font-bold tracking-wide">ADOLESCENTE EMBARAZADA</td>
-                        <td className="p-2 text-md font-black text-center text-[#C21807] w-24">
+                        <td className="p-3 text-base font-bold tracking-wide">ADOLESCENTE EMBARAZADA</td>
+                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
                           {String(datosReporte.nna_embarazadas).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="border-b border-slate-300">
-                        <td className="p-2 text-xs font-bold tracking-wide">DISCAPACIDAD</td>
-                        <td className="p-2 text-md font-black text-center text-[#C21807] w-24">
+                        <td className="p-3 text-base font-bold tracking-wide">DISCAPACIDAD</td>
+                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
                           {String(datosReporte.nna_discapacidad).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="bg-slate-100 font-black">
-                        <td className="p-2.5 text-xs tracking-wide">TOTAL</td>
-                        <td className="p-2.5 text-md text-center w-24">
+                        <td className="p-3 text-base tracking-wide">TOTAL</td>
+                        <td className="p-3 text-lg text-center w-24">
                           {String(datosReporte.totalNNA).padStart(2, '0')}
                         </td>
                       </tr>
@@ -866,17 +870,17 @@ export default function Reportes() {
                   </table>
 
                   {/* Tabla de desglose por sexo en niños */}
-                  <table className="w-[300px] border-collapse border border-slate-300 text-slate-800 mx-auto">
+                  <table className="w-full border-collapse border border-slate-300 text-slate-800">
                     <tbody>
                       <tr className="border-b border-slate-300">
-                        <td className="p-2 text-xs font-bold text-left tracking-wide">FEMENINA</td>
-                        <td className="p-2 text-md font-black text-center text-[#C21807] w-20">
+                        <td className="p-3 text-base font-bold text-left tracking-wide">FEMENINA</td>
+                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
                           {String(datosReporte.nna_femenina).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="bg-slate-50">
-                        <td className="p-2 text-xs font-bold text-left tracking-wide">MASCULINO</td>
-                        <td className="p-2 text-md font-black text-center text-[#C21807] w-20">
+                        <td className="p-3 text-base font-bold text-left tracking-wide">MASCULINO</td>
+                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
                           {String(datosReporte.nna_masculino).padStart(2, '0')}
                         </td>
                       </tr>
@@ -911,7 +915,7 @@ export default function Reportes() {
 
           {/* REPORTE 3: DISCAPACITADOS */}
           {(() => {
-            const ROWS_PER_PAGE = 11;
+            const ROWS_PER_PAGE = 7;
             const total = discapacitadosReporte.length;
             const totalPaginas = Math.max(1, Math.ceil(total / ROWS_PER_PAGE));
             const pages = Array.from({ length: totalPaginas }, (_, i) =>
@@ -982,14 +986,23 @@ export default function Reportes() {
             return (
               <div id="reporte-discapacitados-render" className="flex flex-col">
                 {pages.map((chunk, pageIdx) => (
-                  <div key={pageIdx} className="report-page w-[1120px] h-[790px] bg-white relative flex flex-col justify-between pt-8 px-12 pb-[43px] overflow-hidden">
-                    <BorderDecoration />
+                  <div key={pageIdx} className="report-page w-[1120px] h-[790px] bg-white relative flex flex-col justify-between px-12 pb-[40px] pt-[30px] overflow-hidden">
+                    <img src="/marcaagua.png" alt="" className="absolute right-0 bottom-0 pointer-events-none z-0 opacity-100" style={{ maxWidth: '48%', maxHeight: '48%' }} />
+                    <img src="/bordedeco.png" alt="" className="absolute inset-0 w-full h-full pointer-events-none z-[1]" />
 
                     <div className="text-center mt-0 z-10 relative">
-                      <h2 className="text-[22px] font-black text-slate-800 uppercase tracking-wide">
+                      <div className="flex items-center justify-center gap-4">
+                        <h1 className="text-[20px] font-black text-slate-800 uppercase tracking-wider">
+                          REPORTE PERSONAS CON DISCAPACIDAD
+                        </h1>
+                        <p className="text-[16px] text-slate-500">
+                          Fecha: {fecha}
+                        </p>
+                      </div>
+                      <h2 className="text-[28px] font-bold text-caracas-red uppercase tracking-wide mt-1">
                         {campamentoSeleccionado.nombre}
                       </h2>
-                      <h3 className="text-[13px] font-bold text-slate-600 uppercase tracking-wider mt-1.5">
+                      <h3 className="text-[13px] font-black text-slate-700 uppercase tracking-wider mt-3">
                         Reporte de Personas con Discapacidad{' '}
                         <span className="text-slate-400">—</span>{' '}
                         Total: <span className="font-black text-[#C21807]">{total}</span>
@@ -1001,27 +1014,27 @@ export default function Reportes() {
                       <table className="w-full border-collapse border border-slate-300 text-slate-800">
                         <thead>
                           <tr className="bg-slate-50 border-b border-slate-300">
-                            <th className="p-2.5 text-[11px] font-black tracking-wide text-slate-700 border-r border-slate-300 w-[100px]">CÓDIGO</th>
-                            <th className="p-2.5 text-[11px] font-black tracking-wide text-slate-700 border-r border-slate-300">NOMBRES Y APELLIDOS</th>
-                            <th className="p-2.5 text-[11px] font-black tracking-wide text-slate-700 border-r border-slate-300 w-[130px]">CÉDULA</th>
-                            <th className="p-2.5 text-[11px] font-black tracking-wide text-slate-700 border-r border-slate-300 w-[50px]">EDAD</th>
-                            <th className="p-2.5 text-[11px] font-black tracking-wide text-slate-700 border-r border-slate-300 w-[70px]">CAMA</th>
-                            <th className="p-2.5 text-[11px] font-black tracking-wide text-slate-700 w-[220px]">TIPO DISCAPACIDAD</th>
+                            <th className="p-2.5 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[100px]">CÓDIGO</th>
+                            <th className="p-2.5 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300">NOMBRES Y APELLIDOS</th>
+                            <th className="p-2.5 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[130px]">CÉDULA</th>
+                            <th className="p-2.5 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[50px]">EDAD</th>
+                            <th className="p-2.5 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[70px]">CAMA</th>
+                            <th className="p-2.5 text-xs font-black tracking-wide text-slate-700 w-[220px]">TIPO DISCAPACIDAD</th>
                           </tr>
                         </thead>
                         <tbody>
                           {chunk.map((r, idx) => (
                             <tr key={r.id} className={`border-b border-slate-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
-                              <td className="p-2 text-xs font-mono text-center border-r border-slate-200">{r.codigo || '—'}</td>
-                              <td className="p-2 text-xs border-r border-slate-200">{r.nombres} {r.apellidos}</td>
-                              <td className="p-2 text-xs text-center border-r border-slate-200">{r.cedula ? r.cedula.toLocaleString() : '—'}</td>
-                              <td className="p-2 text-xs text-center border-r border-slate-200">{r.edad}</td>
-                              <td className="p-2 text-xs font-mono text-center border-r border-slate-200">{r.nro_cama || '—'}</td>
-                              <td className="p-2 text-xs">{r.tipo_discapacidad}</td>
+                              <td className="p-3 text-base font-mono text-center border-r border-slate-200">{r.codigo || '—'}</td>
+                              <td className="p-3 text-base border-r border-slate-200">{r.nombres} {r.apellidos}</td>
+                              <td className="p-3 text-base text-center border-r border-slate-200">{r.cedula ? r.cedula.toLocaleString() : '—'}</td>
+                              <td className="p-3 text-lg font-black text-center border-r border-slate-200">{r.edad}</td>
+                              <td className="p-3 text-base font-mono text-center border-r border-slate-200">{r.nro_cama || '—'}</td>
+                              <td className="p-3 text-base">{r.tipo_discapacidad}</td>
                             </tr>
                           ))}
                           {chunk.length < ROWS_PER_PAGE && Array.from({ length: ROWS_PER_PAGE - chunk.length }).map((_, i) => (
-                            <tr key={`empty-${i}`} className="border-b border-slate-200 h-[28px]">
+                            <tr key={`empty-${i}`} className="border-b border-slate-200 h-[41px]">
                               <td colSpan={6} className="border-r border-slate-200">&nbsp;</td>
                             </tr>
                           ))}
@@ -1051,7 +1064,7 @@ export default function Reportes() {
 
           {/* REPORTE 4: MASCOTAS */}
           {(() => {
-            const ROWS_PER_PAGE = 11;
+            const ROWS_PER_PAGE = 7;
             const total = mascotasReporte.length;
             const totalPaginas = Math.max(1, Math.ceil(total / ROWS_PER_PAGE));
             const pages = Array.from({ length: totalPaginas }, (_, i) =>
@@ -1135,14 +1148,23 @@ export default function Reportes() {
             return (
               <div id="reporte-mascotas-render" className="flex flex-col">
                 {pages.map((chunk, pageIdx) => (
-                  <div key={pageIdx} className="report-page w-[1120px] h-[790px] bg-white relative flex flex-col justify-between pt-8 px-12 pb-[43px] overflow-hidden">
-                    <BorderDecoration />
+                  <div key={pageIdx} className="report-page w-[1120px] h-[790px] bg-white relative flex flex-col justify-between px-12 pb-[40px] pt-[30px] overflow-hidden">
+                    <img src="/marcaagua.png" alt="" className="absolute right-0 bottom-0 pointer-events-none z-0 opacity-100" style={{ maxWidth: '48%', maxHeight: '48%' }} />
+                    <img src="/bordedeco.png" alt="" className="absolute inset-0 w-full h-full pointer-events-none z-[1]" />
 
                     <div className="text-center mt-0 z-10 relative">
-                      <h2 className="text-[22px] font-black text-slate-800 uppercase tracking-wide">
+                      <div className="flex items-center justify-center gap-4">
+                        <h1 className="text-[20px] font-black text-slate-800 uppercase tracking-wider">
+                          REPORTE DE MASCOTAS
+                        </h1>
+                        <p className="text-[16px] text-slate-500">
+                          Fecha: {fecha}
+                        </p>
+                      </div>
+                      <h2 className="text-[28px] font-bold text-caracas-red uppercase tracking-wide mt-1">
                         {campamentoSeleccionado.nombre}
                       </h2>
-                      <h3 className="text-[13px] font-bold text-slate-600 uppercase tracking-wider mt-1.5">
+                      <h3 className="text-[13px] font-black text-slate-700 uppercase tracking-wider mt-3">
                         Reporte de Mascotas{' '}
                         <span className="text-slate-400">—</span>{' '}
                         Total: <span className="font-black text-[#C21807]">{total}</span>
@@ -1154,29 +1176,29 @@ export default function Reportes() {
                       <table className="w-full border-collapse border border-slate-300 text-slate-800">
                         <thead>
                           <tr className="bg-slate-50 border-b border-slate-300">
-                            <th className="p-2.5 text-[11px] font-black tracking-wide text-slate-700 border-r border-slate-300 w-[40px]">#</th>
-                            <th className="p-2.5 text-[11px] font-black tracking-wide text-slate-700 border-r border-slate-300 w-[100px]">TIPO</th>
-                            <th className="p-2.5 text-[11px] font-black tracking-wide text-slate-700 border-r border-slate-300 w-[140px]">RAZA</th>
-                            <th className="p-2.5 text-[11px] font-black tracking-wide text-slate-700 border-r border-slate-300">DUEÑO (JEFE DE FAMILIA)</th>
-                            <th className="p-2.5 text-[11px] font-black tracking-wide text-slate-700 border-r border-slate-300 w-[120px]">MASCOTA</th>
-                            <th className="p-2.5 text-[11px] font-black tracking-wide text-slate-700 border-r border-slate-300 w-[40px]">SX</th>
-                            <th className="p-2.5 text-[11px] font-black tracking-wide text-slate-700 w-[40px]">ED</th>
+                            <th className="p-2.5 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[40px]">#</th>
+                            <th className="p-2.5 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[100px]">TIPO</th>
+                            <th className="p-2.5 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[140px]">RAZA</th>
+                            <th className="p-2.5 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300">DUEÑO (JEFE DE FAMILIA)</th>
+                            <th className="p-2.5 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[120px]">MASCOTA</th>
+                            <th className="p-2.5 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[40px]">SX</th>
+                            <th className="p-2.5 text-xs font-black tracking-wide text-slate-700 w-[40px]">ED</th>
                           </tr>
                         </thead>
                         <tbody>
                           {chunk.map((r, idx) => (
                             <tr key={r.id} className={`border-b border-slate-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
-                              <td className="p-2 text-xs text-center border-r border-slate-200">{r.index}</td>
-                              <td className="p-2 text-xs border-r border-slate-200">{r.tipo_mascota || '—'}</td>
-                              <td className="p-2 text-xs border-r border-slate-200">{r.mascota_raza || '—'}</td>
-                              <td className="p-2 text-xs border-r border-slate-200">{r.dueno}</td>
-                              <td className="p-2 text-xs border-r border-slate-200">{r.mascota_nombre || '—'}</td>
-                              <td className="p-2 text-xs text-center border-r border-slate-200">{r.mascota_sexo === true ? 'M' : r.mascota_sexo === false ? 'H' : '—'}</td>
-                              <td className="p-2 text-xs text-center">{r.mascota_edad ?? '—'}</td>
+                              <td className="p-3 text-base text-center border-r border-slate-200">{r.index}</td>
+                              <td className="p-3 text-base border-r border-slate-200">{r.tipo_mascota || '—'}</td>
+                              <td className="p-3 text-base border-r border-slate-200">{r.mascota_raza || '—'}</td>
+                              <td className="p-3 text-base border-r border-slate-200">{r.dueno}</td>
+                              <td className="p-3 text-base border-r border-slate-200">{r.mascota_nombre || '—'}</td>
+                              <td className="p-3 text-base text-center border-r border-slate-200">{r.mascota_sexo === true ? 'M' : r.mascota_sexo === false ? 'H' : '—'}</td>
+                              <td className="p-3 text-lg font-black text-center">{r.mascota_edad ?? '—'}</td>
                             </tr>
                           ))}
                           {chunk.length < ROWS_PER_PAGE && Array.from({ length: ROWS_PER_PAGE - chunk.length }).map((_, i) => (
-                            <tr key={`empty-${i}`} className="border-b border-slate-200 h-[28px]">
+                            <tr key={`empty-${i}`} className="border-b border-slate-200 h-[41px]">
                               <td colSpan={7} className="border-r border-slate-200">&nbsp;</td>
                             </tr>
                           ))}
