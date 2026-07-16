@@ -426,7 +426,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
       drawObservationsSection(
         '7',
         'Observaciones Generales',
-        (refugiado as Record<string, unknown>).observaciones_generales as string || '',
+        (refugiado as any).observaciones_generales || '',
       );
 
       // ── page numbers ──
