@@ -17,6 +17,11 @@ export default function Reportes() {
     ? tienePermisoPorCampamento('Reportes', campamentoSeleccionado.id, 'Ver')
     : true;
 
+  const fecha = useMemo(() => {
+    const now = new Date();
+    return `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
+  }, []);
+
   // Clasificación de procedencias (La Guaira vs Caracas)
   const getProcedenciaEstado = (procedencia: string): 'LA GUAIRA' | 'CARACAS' => {
     const clean = (procedencia || '').toUpperCase().trim();
@@ -593,38 +598,52 @@ export default function Reportes() {
           <div id="reporte-demografico-render" className="flex flex-col">
 
             {/* PÁGINA 1 */}
-            <div className="report-page w-[1120px] h-[790px] bg-white relative flex flex-col justify-between p-12 overflow-hidden">
-              <BorderDecoration />
+            <div className="report-page w-[1120px] h-[790px] bg-white relative flex flex-col justify-between px-12 pb-[40px] pt-[30px] overflow-hidden">
+              <img src="/marcaagua.png" alt="" className="absolute right-0 bottom-0 pointer-events-none z-0 opacity-100" style={{ maxWidth: '48%', maxHeight: '48%' }} />
+              <img src="/bordedeco.png" alt="" className="absolute inset-0 w-full h-full pointer-events-none z-[1]" />
 
               {/* Header */}
-              <div className="text-center mt-6 z-10">
-                <h2 className="text-[22px] font-black text-slate-800 uppercase tracking-wide">
+              <div className="text-center z-10 relative">
+                <div className="flex items-center justify-center gap-4">
+                  <h1 className="text-[20px] font-black text-slate-800 uppercase tracking-wider">
+                    REPORTE GENERAL DEMOGRÁFICO
+                  </h1>
+                  <p className="text-[16px] text-slate-500">
+                    Fecha: {fecha}
+                  </p>
+                </div>
+                <h2 className="text-[28px] font-bold text-caracas-red uppercase tracking-wide mt-1">
                   {campamentoSeleccionado.nombre}
                 </h2>
               </div>
 
+              {/* Subtitle */}
+              <h3 className="text-center text-[13px] font-black text-slate-700 uppercase tracking-wide mt-3 z-10 relative">
+                POBLACIÓN CENSADA LA GUAIRA - CARACAS
+              </h3>
+
               {/* Content body */}
-              <div className="flex-1 flex items-center justify-between px-16 gap-8 z-10">
+              <div className="flex-1 flex items-center justify-between px-16 gap-8 z-10 relative">
                 {/* Tablas izquierdas */}
                 <div className="w-[450px] space-y-6">
                   {/* Tabla Familias */}
                   <table className="w-full border-collapse border border-slate-300 text-slate-800">
                     <tbody>
                       <tr className="border-b border-slate-300">
-                        <td className="p-3.5 text-xs font-bold text-left tracking-wide">FAMILIAS LA GUAIRA</td>
-                        <td className="p-3.5 text-lg font-black text-center text-[#C21807] w-24">
+                        <td className="p-3 text-base font-bold text-left tracking-wide">FAMILIAS LA GUAIRA</td>
+                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
                           {String(datosReporte.familiasLaGuaira).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="border-b border-slate-300">
-                        <td className="p-3.5 text-xs font-bold text-left tracking-wide">FAMILIAS CARACAS</td>
-                        <td className="p-3.5 text-lg font-black text-center text-[#C21807] w-24">
+                        <td className="p-3 text-base font-bold text-left tracking-wide">FAMILIAS CARACAS</td>
+                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
                           {String(datosReporte.familiasCaracas).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="bg-slate-50 font-black">
-                        <td className="p-3.5 text-xs text-left tracking-wide">TOTAL</td>
-                        <td className="p-3.5 text-lg text-center text-[#C21807] w-24">
+                        <td className="p-3 text-base text-left tracking-wide">TOTAL</td>
+                        <td className="p-3 text-lg text-center text-[#C21807] w-24">
                           {String(datosReporte.totalFamilias).padStart(2, '0')}
                         </td>
                       </tr>
@@ -635,20 +654,20 @@ export default function Reportes() {
                   <table className="w-full border-collapse border border-slate-300 text-slate-800">
                     <tbody>
                       <tr className="border-b border-slate-300">
-                        <td className="p-3.5 text-xs font-bold text-left tracking-wide">MASCULINOS</td>
-                        <td className="p-3.5 text-lg font-black text-center text-[#C21807] w-24">
+                        <td className="p-3 text-base font-bold text-left tracking-wide">MASCULINOS</td>
+                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
                           {String(datosReporte.masculinos).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="border-b border-slate-300">
-                        <td className="p-3.5 text-xs font-bold text-left tracking-wide">FEMENINOS</td>
-                        <td className="p-3.5 text-lg font-black text-center text-[#C21807] w-24">
+                        <td className="p-3 text-base font-bold text-left tracking-wide">FEMENINOS</td>
+                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
                           {String(datosReporte.femeninos).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="bg-slate-50 font-black">
-                        <td className="p-3.5 text-xs text-left tracking-wide">TOTAL</td>
-                        <td className="p-3.5 text-lg text-center w-24">
+                        <td className="p-3 text-base text-left tracking-wide">TOTAL</td>
+                        <td className="p-3 text-lg text-center w-24">
                           {String(datosReporte.totalRefugiados).padStart(2, '0')}
                         </td>
                       </tr>
@@ -665,76 +684,83 @@ export default function Reportes() {
               </div>
 
               {/* Footer */}
-              <div className="flex items-end justify-between px-10 mb-4 z-10 shrink-0">
-                <img src="/logorepublica.png" alt="Logo República" className="h-12 w-auto object-contain" />
-                <img src="/logovererojo.png" alt="Logo Venezuela" className="h-12 w-auto object-contain" />
-                <img src="/logoalcadia.png" alt="Logo Alcaldía" className="h-12 w-auto object-contain" />
+              <div className="flex items-end justify-between px-10 mb-px z-10 shrink-0 relative">
+                <img src="/logorepublica.png" alt="Logo República" className="h-[68px] w-auto object-contain" />
+                <img src="/logovererojo.png" alt="Logo Venezuela" className="h-[68px] w-auto object-contain" />
+                <img src="/logoalcadia.png" alt="Logo Alcaldía" className="h-[68px] w-auto object-contain" />
               </div>
             </div>
 
             {/* PÁGINA 2 */}
-            <div className="report-page w-[1120px] h-[790px] bg-white relative flex flex-col justify-between p-12 overflow-hidden">
-              <BorderDecoration />
+            <div className="report-page w-[1120px] h-[790px] bg-white relative flex flex-col justify-between px-12 pb-[40px] pt-[30px] overflow-hidden">
+              <img src="/marcaagua.png" alt="" className="absolute right-0 bottom-0 pointer-events-none z-0 opacity-100" style={{ maxWidth: '48%', maxHeight: '48%' }} />
+              <img src="/bordedeco.png" alt="" className="absolute inset-0 w-full h-full pointer-events-none z-[1]" />
 
               {/* Header */}
-              <div className="text-center mt-6 z-10">
-                <h2 className="text-[22px] font-black text-slate-800 uppercase tracking-wide">
+              <div className="text-center z-10 relative">
+                <div className="flex items-center justify-center gap-4">
+                  <h1 className="text-[20px] font-black text-slate-800 uppercase tracking-wider">
+                    REPORTE GENERAL DEMOGRÁFICO
+                  </h1>
+                  <p className="text-[16px] text-slate-500">
+                    Fecha: {fecha}
+                  </p>
+                </div>
+                <h2 className="text-[28px] font-bold text-caracas-red uppercase tracking-wide mt-1">
                   {campamentoSeleccionado.nombre}
                 </h2>
               </div>
 
+              {/* Subtitle */}
+              <h3 className="text-center text-[13px] font-black text-slate-700 uppercase tracking-wide mt-3 z-10 relative">
+                DISTRIBUCIÓN DE FAMILIAS Y GÉNERO
+              </h3>
+
               {/* Content body */}
-              <div className="flex-1 flex items-center justify-between px-16 gap-8 z-10">
+              <div className="flex-1 flex items-center justify-between px-16 gap-8 z-10 relative">
                 {/* Tabla demográfica general */}
                 <div className="w-[450px]">
                   <table className="w-full border-collapse border border-slate-300 text-slate-800">
-                    <thead>
-                      <tr className="bg-slate-50 border-b border-slate-300">
-                        <th colSpan={2} className="p-3 text-center text-xs font-black tracking-wider text-slate-700">
-                          POBLACIÓN CENSADA LA GUAIRA - CARACAS
-                        </th>
-                      </tr>
-                    </thead>
                     <tbody>
                       <tr className="border-b border-slate-300">
-                        <td className="p-2.5 text-xs font-bold tracking-wide">ADULTOS</td>
-                        <td className="p-2.5 text-md font-black text-center text-[#C21807] w-24">
+                        <td className="p-3 text-base font-bold tracking-wide">ADULTOS</td>
+                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
                           {String(datosReporte.adultos).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="border-b border-slate-300">
-                        <td className="p-2.5 text-xs font-bold tracking-wide">ADULTOS MAYORES</td>
-                        <td className="p-2.5 text-md font-black text-center text-[#C21807] w-24">
+                        <td className="p-3 text-base font-bold tracking-wide">ADULTOS MAYORES</td>
+                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
                           {String(datosReporte.adultosMayores).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="border-b border-slate-300">
-                        <td className="p-2.5 text-xs font-bold tracking-wide">NIÑAS Y NIÑOS</td>
-                        <td className="p-2.5 text-md font-black text-center text-[#C21807] w-24">
+                        <td className="p-3 text-base font-bold tracking-wide">NIÑAS Y NIÑOS</td>
+                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
                           {String(datosReporte.ninasNinos).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="border-b border-slate-300">
-                        <td className="p-2.5 text-xs font-bold tracking-wide">ADOLESCENTES</td>
-                        <td className="p-2.5 text-md font-black text-center text-[#C21807] w-24">
+                        <td className="p-3 text-base font-bold tracking-wide">ADOLESCENTES</td>
+                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
                           {String(datosReporte.adolescentes).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="border-b border-slate-300">
-                        <td className="p-2.5 text-xs font-bold tracking-wide">EMBARAZADAS</td>
-                        <td className="p-2.5 text-md font-black text-center text-[#C21807] w-24">
+                        <td className="p-3 text-base font-bold tracking-wide">EMBARAZADAS</td>
+                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
                           {String(datosReporte.embarazadas).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="border-b border-slate-300">
-                        <td className="p-2.5 text-xs font-bold tracking-wide">DISCAPACITADOS</td>
-                        <td className="p-2.5 text-md font-black text-center text-[#C21807] w-24">
+                        <td className="p-3 text-base font-bold tracking-wide">DISCAPACITADOS</td>
+                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
                           {String(datosReporte.discapacitados).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="bg-slate-100 font-black">
-                        <td className="p-3 text-xs tracking-wide">TOTAL</td>
-                        <td className="p-3 text-md text-center w-24">
+                        <td className="p-3 text-base tracking-wide">TOTAL</td>
+                        <td className="p-3 text-lg text-center w-24">
                           {String(datosReporte.totalRefugiados).padStart(2, '0')}
                         </td>
                       </tr>
@@ -751,10 +777,10 @@ export default function Reportes() {
               </div>
 
               {/* Footer */}
-              <div className="flex items-end justify-between px-10 mb-4 z-10 shrink-0">
-                <img src="/logorepublica.png" alt="Logo República" className="h-12 w-auto object-contain" />
-                <img src="/logovererojo.png" alt="Logo Venezuela" className="h-12 w-auto object-contain" />
-                <img src="/logoalcadia.png" alt="Logo Alcaldía" className="h-12 w-auto object-contain" />
+              <div className="flex items-end justify-between px-10 mb-px z-10 shrink-0 relative">
+                <img src="/logorepublica.png" alt="Logo República" className="h-[68px] w-auto object-contain" />
+                <img src="/logovererojo.png" alt="Logo Venezuela" className="h-[68px] w-auto object-contain" />
+                <img src="/logoalcadia.png" alt="Logo Alcaldía" className="h-[68px] w-auto object-contain" />
               </div>
             </div>
 
@@ -767,14 +793,22 @@ export default function Reportes() {
               <BorderDecoration />
 
               {/* Header */}
-              <div className="text-center mt-6 z-10">
-                <h2 className="text-[22px] font-black text-slate-800 uppercase tracking-wide">
+              <div className="text-center z-10 relative">
+                <div className="flex items-center justify-center gap-4">
+                  <h1 className="text-[20px] font-black text-slate-800 uppercase tracking-wider">
+                    REPORTE GENERAL DEMOGRÁFICO
+                  </h1>
+                  <p className="text-[16px] text-slate-500">
+                    Fecha: {fecha}
+                  </p>
+                </div>
+                <h2 className="text-[28px] font-bold text-caracas-red uppercase tracking-wide mt-1">
                   {campamentoSeleccionado.nombre}
                 </h2>
               </div>
 
               {/* Content body */}
-              <div className="flex-1 flex items-center justify-between px-16 gap-8 z-10">
+              <div className="flex-1 flex items-center justify-between px-16 gap-8 z-10 relative">
                 {/* Tablas izquierdas */}
                 <div className="w-[450px] space-y-5">
                   <table className="w-full border-collapse border border-slate-300 text-slate-800">
@@ -866,10 +900,10 @@ export default function Reportes() {
               </div>
 
               {/* Footer */}
-              <div className="flex items-end justify-between px-10 mb-4 z-10 shrink-0">
-                <img src="/logorepublica.png" alt="Logo República" className="h-12 w-auto object-contain" />
-                <img src="/logovererojo.png" alt="Logo Venezuela" className="h-12 w-auto object-contain" />
-                <img src="/logoalcadia.png" alt="Logo Alcaldía" className="h-12 w-auto object-contain" />
+              <div className="flex items-end justify-between px-10 mb-px z-10 shrink-0 relative">
+                <img src="/logorepublica.png" alt="Logo República" className="h-[68px] w-auto object-contain" />
+                <img src="/logovererojo.png" alt="Logo Venezuela" className="h-[68px] w-auto object-contain" />
+                <img src="/logoalcadia.png" alt="Logo Alcaldía" className="h-[68px] w-auto object-contain" />
               </div>
             </div>
 
@@ -951,7 +985,7 @@ export default function Reportes() {
                   <div key={pageIdx} className="report-page w-[1120px] h-[790px] bg-white relative flex flex-col justify-between pt-8 px-12 pb-[43px] overflow-hidden">
                     <BorderDecoration />
 
-                    <div className="text-center mt-0 z-10">
+                    <div className="text-center mt-0 z-10 relative">
                       <h2 className="text-[22px] font-black text-slate-800 uppercase tracking-wide">
                         {campamentoSeleccionado.nombre}
                       </h2>
@@ -963,7 +997,7 @@ export default function Reportes() {
                       </h3>
                     </div>
 
-                    <div className="px-8 mt-2 z-10">
+                    <div className="px-8 mt-2 z-10 relative">
                       <table className="w-full border-collapse border border-slate-300 text-slate-800">
                         <thead>
                           <tr className="bg-slate-50 border-b border-slate-300">
@@ -995,7 +1029,7 @@ export default function Reportes() {
                       </table>
                     </div>
 
-                    <div className="flex items-center justify-center gap-16 px-8 mt-3 z-10">
+                    <div className="flex items-center justify-center gap-16 px-8 mt-3 z-10 relative">
                       <div className="shrink-0">
                         {renderDonutChart()}
                       </div>
@@ -1004,10 +1038,10 @@ export default function Reportes() {
                       </div>
                     </div>
 
-                    <div className="flex items-end justify-between px-10 z-10 shrink-0">
-                      <img src="/logorepublica.png" alt="Logo República" className="h-12 w-auto object-contain" />
-                      <img src="/logovererojo.png" alt="Logo Venezuela" className="h-12 w-auto object-contain" />
-                      <img src="/logoalcadia.png" alt="Logo Alcaldía" className="h-12 w-auto object-contain" />
+                    <div className="flex items-end justify-between px-10 mb-px z-10 shrink-0 relative">
+                      <img src="/logorepublica.png" alt="Logo República" className="h-[68px] w-auto object-contain" />
+                      <img src="/logovererojo.png" alt="Logo Venezuela" className="h-[68px] w-auto object-contain" />
+                      <img src="/logoalcadia.png" alt="Logo Alcaldía" className="h-[68px] w-auto object-contain" />
                     </div>
                   </div>
                 ))}
@@ -1104,7 +1138,7 @@ export default function Reportes() {
                   <div key={pageIdx} className="report-page w-[1120px] h-[790px] bg-white relative flex flex-col justify-between pt-8 px-12 pb-[43px] overflow-hidden">
                     <BorderDecoration />
 
-                    <div className="text-center mt-0 z-10">
+                    <div className="text-center mt-0 z-10 relative">
                       <h2 className="text-[22px] font-black text-slate-800 uppercase tracking-wide">
                         {campamentoSeleccionado.nombre}
                       </h2>
@@ -1116,7 +1150,7 @@ export default function Reportes() {
                       </h3>
                     </div>
 
-                    <div className="px-8 mt-2 z-10">
+                    <div className="px-8 mt-2 z-10 relative">
                       <table className="w-full border-collapse border border-slate-300 text-slate-800">
                         <thead>
                           <tr className="bg-slate-50 border-b border-slate-300">
@@ -1150,7 +1184,7 @@ export default function Reportes() {
                       </table>
                     </div>
 
-                    <div className="flex items-center justify-center gap-16 px-8 mt-3 z-10">
+                    <div className="flex items-center justify-center gap-16 px-8 mt-3 z-10 relative">
                       <div className="shrink-0">
                         {renderDonutChart()}
                       </div>
@@ -1159,10 +1193,10 @@ export default function Reportes() {
                       </div>
                     </div>
 
-                    <div className="flex items-end justify-between px-10 z-10 shrink-0">
-                      <img src="/logorepublica.png" alt="Logo República" className="h-12 w-auto object-contain" />
-                      <img src="/logovererojo.png" alt="Logo Venezuela" className="h-12 w-auto object-contain" />
-                      <img src="/logoalcadia.png" alt="Logo Alcaldía" className="h-12 w-auto object-contain" />
+                    <div className="flex items-end justify-between px-10 mb-px z-10 shrink-0 relative">
+                      <img src="/logorepublica.png" alt="Logo República" className="h-[68px] w-auto object-contain" />
+                      <img src="/logovererojo.png" alt="Logo Venezuela" className="h-[68px] w-auto object-contain" />
+                      <img src="/logoalcadia.png" alt="Logo Alcaldía" className="h-[68px] w-auto object-contain" />
                     </div>
                   </div>
                 ))}
