@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { FileText, Presentation, ShieldOff, Loader2 } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
+import { supabase } from '../lib/supabase';
 
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -12,6 +13,7 @@ export default function Reportes() {
   const { tienePermisoPorCampamento } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
   const [logoKidsError, setLogoKidsError] = useState(false);
+  const [historiaDiscapacidadMap, setHistoriaDiscapacidadMap] = useState<Record<string, string>>({});
 
   const tieneAcceso = campamentoSeleccionado
     ? tienePermisoPorCampamento('Reportes', campamentoSeleccionado.id, 'Ver')
@@ -40,6 +42,26 @@ export default function Reportes() {
     if (!campamentoSeleccionado) return [];
     return refugiados.filter(r => r.campamento_id === campamentoSeleccionado.id);
   }, [refugiados, campamentoSeleccionado]);
+
+  useEffect(() => {
+    const discapacitados = refugiadosDelCampamento.filter(r => r.discapacidad);
+    if (discapacitados.length === 0) {
+      setHistoriaDiscapacidadMap({});
+      return;
+    }
+    const ids = discapacitados.map(r => r.id);
+    supabase
+      .from('historias_clinicas')
+      .select('refugiado_id, tipo_discapacidad')
+      .in('refugiado_id', ids)
+      .then(({ data }) => {
+        const map: Record<string, string> = {};
+        (data || []).forEach((h: any) => {
+          if (h.tipo_discapacidad) map[h.refugiado_id] = h.tipo_discapacidad;
+        });
+        setHistoriaDiscapacidadMap(map);
+      });
+  }, [refugiadosDelCampamento]);
 
   const familiasDelCampamento = useMemo(() => {
     if (!campamentoSeleccionado) return [];
@@ -183,7 +205,7 @@ export default function Reportes() {
         return {
           ...r,
           edad,
-          tipo_discapacidad: 'No especificada',
+          tipo_discapacidad: historiaDiscapacidadMap[r.id] || 'No tiene historia abierta',
         };
       })
       .sort((a, b) => {
@@ -191,7 +213,7 @@ export default function Reportes() {
         const cb = parseInt(b.nro_cama || '9999');
         return ca - cb;
       });
-  }, [refugiadosDelCampamento]);
+  }, [refugiadosDelCampamento, historiaDiscapacidadMap]);
 
   // ── Agrupación de discapacidades para gráfico de tortas ────────────────────
   const discapacidadGrupos = useMemo(() => {
