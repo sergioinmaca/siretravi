@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useCampamento } from '../../context/CampamentoContext';
-import { User, Users, MapPin, Save, AlertCircle, CheckCircle2, X, Accessibility, Shirt, Loader2, Camera } from 'lucide-react';
+import { User, Users, MapPin, Save, AlertCircle, CheckCircle2, X, Accessibility, Shirt, Loader2, Camera, FileText } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { Refugiado } from '../../types';
 import { formatAge } from '../../lib/formatAge';
@@ -61,6 +61,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     tenenciaVivienda: '',
     ingresoFamiliar: '',
     observaciones: '',
+    observacionesGenerales: '',
     parentesco: '',
   });
 
@@ -120,6 +121,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
         tenenciaVivienda: refugiadoToEdit.tenencia_vivienda || '',
         ingresoFamiliar: refugiadoToEdit.ingreso_familiar || '',
         observaciones: refugiadoToEdit.observaciones || '',
+        observacionesGenerales: refugiadoToEdit.observaciones_generales || '',
         parentesco: refugiadoToEdit.parentesco || '',
       });
     } else {
@@ -144,6 +146,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
         tenenciaVivienda: '',
         ingresoFamiliar: '',
         observaciones: '',
+        observacionesGenerales: '',
         parentesco: '',
       });
     }
@@ -289,6 +292,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       tenencia_vivienda: formData.tenenciaVivienda || undefined,
       ingreso_familiar: formData.ingresoFamiliar || undefined,
       observaciones: formData.observaciones || undefined,
+      observaciones_generales: formData.observacionesGenerales || undefined,
       parentesco: formData.parentesco || undefined,
       foto_url: fotoFile ? undefined : (refugiadoToEdit?.foto_url || undefined),
     };
@@ -837,6 +841,19 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                   <label className="block text-sm font-medium text-gray-700 mb-1">Talla de Zapatos (Opcional)</label>
                   <input type="text" name="tallaZapatos" value={formData.tallaZapatos} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase" placeholder="EJ. 38, 40, 42" />
                 </div>
+              </div>
+            </div>
+
+            {/* Tarjeta 7: Observaciones Generales */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
+                <div className="p-2 bg-gray-100 rounded-lg">
+                  <FileText size={18} className="text-gray-600" />
+                </div>
+                <h3 className="font-semibold text-gray-800">7. Observaciones Generales (Opcional)</h3>
+              </div>
+              <div className="p-6">
+                <textarea name="observacionesGenerales" value={formData.observacionesGenerales} onChange={handleChange} rows={4} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase resize-none" placeholder="Observaciones generales sobre el integrante..." />
               </div>
             </div>
             
