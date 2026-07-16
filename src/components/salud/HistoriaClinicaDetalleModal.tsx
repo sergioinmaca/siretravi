@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import {
   X, User, Users, MapPin, Activity, ClipboardList, Stethoscope,
-  Accessibility, AlertTriangle, Heart, Baby,
+  Accessibility, AlertTriangle, Heart, Baby, FileText, Loader2,
 } from 'lucide-react';
+import jsPDF from 'jspdf';
 import { useCampamento } from '../../context/CampamentoContext';
 import { formatAge } from '../../lib/formatAge';
 import { toDisplayDate } from '../../lib/formatDate';
@@ -20,7 +22,8 @@ export default function HistoriaClinicaDetalleModal({
   historia,
   refugiado,
 }: HistoriaClinicaDetalleModalProps) {
-  const { familias = [] } = useCampamento();
+  const { familias = [], campamentos = [] } = useCampamento();
+  const [isExporting, setIsExporting] = useState(false);
 
   if (!isOpen) return null;
 
@@ -64,6 +67,357 @@ export default function HistoriaClinicaDetalleModal({
     !!historia?.examen_subjetivo ||
     !!historia?.examen_objetivo ||
     !!historia?.examen_diagnostico;
+
+  const handleExportPDF = async () => {
+    if (!refugiado) return;
+    setIsExporting(true);
+    try {
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageW = 210;
+      const pageH = 297;
+      const margin = 15;
+      const contentW = pageW - margin * 2;
+      let y = margin;
+
+      const campName = campamentos.find((c: any) => c.id === refugiado.campamento_id)?.nombre || '—';
+      const logoDataUrl = await loadImageAsDataUrl('/logorepublica.png');
+      const photoDataUrl = refugiado.foto_url ? await loadImageAsDataUrl(refugiado.foto_url) : null;
+
+      const newPage = () => {
+        pdf.addPage();
+        y = margin;
+      };
+
+      const ensureSpace = (needed: number) => {
+        if (y + needed > pageH - margin) newPage();
+      };
+
+      const truncate = (text: string, maxW: number, size = 9) => {
+        pdf.setFontSize(size);
+        let t = text;
+        while (t.length > 1 && pdf.getTextWidth(t + '…') > maxW) t = t.slice(0, -1);
+        return t.length < text.length ? t + '…' : text;
+      };
+
+      const drawSectionHeader = (num: string, title: string) => {
+        ensureSpace(8);
+        pdf.setFillColor(243, 244, 246);
+        pdf.rect(margin, y, contentW, 6, 'F');
+        pdf.setDrawColor(220, 38, 38);
+        pdf.setLineWidth(1);
+        pdf.line(margin, y, margin, y + 6);
+        pdf.setFont('Helvetica', 'bold');
+        pdf.setFontSize(9);
+        pdf.setTextColor(0, 0, 0);
+        pdf.text(`${num}. ${title}`, margin + 3, y + 4.2);
+        y += 8;
+      };
+
+      const drawField = (label: string, value: string, x: number, maxW: number) => {
+        pdf.setFont('Helvetica', 'bold');
+        pdf.setFontSize(9);
+        pdf.setTextColor(0, 0, 0);
+        pdf.text(label, x, y + 4);
+        const labelW = pdf.getTextWidth(label);
+        pdf.setFont('Helvetica', 'normal');
+        const val = truncate(value || '—', maxW - labelW - 1);
+        pdf.text(val, x + labelW + 1, y + 4);
+      };
+
+      const drawFieldFull = (label: string, value: string) => {
+        ensureSpace(6);
+        drawField(label, value, margin, contentW);
+        y += 6;
+      };
+
+      const drawFieldHalfL = (label: string, value: string) => {
+        drawField(label, value, margin, contentW / 2 - 2);
+      };
+
+      const drawFieldHalfR = (label: string, value: string) => {
+        drawField(label, value, margin + contentW / 2 + 2, contentW / 2 - 2);
+      };
+
+      const drawFieldRowLR = (lblL: string, valL: string, lblR: string, valR: string) => {
+        ensureSpace(6);
+        drawFieldHalfL(lblL, valL);
+        drawFieldHalfR(lblR, valR);
+        y += 6;
+      };
+
+      const drawTextBlock = (title: string, text: string) => {
+        ensureSpace(12);
+        pdf.setFont('Helvetica', 'bold');
+        pdf.setFontSize(9);
+        pdf.setTextColor(0, 0, 0);
+        pdf.text(title, margin, y + 4);
+        y += 6;
+
+        if (!text || text === '—') {
+          pdf.setDrawColor(156, 163, 175);
+          pdf.setLineWidth(0.3);
+          pdf.rect(margin, y, contentW, 10, 'S');
+          pdf.setFont('Helvetica', 'normal');
+          pdf.setFontSize(9);
+          pdf.text('—', margin + 3, y + 7);
+          y += 14;
+          return;
+        }
+
+        pdf.setFont('Helvetica', 'normal');
+        pdf.setFontSize(9);
+        const textW = contentW - 6;
+        const lines = pdf.splitTextToSize(text, textW);
+        const totalH = Math.max(lines.length * 5 + 7, 10);
+        ensureSpace(totalH + 4);
+        pdf.setDrawColor(156, 163, 175);
+        pdf.setLineWidth(0.3);
+        pdf.rect(margin, y, contentW, totalH, 'S');
+        lines.forEach((line: string, i: number) => {
+          pdf.text(line, margin + 3, y + 7 + i * 5);
+        });
+        y += totalH + 6;
+      };
+
+      // ── CABECERA ──
+
+      if (logoDataUrl) {
+        pdf.addImage(logoDataUrl, 'PNG', margin, y, 20, 20);
+      }
+
+      pdf.setFont('Helvetica', 'bold');
+      pdf.setFontSize(10);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text('DETALLE DE HISTORIA CLÍNICA', pageW / 2, y + 4, { align: 'center' });
+
+      pdf.setFontSize(15);
+      pdf.setTextColor(80, 80, 80);
+      const campLines = pdf.splitTextToSize(campName, 115);
+      const campLineH = 7;
+      campLines.forEach((line: string, i: number) => {
+        pdf.text(line, pageW / 2, y + 11 + i * campLineH, { align: 'center' });
+      });
+
+      pdf.setFont('Helvetica', 'bold');
+      pdf.setFontSize(10);
+      pdf.setTextColor(0, 0, 0);
+      const planY = y + 11 + campLines.length * campLineH;
+      pdf.text('PLAN VENEZUELA RENACE', pageW / 2, planY, { align: 'center' });
+
+      pdf.setFontSize(9);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text('PACIENTE N°:', pageW - margin - 34, y + 4);
+      pdf.setFont('Helvetica', 'normal');
+      pdf.setTextColor(220, 38, 38);
+      const codeLabelW = pdf.getTextWidth('PACIENTE N°:');
+      pdf.text(refugiado.codigo || '—', pageW - margin - 34 + codeLabelW + 2, y + 4);
+
+      const photoX = pageW - margin - 25;
+      const photoY = y + 7;
+      if (photoDataUrl) {
+        pdf.addImage(photoDataUrl, 'PNG', photoX, photoY, 25, 30);
+      } else {
+        pdf.setDrawColor(156, 163, 175);
+        pdf.setLineWidth(0.3);
+        pdf.rect(photoX, photoY, 25, 30, 'S');
+        pdf.setFontSize(6);
+        pdf.setTextColor(156, 163, 175);
+        pdf.text('Foto', photoX + 12.5, photoY + 14, { align: 'center' });
+        pdf.setTextColor(0, 0, 0);
+      }
+
+      y += Math.max(40, planY - y + 6);
+      pdf.setDrawColor(0, 0, 0);
+      pdf.setLineWidth(0.5);
+      pdf.line(margin, y, pageW - margin, y);
+      y += 6;
+
+      // ── 1. DATOS PERSONALES ──
+
+      drawSectionHeader('1', 'Datos Personales');
+
+      drawFieldFull('Nombres y Apellidos:', `${refugiado.nombres} ${refugiado.apellidos}`);
+
+      drawFieldRowLR(
+        'Cédula de Identidad:', refugiado.cedula?.toString() || 'S/N',
+        'Fecha de Nacimiento:', toDisplayDate(refugiado.fecha_nacimiento),
+      );
+
+      ensureSpace(6);
+      drawField('Edad:', formatAge(refugiado.fecha_nacimiento), margin, contentW / 3 - 2);
+      const gX = margin + contentW / 3 + 4;
+      pdf.setFont('Helvetica', 'bold');
+      pdf.setFontSize(9);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text('Género:', gX, y + 4);
+      pdf.setDrawColor(0, 0, 0);
+      pdf.setLineWidth(0.3);
+      pdf.rect(gX + pdf.getTextWidth('Género:') + 2, y + 1, 3, 3, 'S');
+      if (refugiado.genero) {
+        pdf.setLineWidth(0.4);
+        pdf.line(gX + pdf.getTextWidth('Género:') + 2, y + 1, gX + pdf.getTextWidth('Género:') + 5, y + 4);
+        pdf.line(gX + pdf.getTextWidth('Género:') + 5, y + 1, gX + pdf.getTextWidth('Género:') + 2, y + 4);
+      }
+      pdf.setFont('Helvetica', 'normal');
+      pdf.text('Masculino (M)', gX + pdf.getTextWidth('Género:') + 7, y + 4);
+      pdf.rect(gX + pdf.getTextWidth('Género:') + 2 + 35, y + 1, 3, 3, 'S');
+      if (!refugiado.genero) {
+        pdf.setLineWidth(0.4);
+        pdf.line(gX + pdf.getTextWidth('Género:') + 2 + 35, y + 1, gX + pdf.getTextWidth('Género:') + 5 + 35, y + 4);
+        pdf.line(gX + pdf.getTextWidth('Género:') + 5 + 35, y + 1, gX + pdf.getTextWidth('Género:') + 2 + 35, y + 4);
+      }
+      pdf.text('Femenino (F)', gX + pdf.getTextWidth('Género:') + 7 + 35, y + 4);
+      y += 6;
+
+      drawFieldRowLR(
+        'Teléfono:', refugiado.telefono?.toString() || '—',
+        'Profesión / Ocupación:', refugiado.profesion || '—',
+      );
+
+      drawFieldFull('Nivel Educativo:', refugiado.nivel_educativo || '—');
+      drawFieldFull('Fecha Apertura HC:', historia ? toDisplayDate(historia.fecha_apertura) : '—');
+
+      // ── 2. JERARQUÍA FAMILIAR ──
+
+      drawSectionHeader('2', 'Jerarquía Familiar');
+
+      ensureSpace(6);
+      pdf.setFont('Helvetica', 'bold');
+      pdf.setFontSize(9);
+      pdf.text('Jerarquía Familiar:', margin, y + 3);
+      const jfw = pdf.getTextWidth('Jerarquía Familiar:');
+      pdf.setDrawColor(0, 0, 0);
+      pdf.setLineWidth(0.3);
+      pdf.rect(margin + jfw + 2, y + 1, 3, 3, 'S');
+      if (refugiado.es_jefe_familia) {
+        pdf.setLineWidth(0.4);
+        pdf.line(margin + jfw + 2, y + 1, margin + jfw + 5, y + 4);
+        pdf.line(margin + jfw + 5, y + 1, margin + jfw + 2, y + 4);
+      }
+      pdf.setFont('Helvetica', 'normal');
+      pdf.text('Jefe de Familia', margin + jfw + 7, y + 4);
+      pdf.rect(margin + jfw + 2 + 35, y + 1, 3, 3, 'S');
+      if (!refugiado.es_jefe_familia) {
+        pdf.setLineWidth(0.4);
+        pdf.line(margin + jfw + 2 + 35, y + 1, margin + jfw + 5 + 35, y + 4);
+        pdf.line(margin + jfw + 5 + 35, y + 1, margin + jfw + 2 + 35, y + 4);
+      }
+      pdf.text('Miembro', margin + jfw + 7 + 35, y + 4);
+      if (!refugiado.es_jefe_familia) {
+        const fam = familias.find((f: any) => f.id === refugiado.familia_id);
+        pdf.text(`(${fam?.nombre || 'Familia Desconocida'})`, margin + jfw + 7 + 62, y + 4);
+      }
+      y += 6;
+
+      if (!refugiado.es_jefe_familia) {
+        drawFieldFull('Parentesco con el Jefe/a:', refugiado.parentesco || '—');
+      }
+
+      // ── 3. UBICACIÓN Y PROCEDENCIA ──
+
+      drawSectionHeader('3', 'Ubicación y Procedencia');
+
+      drawFieldRowLR(
+        'Nro de Cama:', refugiado.nro_cama || '—',
+        'Fecha de Ingreso:', refugiado.fecha_ingreso ? toDisplayDate(refugiado.fecha_ingreso) : '—',
+      );
+
+      drawFieldFull('Procedencia:', refugiado.procedencia || '—');
+      drawFieldFull('Dirección Exacta:', refugiado.direccion_exacta || '—');
+
+      // ── 4. INFORMACIÓN ADICIONAL MÉDICA ──
+
+      if (tieneInfoAdicionalMedica && historia) {
+        drawSectionHeader('4', 'Información Adicional Médica');
+
+        if (historia.tipo_discapacidad) {
+          drawFieldFull('Discapacidad (Tipo):', historia.tipo_discapacidad);
+        }
+
+        if (historia.tipo_alergia) {
+          drawFieldFull('Alergias (Tipo):', historia.tipo_alergia);
+        }
+
+        if (historia.medicamento_enfermedad) {
+          drawFieldFull('Medicamento:', historia.medicamento_enfermedad);
+        }
+
+        if (historia.lesion_sismo_detalle) {
+          drawFieldFull('Lesión Sismo (Detalle):', historia.lesion_sismo_detalle);
+        }
+
+        if (historia.adulto_mayor_detalle) {
+          drawFieldFull('Adulto Mayor Dependencia (Detalle):', historia.adulto_mayor_detalle);
+        }
+
+        if (historia.lactante_detalle) {
+          drawFieldFull('Lactante (Detalle):', historia.lactante_detalle);
+        }
+
+        if (enfCronicas.length > 0) {
+          ensureSpace(6);
+          pdf.setFont('Helvetica', 'bold');
+          pdf.setFontSize(9);
+          pdf.setTextColor(0, 0, 0);
+          pdf.text('Enfermedades Crónicas:', margin, y + 4);
+          y += 6;
+          enfCronicas.forEach((ec) => {
+            drawFieldFull(`  • ${ec.enfermedad}`, ec.tratamiento ? `Tratamiento: ${ec.tratamiento}` : '—');
+          });
+        }
+      }
+
+      // ── 5. DESGLOSE MÉDICO ──
+
+      if (tieneDesgloseMedico && historia) {
+        drawSectionHeader('5', 'Desglose Médico');
+
+        if (historia.enfermedades_previas) {
+          drawTextBlock('Enfermedades Previas:', historia.enfermedades_previas);
+        }
+
+        if (historia.cirugias) {
+          drawTextBlock('Cirugías:', historia.cirugias);
+        }
+      }
+
+      // ── 6. EXAMEN FÍSICO GENERAL ──
+
+      if (tieneExamenFisico && historia) {
+        drawSectionHeader('6', 'Examen Físico General');
+
+        if (historia.examen_subjetivo) {
+          drawTextBlock('Subjetivo:', historia.examen_subjetivo);
+        }
+
+        if (historia.examen_objetivo) {
+          drawTextBlock('Objetivo:', historia.examen_objetivo);
+        }
+
+        if (historia.examen_diagnostico) {
+          drawTextBlock('Diagnóstico:', historia.examen_diagnostico);
+        }
+      }
+
+      // ── page numbers ──
+
+      const totalPages = pdf.getNumberOfPages();
+      for (let p = 1; p <= totalPages; p++) {
+        pdf.setPage(p);
+        pdf.setFontSize(6);
+        pdf.setTextColor(156, 163, 175);
+        pdf.text(`Página ${p} de ${totalPages}`, pageW - margin, pageH - margin, { align: 'right' });
+      }
+
+      const patientName = `${refugiado.apellidos}_${refugiado.nombres}`.replace(/\s+/g, '_');
+      pdf.save(`Historia_Clinica_${patientName}.pdf`);
+    } catch (err) {
+      console.error(err);
+      alert('Ocurrió un error al generar el PDF.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
@@ -335,6 +689,18 @@ export default function HistoriaClinicaDetalleModal({
 
         <div className="px-8 py-5 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
           <button
+            onClick={handleExportPDF}
+            disabled={isExporting}
+            className="flex items-center justify-center gap-2 bg-caracas-red hover:bg-red-800 text-white px-6 py-2.5 rounded-xl font-medium transition-all shadow-lg shadow-caracas-red/20 disabled:opacity-50"
+          >
+            {isExporting ? (
+              <Loader2 className="animate-spin" size={18} />
+            ) : (
+              <FileText size={18} />
+            )}
+            {isExporting ? 'Exportando...' : 'Exportar PDF'}
+          </button>
+          <button
             onClick={onClose}
             className="px-6 py-2.5 rounded-xl text-gray-600 font-medium hover:bg-gray-200 transition-colors"
           >
@@ -344,6 +710,27 @@ export default function HistoriaClinicaDetalleModal({
       </div>
     </div>
   );
+}
+
+async function loadImageAsDataUrl(url: string): Promise<string | null> {
+  try {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error('Failed to load'));
+      img.src = url;
+    });
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return null;
+    ctx.drawImage(img, 0, 0);
+    return canvas.toDataURL('image/png');
+  } catch {
+    return null;
+  }
 }
 
 function FichaField({
