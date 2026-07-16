@@ -127,6 +127,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
           tenencia_vivienda: (r.tenencia_vivienda as string) || undefined,
           ingreso_familiar: (r.ingreso_familiar as string) || undefined,
           observaciones: (r.observaciones as string) || undefined,
+          observaciones_generales: (r.observaciones_generales as string) || undefined,
           parentesco: (r.parentesco as string) || undefined,
           foto_url: (r.foto_url as string) || undefined,
         }));
@@ -189,6 +190,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         tenencia_vivienda: r.tenencia_vivienda || undefined,
         ingreso_familiar: r.ingreso_familiar || undefined,
         observaciones: r.observaciones || undefined,
+        observaciones_generales: r.observaciones_generales || undefined,
         parentesco: r.parentesco || undefined,
         foto_url: r.foto_url || undefined,
       });
@@ -517,6 +519,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         tenencia_vivienda: nuevo.tenencia_vivienda || null,
         ingreso_familiar: nuevo.ingreso_familiar || null,
         observaciones: nuevo.observaciones || null,
+        observaciones_generales: nuevo.observaciones_generales || null,
         parentesco: nuevo.parentesco || null,
         foto_url: nuevo.foto_url || null,
       })
@@ -567,6 +570,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       tenencia_vivienda: data.tenencia_vivienda || undefined,
       ingreso_familiar: data.ingreso_familiar || undefined,
       observaciones: data.observaciones || undefined,
+      observaciones_generales: (data.observaciones_generales as string) || undefined,
       parentesco: data.parentesco || undefined,
       foto_url: (data.foto_url as string) || undefined,
     };
@@ -632,6 +636,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         tenencia_vivienda: actualizado.tenencia_vivienda || null,
         ingreso_familiar: actualizado.ingreso_familiar || null,
         observaciones: actualizado.observaciones || null,
+        observaciones_generales: actualizado.observaciones_generales || null,
         parentesco: actualizado.parentesco || null,
         foto_url: actualizado.foto_url || null,
       })
@@ -720,6 +725,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       tenencia_vivienda: (r.tenencia_vivienda as string) || undefined,
       ingreso_familiar: (r.ingreso_familiar as string) || undefined,
       observaciones: (r.observaciones as string) || undefined,
+      observaciones_generales: (r.observaciones_generales as string) || undefined,
       parentesco: (r.parentesco as string) || undefined,
       foto_url: (r.foto_url as string) || undefined,
     })) as Refugiado[];

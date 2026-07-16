@@ -2,9 +2,10 @@ import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useCampamento } from '../../context/CampamentoContext';
-import { ArrowLeft, Stethoscope, Search, Plus, Pencil } from 'lucide-react';
+import { ArrowLeft, Stethoscope, Search, Plus, Pencil, Eye } from 'lucide-react';
 import HistoriaClinicaModal from '../../components/salud/HistoriaClinicaModal';
 import AtencionMedicaModal from '../../components/salud/AtencionMedicaModal';
+import HistoriaClinicaDetalleModal from '../../components/salud/HistoriaClinicaDetalleModal';
 import type { HistoriaClinica } from '../../types';
 import { toDisplayDate } from '../../lib/formatDate';
 import { obtenerHistoriasClinicas } from '../../lib/salud';
@@ -21,6 +22,8 @@ export default function HistoriasClinicas() {
   const [historiaToEdit, setHistoriaToEdit] = useState<HistoriaClinica | null>(null);
   const [atencionHCId, setAtencionHCId] = useState('');
   const [atencionNombre, setAtencionNombre] = useState('');
+  const [detalleOpen, setDetalleOpen] = useState(false);
+  const [detalleData, setDetalleData] = useState<{ historia: HistoriaClinica; refugiado: any } | null>(null);
   const [historias, setHistorias] = useState<HistoriaClinica[]>([]);
   const perPage = 15;
 
@@ -146,6 +149,16 @@ export default function HistoriasClinicas() {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => {
+                          setDetalleData({ historia, refugiado: refugiado! });
+                          setDetalleOpen(true);
+                        }}
+                        className="p-2 text-gray-400 hover:text-caracas-blue hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Ver Detalle"
+                      >
+                        <Eye size={18} />
+                      </button>
                       {tienePermisoPorCampamento('Salud', campId, 'Modificar') && (
                         <button
                           onClick={() => {
@@ -223,6 +236,12 @@ export default function HistoriasClinicas() {
         onClose={() => setAtencionModalOpen(false)}
         historiaClinicaId={atencionHCId}
         refugiadoNombre={atencionNombre}
+      />
+      <HistoriaClinicaDetalleModal
+        isOpen={detalleOpen}
+        onClose={() => { setDetalleOpen(false); setDetalleData(null); }}
+        historia={detalleData?.historia || null}
+        refugiado={detalleData?.refugiado || null}
       />
     </div>
   );
