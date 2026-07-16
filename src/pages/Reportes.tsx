@@ -373,51 +373,51 @@ export default function Reportes() {
     const femPct = Math.round((datosReporte.femeninos / total) * 100);
     const mascPct = Math.round((datosReporte.masculinos / total) * 100);
 
-    const radius = 60;
+    const radius = 80;
     const circ = 2 * Math.PI * radius;
     const femStroke = (femPct / 100) * circ;
     const mascStroke = (mascPct / 100) * circ;
 
-    // Calcular ángulos intermedios para situar las etiquetas de porcentaje
+    const cx = 140;
+    const cy = 140;
+
     const femAngle = (femPct * 3.6) / 2 - 90;
     const mascAngle = femPct * 3.6 + (mascPct * 3.6) / 2 - 90;
 
     const radFem = (femAngle * Math.PI) / 180;
     const radMasc = (mascAngle * Math.PI) / 180;
 
-    // Posición del label dentro del aro de color
-    const labelR = 60;
-    const xFem = 110 + labelR * Math.cos(radFem);
-    const yFem = 110 + labelR * Math.sin(radFem);
-    const xMasc = 110 + labelR * Math.cos(radMasc);
-    const yMasc = 110 + labelR * Math.sin(radMasc);
+    const labelR = 80;
+    const xFem = cx + labelR * Math.cos(radFem);
+    const yFem = cy + labelR * Math.sin(radFem);
+    const xMasc = cx + labelR * Math.cos(radMasc);
+    const yMasc = cy + labelR * Math.sin(radMasc);
 
     return (
-      <svg width="290" height="220" viewBox="0 0 290 220" className="mx-auto">
-        <circle cx="110" cy="110" r={radius} fill="transparent" stroke="#F97316" strokeWidth="42" strokeDasharray={`${femStroke} ${circ}`} />
-        <circle cx="110" cy="110" r={radius} fill="transparent" stroke="#3B82F6" strokeWidth="42" strokeDasharray={`${mascStroke} ${circ}`} strokeDashoffset={-femStroke} />
+      <svg width="420" height="280" viewBox="0 0 420 280" className="mx-auto">
+        <circle cx={cx} cy={cy} r={radius} fill="transparent" stroke="#F97316" strokeWidth="56" strokeDasharray={`${femStroke} ${circ}`} />
+        <circle cx={cx} cy={cy} r={radius} fill="transparent" stroke="#3B82F6" strokeWidth="56" strokeDasharray={`${mascStroke} ${circ}`} strokeDashoffset={-femStroke} />
 
-        {/* Etiquetas de porcentaje */}
         {femPct > 0 && (
-          <g transform={`translate(${xFem - 16}, ${yFem - 10})`}>
-            <rect width="32" height="18" rx="4" fill="#FFFFFF" stroke="#F97316" strokeWidth="1" />
-            <text x="16" y="13" textAnchor="middle" className="text-[10px] font-black fill-slate-800">{femPct}%</text>
+          <g transform={`translate(${xFem - 20}, ${yFem - 14})`}>
+            <rect width="42" height="28" rx="5" fill="#FFFFFF" stroke="#F97316" strokeWidth="1.5" />
+            <text x="21" y="19" textAnchor="middle" className="text-[14px] font-black fill-slate-800">{femPct}%</text>
           </g>
         )}
         {mascPct > 0 && (
-          <g transform={`translate(${xMasc - 16}, ${yMasc - 10})`}>
-            <rect width="32" height="18" rx="4" fill="#FFFFFF" stroke="#3B82F6" strokeWidth="1" />
-            <text x="16" y="13" textAnchor="middle" className="text-[10px] font-black fill-slate-800">{mascPct}%</text>
+          <g transform={`translate(${xMasc - 20}, ${yMasc - 14})`}>
+            <rect width="42" height="28" rx="5" fill="#FFFFFF" stroke="#3B82F6" strokeWidth="1.5" />
+            <text x="21" y="19" textAnchor="middle" className="text-[14px] font-black fill-slate-800">{mascPct}%</text>
           </g>
         )}
 
         {/* Leyenda */}
-        <g transform="translate(195, 80)">
-          <rect width="10" height="10" rx="2" fill="#3B82F6" />
-          <text x="15" y="9" className="text-[9px] font-bold fill-slate-600">MASCULINOS</text>
+        <g transform="translate(260, 105)">
+          <rect width="14" height="14" rx="3" fill="#3B82F6" />
+          <text x="20" y="12" className="text-[16px] font-bold fill-slate-600">MASCULINOS</text>
 
-          <rect y="18" width="10" height="10" rx="2" fill="#F97316" />
-          <text x="15" y="27" className="text-[9px] font-bold fill-slate-600">FEMENINOS</text>
+          <rect y="30" width="14" height="14" rx="3" fill="#F97316" />
+          <text x="20" y="42" className="text-[16px] font-bold fill-slate-600">FEMENINOS</text>
         </g>
       </svg>
     );
@@ -436,23 +436,23 @@ export default function Reportes() {
     const maxVal = Math.max(...categories.map(c => c.val)) || 1;
 
     return (
-      <div className="w-[380px] h-[210px] flex flex-col justify-between border-l-2 border-slate-700 pl-4 py-2 relative">
+      <div className="w-[380px] h-[210px] flex flex-col justify-between pl-0 py-2 relative">
         {categories.map((cat, idx) => {
-          const widthPct = Math.max(8, (cat.val / maxVal) * 82); // Mínimo de ancho visual
+          const widthPct = Math.max(8, (cat.val / maxVal) * 82);
           return (
             <div key={idx} className="flex items-center w-full">
-              <span className="text-[11px] font-black text-slate-500 w-[170px] text-right pr-3">
+              <span className="text-[16px] font-bold text-slate-600 w-[210px] text-left pr-3 ml-[-9px]">
                 {cat.key}
               </span>
-              <div className="flex-1 flex items-center">
+              <div className="flex-1 flex items-center ml-[-30px]">
                 {cat.val > 0 && (
-                  <span className="text-[11px] font-black text-slate-800 mr-2">{cat.val}</span>
+                  <span className="text-[14px] font-black text-slate-800 w-[28px] text-right mr-2 inline-block">{cat.val}</span>
                 )}
                 {cat.val === 0 && (
-                  <span className="text-[11px] font-black text-slate-400 mr-2">0</span>
+                  <span className="text-[14px] font-black text-slate-400 w-[28px] text-right mr-2 inline-block">0</span>
                 )}
                 <div
-                  className="h-5 rounded-md transition-all shadow-sm border border-black/5"
+                  className="h-5 rounded-md transition-all shadow-sm border border-black/5 mt-[13px]"
                   style={{
                     width: `${widthPct}%`,
                     backgroundColor: cat.color
@@ -645,7 +645,7 @@ export default function Reportes() {
               </h3>
 
               {/* Content body */}
-              <div className="flex-1 flex items-center justify-between px-16 gap-8 z-10 relative">
+              <div className="flex-1 flex items-center px-16 z-10 relative">
                 {/* Tablas izquierdas */}
                 <div className="w-[450px] space-y-6">
                   {/* Tabla Familias */}
@@ -696,12 +696,12 @@ export default function Reportes() {
                     </tbody>
                   </table>
                 </div>
+              </div>
 
-                {/* Gráfico circular */}
-                <div className="flex-1 flex flex-col items-center">
-                  <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
-                    {renderPieChart()}
-                  </div>
+              {/* Gráfico circular - absolute */}
+              <div className="absolute right-12 top-1/2 -translate-y-1/2 z-[5]">
+                <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
+                  {renderPieChart()}
                 </div>
               </div>
 
@@ -834,57 +834,57 @@ export default function Reportes() {
               </div>
 
               {/* Content body */}
-              <div className="flex-1 flex items-center justify-between px-16 gap-8 z-10 relative">
+              <div className="flex-1 flex items-center px-16 z-10 relative">
                 {/* Tablas izquierdas */}
                 <div className="w-[450px] space-y-6">
                   <table className="w-full border-collapse border border-slate-300 text-slate-800">
                     <thead>
                       <tr className="bg-slate-50 border-b border-slate-300">
-                        <th colSpan={2} className="p-3 text-center text-xs font-black tracking-wider text-slate-700">
+                        <th colSpan={2} className="py-1.5 px-1 text-center text-xs font-black tracking-wider text-slate-700">
                           NIÑAS – NIÑOS Y ADOLESCENTES LA GUAIRA - CARACAS
                         </th>
                       </tr>
                     </thead>
                     <tbody>
                       <tr className="border-b border-slate-300">
-                        <td className="p-3 text-base font-bold tracking-wide">0-3 AÑOS</td>
-                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
+                        <td className="py-[4.5px] px-0.5 text-base font-bold tracking-wide">0-3 AÑOS</td>
+                        <td className="py-[4.5px] px-0.5 text-lg font-black text-center text-[#C21807] w-24">
                           {String(datosReporte.nna_0_3).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="border-b border-slate-300">
-                        <td className="p-3 text-base font-bold tracking-wide">4-6 AÑOS</td>
-                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
+                        <td className="py-[4.5px] px-0.5 text-base font-bold tracking-wide">4-6 AÑOS</td>
+                        <td className="py-[4.5px] px-0.5 text-lg font-black text-center text-[#C21807] w-24">
                           {String(datosReporte.nna_4_6).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="border-b border-slate-300">
-                        <td className="p-3 text-base font-bold tracking-wide">7-12 AÑOS</td>
-                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
+                        <td className="py-[4.5px] px-0.5 text-base font-bold tracking-wide">7-12 AÑOS</td>
+                        <td className="py-[4.5px] px-0.5 text-lg font-black text-center text-[#C21807] w-24">
                           {String(datosReporte.nna_7_12).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="border-b border-slate-300">
-                        <td className="p-3 text-base font-bold tracking-wide">ADOLESCENTES</td>
-                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
+                        <td className="py-[4.5px] px-0.5 text-base font-bold tracking-wide">ADOLESCENTES</td>
+                        <td className="py-[4.5px] px-0.5 text-lg font-black text-center text-[#C21807] w-24">
                           {String(datosReporte.nna_adolescentes).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="border-b border-slate-300">
-                        <td className="p-3 text-base font-bold tracking-wide">ADOLESCENTE EMBARAZADA</td>
-                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
+                        <td className="py-[4.5px] px-0.5 text-base font-bold tracking-wide">ADOLESCENTE EMBARAZADA</td>
+                        <td className="py-[4.5px] px-0.5 text-lg font-black text-center text-[#C21807] w-24">
                           {String(datosReporte.nna_embarazadas).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="border-b border-slate-300">
-                        <td className="p-3 text-base font-bold tracking-wide">DISCAPACIDAD</td>
-                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
+                        <td className="py-[4.5px] px-0.5 text-base font-bold tracking-wide">DISCAPACIDAD</td>
+                        <td className="py-[4.5px] px-0.5 text-lg font-black text-center text-[#C21807] w-24">
                           {String(datosReporte.nna_discapacidad).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="bg-slate-100 font-black">
-                        <td className="p-3 text-base tracking-wide">TOTAL</td>
-                        <td className="p-3 text-lg text-center w-24">
+                        <td className="py-[4.5px] px-0.5 text-base tracking-wide">TOTAL</td>
+                        <td className="py-[4.5px] px-0.5 text-lg text-center w-24">
                           {String(datosReporte.totalNNA).padStart(2, '0')}
                         </td>
                       </tr>
@@ -895,34 +895,34 @@ export default function Reportes() {
                   <table className="w-full border-collapse border border-slate-300 text-slate-800">
                     <tbody>
                       <tr className="border-b border-slate-300">
-                        <td className="p-3 text-base font-bold text-left tracking-wide">FEMENINA</td>
-                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
+                        <td className="py-[4.5px] px-0.5 text-base font-bold text-left tracking-wide">FEMENINA</td>
+                        <td className="py-[4.5px] px-0.5 text-lg font-black text-center text-[#C21807] w-24">
                           {String(datosReporte.nna_femenina).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="bg-slate-50">
-                        <td className="p-3 text-base font-bold text-left tracking-wide">MASCULINO</td>
-                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
+                        <td className="py-[4.5px] px-0.5 text-base font-bold text-left tracking-wide">MASCULINO</td>
+                        <td className="py-[4.5px] px-0.5 text-lg font-black text-center text-[#C21807] w-24">
                           {String(datosReporte.nna_masculino).padStart(2, '0')}
                         </td>
                       </tr>
                     </tbody>
                   </table>
                 </div>
+              </div>
 
-                {/* Ilustración de Niños */}
-                <div className="flex-1 flex flex-col items-center">
-                  {logoKidsError ? (
-                    <KidsIllustrationFallback />
-                  ) : (
-                    <img
-                      src="/ninos.png"
-                      alt="Ilustración Niños"
-                      className="max-h-[350px] w-auto object-contain"
-                      onError={() => setLogoKidsError(true)}
-                    />
-                  )}
-                </div>
+              {/* Ilustración de Niños - absolute */}
+              <div className="absolute right-12 top-1/2 -translate-y-1/2 z-[5]">
+                {logoKidsError ? (
+                  <KidsIllustrationFallback />
+                ) : (
+                  <img
+                    src="/ninos.png"
+                    alt="Ilustración Niños"
+                    className="h-[512px] w-auto object-contain"
+                    onError={() => setLogoKidsError(true)}
+                  />
+                )}
               </div>
 
               {/* Footer */}
@@ -937,12 +937,22 @@ export default function Reportes() {
 
           {/* REPORTE 3: DISCAPACITADOS */}
           {(() => {
-            const ROWS_PER_PAGE = 7;
+            const ROWS_PAGE1 = 7;
+            const ROWS_OTHER = 18;
             const total = discapacitadosReporte.length;
-            const totalPaginas = Math.max(1, Math.ceil(total / ROWS_PER_PAGE));
-            const pages = Array.from({ length: totalPaginas }, (_, i) =>
-              discapacitadosReporte.slice(i * ROWS_PER_PAGE, (i + 1) * ROWS_PER_PAGE)
-            );
+
+            const firstChunk = discapacitadosReporte.slice(0, ROWS_PAGE1);
+            const rest = discapacitadosReporte.slice(ROWS_PAGE1);
+            const restPageCount = Math.ceil(rest.length / ROWS_OTHER);
+            const totalPaginas = 1 + restPageCount;
+
+            const pages = [
+              { chunk: firstChunk, isFirst: true },
+              ...Array.from({ length: restPageCount }, (_, i) => ({
+                chunk: rest.slice(i * ROWS_OTHER, (i + 1) * ROWS_OTHER),
+                isFirst: false
+              }))
+            ];
 
             const renderDonutChart = () => {
               const cx = 110;
@@ -954,10 +964,10 @@ export default function Reportes() {
 
               if (discapacidadGrupos.length === 0) {
                 return (
-                  <svg width="300" height="230" viewBox="0 0 300 230" className="mx-auto">
+                  <svg width="210" height="230" viewBox="0 0 210 230" className="mx-auto">
                     <circle cx={cx} cy={cy} r={outerR} fill="transparent" stroke="#E2E8F0" strokeWidth={outerR - innerR} />
                     <circle cx={cx} cy={cy} r={innerR} fill="white" />
-                    <text x={cx} y={cy - 5} textAnchor="middle" className="text-[11px] font-bold fill-slate-500">Sin datos</text>
+                    <text x={cx} y={cy - 5} textAnchor="middle" style={{ fontSize: '16px', fontWeight: 700, fill: '#9CA3AF' }}>Sin datos</text>
                   </svg>
                 );
               }
@@ -987,19 +997,21 @@ export default function Reportes() {
                     />
                   ))}
                   <circle cx={cx} cy={cy} r={innerR} fill="white" />
-                  <text x={cx} y={cy - 6} textAnchor="middle" style={{ fontSize: '22px', fontWeight: 800, fill: '#1E293B' }}>{total}</text>
-                  <text x={cx} y={cy + 10} textAnchor="middle" style={{ fontSize: '9px', fontWeight: 600, fill: '#64748B' }}>TOTAL</text>
+                  <text x={cx} y={cy - 6} textAnchor="middle" style={{ fontSize: '28px', fontWeight: 800, fill: '#1E293B' }}>{total}</text>
+                  <text x={cx} y={cy + 10} textAnchor="middle" style={{ fontSize: '11px', fontWeight: 600, fill: '#64748B' }}>TOTAL</text>
                 </svg>
               );
             };
 
             const renderDonutLegend = () => (
-              <div className="flex flex-wrap gap-x-6 gap-y-1.5 max-w-[400px]">
+              <div className="grid grid-rows-6 grid-flow-col gap-x-6 gap-y-2 max-w-[600px]">
                 {discapacidadGrupos.map((g, i) => (
-                  <div key={i} className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: g.color }} />
-                    <span className="text-[11px] text-slate-600">{g.nombre}</span>
-                    <span className="text-[11px] font-bold text-slate-800">{g.count}</span>
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="w-3.5 h-3.5 rounded-sm shrink-0" style={{ backgroundColor: g.color }} />
+                    <div className="relative -top-[10px]">
+                      <span className="text-[16px] font-bold text-slate-600">{g.nombre}</span>{' '}
+                      <span className="text-[16px] font-black text-slate-800">{g.count}</span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -1007,79 +1019,87 @@ export default function Reportes() {
 
             return (
               <div id="reporte-discapacitados-render" className="flex flex-col">
-                {pages.map((chunk, pageIdx) => (
-                  <div key={pageIdx} className="report-page w-[1120px] h-[790px] bg-white relative flex flex-col justify-between px-12 pb-[40px] pt-[30px] overflow-hidden">
-                    <img src="/marcaagua.png" alt="" className="absolute right-0 bottom-0 pointer-events-none z-0 opacity-100" style={{ maxWidth: '48%', maxHeight: '48%' }} />
-                    <img src="/bordedeco.png" alt="" className="absolute inset-0 w-full h-full pointer-events-none z-[1]" />
+                {pages.map(({ chunk, isFirst }, pageIdx) => {
+                  const rowsPerPage = isFirst ? ROWS_PAGE1 : ROWS_OTHER;
 
-                    <div className="text-center mt-0 z-10 relative">
-                      <div className="flex items-center justify-center gap-4">
-                        <h1 className="text-[20px] font-black text-slate-800 uppercase tracking-wider">
-                          REPORTE PERSONAS CON DISCAPACIDAD
-                        </h1>
-                        <p className="text-[16px] text-slate-500">
-                          Fecha: {fecha}
-                        </p>
-                      </div>
-                      <h2 className="text-[28px] font-bold text-caracas-red uppercase tracking-wide mt-1">
-                        {campamentoSeleccionado.nombre}
-                      </h2>
-                      <h3 className="text-[13px] font-black text-slate-700 uppercase tracking-wider mt-3">
-                        Reporte de Personas con Discapacidad{' '}
-                        <span className="text-slate-400">—</span>{' '}
-                        Total: <span className="font-black text-[#C21807]">{total}</span>
-                        {totalPaginas > 1 ? <span className="text-xs text-slate-400 ml-2">· Página {pageIdx + 1} de {totalPaginas}</span> : null}
-                      </h3>
-                    </div>
+                  return (
+                    <div key={pageIdx} className="report-page w-[1120px] h-[790px] bg-white relative flex flex-col justify-between px-12 pb-[40px] pt-[30px] overflow-hidden">
+                      <img src="/marcaagua.png" alt="" className="absolute right-0 bottom-0 pointer-events-none z-0 opacity-100" style={{ maxWidth: '48%', maxHeight: '48%' }} />
+                      <img src="/bordedeco.png" alt="" className="absolute inset-0 w-full h-full pointer-events-none z-[1]" />
 
-                    <div className="px-8 mt-2 z-10 relative">
-                      <table className="w-full border-collapse border border-slate-300 text-slate-800">
-                        <thead>
-                          <tr className="bg-slate-50 border-b border-slate-300">
-                            <th className="p-2.5 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[100px]">CÓDIGO</th>
-                            <th className="p-2.5 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300">NOMBRES Y APELLIDOS</th>
-                            <th className="p-2.5 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[130px]">CÉDULA</th>
-                            <th className="p-2.5 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[50px]">EDAD</th>
-                            <th className="p-2.5 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[70px]">CAMA</th>
-                            <th className="p-2.5 text-xs font-black tracking-wide text-slate-700 w-[220px]">TIPO DISCAPACIDAD</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {chunk.map((r, idx) => (
-                            <tr key={r.id} className={`border-b border-slate-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
-                              <td className="p-3 text-base font-mono text-center border-r border-slate-200">{r.codigo || '—'}</td>
-                              <td className="p-3 text-base border-r border-slate-200">{r.nombres} {r.apellidos}</td>
-                              <td className="p-3 text-base text-center border-r border-slate-200">{r.cedula ? r.cedula.toLocaleString() : '—'}</td>
-                              <td className="p-3 text-lg font-black text-center border-r border-slate-200">{r.edad}</td>
-                              <td className="p-3 text-base font-mono text-center border-r border-slate-200">{r.nro_cama || '—'}</td>
-                              <td className="p-3 text-base">{r.tipo_discapacidad}</td>
+                      {isFirst && (
+                        <div className="text-center mt-0 z-10 relative">
+                          <div className="flex items-center justify-center gap-4">
+                            <h1 className="text-[20px] font-black text-slate-800 uppercase tracking-wider">
+                              REPORTE PERSONAS CON DISCAPACIDAD
+                            </h1>
+                            <p className="text-[16px] text-slate-500">
+                              Fecha: {fecha}
+                            </p>
+                          </div>
+                          <h2 className="text-[28px] font-bold text-caracas-red uppercase tracking-wide mt-1">
+                            {campamentoSeleccionado.nombre}
+                          </h2>
+                          <h3 className="text-[13px] font-black text-slate-700 uppercase tracking-wider mt-3">
+                            Reporte de Personas con Discapacidad{' '}
+                            <span className="text-slate-400">—</span>{' '}
+                            Total: <span className="font-black text-[#C21807]">{total}</span>
+                            {totalPaginas > 1 ? <span className="text-xs text-slate-400 ml-2">· Página {pageIdx + 1} de {totalPaginas}</span> : null}
+                          </h3>
+                        </div>
+                      )}
+
+                      {isFirst && (
+                        <div className="flex items-center justify-center gap-0 px-8 z-10 relative">
+                          <div className="shrink-0">
+                            {renderDonutChart()}
+                          </div>
+                          <div className="ml-[-55px] mt-[15px]">
+                            {renderDonutLegend()}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex-1 px-8 z-10 relative">
+                        <table className="w-full border-collapse border border-slate-300 text-slate-800">
+                          <thead>
+                            <tr className="bg-slate-50 border-b border-slate-300">
+                              <th className="py-1.5 px-1 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[100px]">CÓDIGO</th>
+                              <th className="py-1.5 px-1 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300">NOMBRES Y APELLIDOS</th>
+                              <th className="py-1.5 px-1 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[130px]">CÉDULA</th>
+                              <th className="py-1.5 px-1 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[50px]">EDAD</th>
+                              <th className="py-1.5 px-1 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[70px]">CAMA</th>
+                              <th className="py-1.5 px-1 text-xs font-black tracking-wide text-slate-700 w-[220px]">TIPO DISCAPACIDAD</th>
                             </tr>
-                          ))}
-                          {chunk.length < ROWS_PER_PAGE && Array.from({ length: ROWS_PER_PAGE - chunk.length }).map((_, i) => (
-                            <tr key={`empty-${i}`} className="border-b border-slate-200 h-[41px]">
-                              <td colSpan={6} className="border-r border-slate-200">&nbsp;</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <div className="flex items-center justify-center gap-16 px-8 mt-3 z-10 relative">
-                      <div className="shrink-0">
-                        {renderDonutChart()}
+                          </thead>
+                          <tbody>
+                            {chunk.map((r, idx) => (
+                              <tr key={r.id} className={`border-b border-slate-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                                <td className="py-[4.5px] px-0.5 text-base font-mono text-center border-r border-slate-200">{r.codigo || '—'}</td>
+                                <td className="py-[4.5px] px-0.5 text-base border-r border-slate-200">{r.nombres} {r.apellidos}</td>
+                                <td className="py-[4.5px] px-0.5 text-base text-center border-r border-slate-200">{r.cedula ? r.cedula.toLocaleString() : '—'}</td>
+                                <td className="py-[4.5px] px-0.5 text-lg font-black text-center border-r border-slate-200">{r.edad}</td>
+                                <td className="py-[4.5px] px-0.5 text-base font-mono text-center border-r border-slate-200">{r.nro_cama || '—'}</td>
+                                <td className="py-[4.5px] px-0.5 text-base">{r.tipo_discapacidad}</td>
+                              </tr>
+                            ))}
+                            {chunk.length < rowsPerPage && Array.from({ length: rowsPerPage - chunk.length }).map((_, i) => (
+                              <tr key={`empty-${i}`} className="border-b border-slate-200 h-[34px]">
+                                <td colSpan={6} className="border-r border-slate-200">&nbsp;</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
-                      <div className="flex-1">
-                        {renderDonutLegend()}
+
+                      <div className="flex items-end justify-between px-10 mb-px z-10 shrink-0 relative">
+                        <img src="/logorepublica.png" alt="Logo República" className="h-[68px] w-auto object-contain" />
+                        <img src="/logovererojo.png" alt="Logo Venezuela" className="h-[68px] w-auto object-contain" />
+                        <img src="/logoalcadia.png" alt="Logo Alcaldía" className="h-[68px] w-auto object-contain" />
                       </div>
                     </div>
-
-                    <div className="flex items-end justify-between px-10 mb-px z-10 shrink-0 relative">
-                      <img src="/logorepublica.png" alt="Logo República" className="h-[68px] w-auto object-contain" />
-                      <img src="/logovererojo.png" alt="Logo Venezuela" className="h-[68px] w-auto object-contain" />
-                      <img src="/logoalcadia.png" alt="Logo Alcaldía" className="h-[68px] w-auto object-contain" />
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             );
           })()}
@@ -1103,7 +1123,7 @@ export default function Reportes() {
 
               if (mascotasGrupos.length === 0) {
                 return (
-                  <svg width="300" height="230" viewBox="0 0 300 230" className="mx-auto">
+                <svg width="210" height="230" viewBox="0 0 210 230" className="mx-auto">
                     <circle cx={cx} cy={cy} r={outerR} fill="transparent" stroke="#E2E8F0" strokeWidth={outerR - innerR} />
                     <circle cx={cx} cy={cy} r={innerR} fill="white" />
                     <text x={cx} y={cy - 5} textAnchor="middle" style={{ fontSize: '11px', fontWeight: 700, fill: '#9CA3AF' }}>Sin datos</text>
