@@ -69,7 +69,6 @@ export default function HistoriasClinicas() {
     setAtencionHCId(hcId);
     setAtencionNombre(refNombre);
     setAtencionModalOpen(true);
-    setContextMenuOpen(null);
   };
 
   return (

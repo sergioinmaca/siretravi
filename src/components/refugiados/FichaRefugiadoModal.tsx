@@ -116,16 +116,19 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
       const drawFieldHalfL = (label: string, value: string) => {
         drawField(label, value, margin, contentW / 2 - 2);
       };
+      void drawFieldHalfL;
 
       const drawFieldHalfR = (label: string, value: string) => {
         drawField(label, value, margin + contentW / 2 + 2, contentW / 2 - 2);
       };
+      void drawFieldHalfR;
 
       const drawFieldRow = (label: string, value: string) => {
         ensureSpace(6);
         drawFieldHalfL(label, value);
         y += 6;
       };
+      void drawFieldRow;
 
       const drawFieldRowLR = (lblL: string, valL: string, lblR: string, valR: string) => {
         ensureSpace(6);
@@ -142,6 +145,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
         drawField(lbl3, val3, margin + 2 * third + 2, third - 2);
         y += 6;
       };
+      void drawFieldRowThird;
 
       const drawFieldRowCols = (cols: [string, string][]) => {
         ensureSpace(6);
@@ -251,7 +255,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
       const safeTextW = 115;
       const campLines = pdf.splitTextToSize(campName, safeTextW);
       const campLineH = 7;
-      campLines.forEach((line, i) => {
+      campLines.forEach((line: string, i: number) => {
         pdf.text(line, pageW / 2, y + 11 + i * campLineH, { align: 'center' });
       });
 
