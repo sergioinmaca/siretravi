@@ -6,6 +6,7 @@ import {
 import jsPDF from 'jspdf';
 import { useCampamento } from '../../context/CampamentoContext';
 import { formatAge } from '../../lib/formatAge';
+import { formatCedula } from '../../lib/formatCedula';
 import { toDisplayDate } from '../../lib/formatDate';
 import type { HistoriaClinica, Refugiado } from '../../types';
 
@@ -239,7 +240,7 @@ export default function HistoriaClinicaDetalleModal({
       drawFieldFull('Nombres y Apellidos:', `${refugiado.nombres} ${refugiado.apellidos}`);
 
       drawFieldRowLR(
-        'Cédula de Identidad:', refugiado.cedula?.toString() || 'S/N',
+        'Cédula de Identidad:', formatCedula(refugiado.cedula) ?? 'S/N',
         'Fecha de Nacimiento:', toDisplayDate(refugiado.fecha_nacimiento),
       );
 
@@ -471,7 +472,7 @@ export default function HistoriaClinicaDetalleModal({
                 </div>
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FichaField label="Código" value={refugiado?.codigo || '—'} />
-                  <FichaField label="Cédula" value={refugiado?.cedula?.toString() || 'S/N'} />
+                  <FichaField label="Cédula" value={formatCedula(refugiado?.cedula) ?? 'S/N'} />
                   <FichaField label="Nombres" value={refugiado?.nombres || '—'} />
                   <FichaField label="Apellidos" value={refugiado?.apellidos || '—'} />
                 </div>

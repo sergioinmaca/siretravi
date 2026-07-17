@@ -5,6 +5,7 @@ import { useCampamento } from '../../context/CampamentoContext';
 import { useAuth } from '../../context/AuthContext';
 import { obtenerTiposActa, crearActa } from '../../lib/actas';
 import { formatAge } from '../../lib/formatAge';
+import { formatCedula } from '../../lib/formatCedula';
 import { toDateInput } from '../../lib/formatDate';
 import ActaPreview from './ActaPreview';
 import TipoActaModal from './TipoActaModal';
@@ -176,11 +177,11 @@ export default function LevantarActaModal({ isOpen, onClose, onSaved }: Levantar
       ? `${refugiadoEncontrado.nombres} ${refugiadoEncontrado.apellidos}`
       : '',
     cedula_integrante: refugiadoEncontrado?.cedula
-      ? `V-${refugiadoEncontrado.cedula}`
+      ? `V-${formatCedula(refugiadoEncontrado.cedula)}`
       : '',
     codigo_integrante: refugiadoEncontrado?.codigo || '',
     jefe_familia: jefeFamilia ? `${jefeFamilia.nombres} ${jefeFamilia.apellidos}` : '',
-    cedula_jefe_familia: jefeFamilia?.cedula ? `V-${jefeFamilia.cedula}` : '',
+    cedula_jefe_familia: jefeFamilia?.cedula ? `V-${formatCedula(jefeFamilia.cedula)}` : '',
     nro_cama: refugiadoEncontrado?.nro_cama || '',
   };
 
@@ -249,7 +250,7 @@ export default function LevantarActaModal({ isOpen, onClose, onSaved }: Levantar
                             <p className="font-semibold text-gray-800">{r.nombres} {r.apellidos}</p>
                             <p className="text-xs text-gray-500">
                               {r.codigo && <span>Código: {r.codigo} | </span>}
-                              C.I: {r.cedula || 'N/A'} | Cama: {r.nro_cama || 'N/A'}
+                              C.I: {formatCedula(r.cedula) ?? 'N/A'} | Cama: {r.nro_cama || 'N/A'}
                             </p>
                           </button>
                         ))}
@@ -271,7 +272,7 @@ export default function LevantarActaModal({ isOpen, onClose, onSaved }: Levantar
                     </p>
                     <p className="text-sm text-green-700">
                       {refugiadoEncontrado.codigo && <span>Código: {refugiadoEncontrado.codigo} | </span>}
-                      C.I: {refugiadoEncontrado.cedula || 'N/A'} | Edad: {edadCalculada || 'N/A'} | Cama: {refugiadoEncontrado.nro_cama || 'N/A'}
+                      C.I: {formatCedula(refugiadoEncontrado.cedula) ?? 'N/A'} | Edad: {edadCalculada || 'N/A'} | Cama: {refugiadoEncontrado.nro_cama || 'N/A'}
                     </p>
                   </div>
                 )}
@@ -299,7 +300,7 @@ export default function LevantarActaModal({ isOpen, onClose, onSaved }: Levantar
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Cédula</label>
-                      <p className="font-semibold text-gray-800 bg-gray-100 px-4 py-2.5 rounded-xl">{refugiadoEncontrado.cedula || 'N/A'}</p>
+                      <p className="font-semibold text-gray-800 bg-gray-100 px-4 py-2.5 rounded-xl">{formatCedula(refugiadoEncontrado.cedula) ?? 'N/A'}</p>
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Código</label>

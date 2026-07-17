@@ -8,6 +8,7 @@ import AtencionMedicaModal from '../../components/salud/AtencionMedicaModal';
 import HistoriaClinicaDetalleModal from '../../components/salud/HistoriaClinicaDetalleModal';
 import type { HistoriaClinica } from '../../types';
 import { toDisplayDate } from '../../lib/formatDate';
+import { formatCedula } from '../../lib/formatCedula';
 import { obtenerHistoriasClinicas } from '../../lib/salud';
 
 export default function HistoriasClinicas() {
@@ -133,7 +134,7 @@ export default function HistoriasClinicas() {
                     {refugiado?.codigo || '-'}
                   </td>
                   <td className="px-6 py-4 font-medium text-gray-800">
-                    {refugiado?.cedula || 'S/C'}
+                    {formatCedula(refugiado?.cedula) ?? 'S/C'}
                   </td>
                   <td className="px-6 py-4">
                     <p className="font-semibold text-gray-800">

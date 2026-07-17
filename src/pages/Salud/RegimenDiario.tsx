@@ -5,6 +5,7 @@ import { useCampamento } from '../../context/CampamentoContext';
 import { ArrowLeft, Pill, Clock, Plus, Trash2 } from 'lucide-react';
 import TratamientoModal from '../../components/salud/TratamientoModal';
 import { obtenerHistoriasClinicas, obtenerTratamientos, eliminarTratamiento } from '../../lib/salud';
+import { formatCedula } from '../../lib/formatCedula';
 import type { HistoriaClinica, Tratamiento } from '../../types';
 
 export default function RegimenDiario() {
@@ -98,7 +99,7 @@ export default function RegimenDiario() {
                 </h3>
                 <p className="text-blue-100 text-sm">
                   {refugiado.codigo && <>{refugiado.codigo} | </>}
-                  C.I: {refugiado.cedula || 'S/C'} | Cama: {refugiado.nro_cama || 'N/A'}
+                  C.I: {formatCedula(refugiado.cedula) ?? 'S/C'} | Cama: {refugiado.nro_cama || 'N/A'}
                 </p>
               </div>
               <div className="p-6">

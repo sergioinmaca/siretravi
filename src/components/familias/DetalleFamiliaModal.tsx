@@ -3,6 +3,7 @@ import { X, Users, BedDouble, Calendar, MapPin, Home, FileText, Loader2 } from '
 import jsPDF from 'jspdf';
 import { useCampamento } from '../../context/CampamentoContext';
 import { toDisplayDate } from '../../lib/formatDate';
+import { formatCedula } from '../../lib/formatCedula';
 import type { Familia } from '../../types';
 
 interface DetalleFamiliaModalProps {
@@ -256,7 +257,7 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
         drawFieldFull('Nombres y Apellidos:', `${jefe.nombres} ${jefe.apellidos}`);
 
         drawFieldRowLR(
-          'C\u00e9dula de Identidad:', jefe.cedula?.toString() || 'S/N',
+          'C\u00e9dula de Identidad:', formatCedula(jefe.cedula) ?? 'S/N',
           'Fecha de Nacimiento:', toDisplayDate(jefe.fecha_nacimiento),
         );
 
@@ -293,7 +294,7 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
 
         const tableRows = sortedIntegrantes.map(p => [
           p.codigo || '—',
-          p.cedula?.toString() || 'S/N',
+          formatCedula(p.cedula) ?? 'S/N',
           `${p.apellidos}, ${p.nombres}`,
           `${calcularEdad(p.fecha_nacimiento)}`,
           p.genero ? 'M' : 'F',
@@ -448,7 +449,7 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
                     {sortedIntegrantes.map((p) => (
                       <tr key={p.id} className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors">
                         <td className="py-3 px-6 text-sm font-medium text-caracas-blue">{p.codigo || '—'}</td>
-                        <td className="py-3 px-6 text-sm font-medium text-gray-700">{p.cedula?.toString() || 'S/N'}</td>
+                        <td className="py-3 px-6 text-sm font-medium text-gray-700">{formatCedula(p.cedula) ?? 'S/N'}</td>
                         <td className="py-3 px-6">
                           <div className="text-sm font-bold text-gray-800">{p.apellidos}</div>
                           <div className="text-xs text-gray-500">{p.nombres}</div>

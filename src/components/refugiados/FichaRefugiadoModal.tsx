@@ -9,6 +9,7 @@ import jsPDF from 'jspdf';
 import { useFotoUpload } from '../../hooks/useFotoUpload';
 import { useCampamento } from '../../context/CampamentoContext';
 import { formatAge } from '../../lib/formatAge';
+import { formatCedula } from '../../lib/formatCedula';
 import { toDisplayDate } from '../../lib/formatDate';
 import type { Refugiado } from '../../types';
 
@@ -318,7 +319,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
       drawFieldFull('Nombres y Apellidos:', `${refugiado.nombres} ${refugiado.apellidos}`);
 
       drawFieldRowLR(
-        'C\u00e9dula de Identidad:', refugiado.cedula?.toString() || 'S/N',
+        'C\u00e9dula de Identidad:', formatCedula(refugiado.cedula) ?? 'S/N',
         'Fecha de Nacimiento:', toDisplayDate(refugiado.fecha_nacimiento),
       );
 
@@ -746,7 +747,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
                 </div>
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
                   <FichaField label="Código" value={refugiado.codigo || '—'} />
-                  <FichaField label="Cédula" value={refugiado.cedula?.toString() || 'S/N'} />
+                  <FichaField label="Cédula" value={formatCedula(refugiado.cedula) ?? 'S/N'} />
                   <FichaField label="Nombres" value={refugiado.nombres} />
                   <FichaField label="Apellidos" value={refugiado.apellidos} />
                 </div>

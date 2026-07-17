@@ -4,6 +4,7 @@ import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
 import { contarActasPorRefugiado, obtenerActas, eliminarActa, obtenerTiposActa } from '../lib/actas';
 import { toDisplayDate } from '../lib/formatDate';
+import { formatCedula } from '../lib/formatCedula';
 import CroquisViewer, { countElements, contarTiposDesdeCroquis } from '../components/constructor/CroquisViewer';
 import LevantarActaModal from '../components/actas/LevantarActaModal';
 import type { Acta, TipoActa } from '../types';
@@ -316,7 +317,7 @@ export default function Actas() {
                       </p>
                     </td>
                     <td className="px-6 py-4 text-gray-600">
-                      {refugiado?.cedula || 'S/C'}
+                      {formatCedula(refugiado?.cedula) ?? 'S/C'}
                     </td>
                     <td className="px-6 py-4 text-gray-600">
                       {refugiado?.nro_cama || 'N/A'}

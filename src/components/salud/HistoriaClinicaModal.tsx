@@ -4,6 +4,7 @@ import { useCampamento } from '../../context/CampamentoContext';
 import { X, Save, Search, User, Users, MapPin, Stethoscope, Accessibility, AlertCircle } from 'lucide-react';
 import type { Refugiado, HistoriaClinica } from '../../types';
 import { formatAge } from '../../lib/formatAge';
+import { formatCedula } from '../../lib/formatCedula';
 import { toDateInput, toDisplayDate } from '../../lib/formatDate';
 import { agregarHistoriaClinica, actualizarHistoriaClinica } from '../../lib/salud';
 
@@ -403,7 +404,7 @@ export default function HistoriaClinicaModal({ isOpen, onClose, historiaToEdit, 
                               <p className="font-semibold text-gray-800">{r.nombres} {r.apellidos}</p>
                               <p className="text-xs text-gray-500">
                                 {r.codigo && <span>Codigo: {r.codigo} | </span>}
-                                C.I: {r.cedula || 'N/A'} | Cama: {r.nro_cama || 'N/A'}
+                                C.I: {formatCedula(r.cedula) ?? 'N/A'} | Cama: {r.nro_cama || 'N/A'}
                               </p>
                             </button>
                           ))}
@@ -421,7 +422,7 @@ export default function HistoriaClinicaModal({ isOpen, onClose, historiaToEdit, 
                       </p>
                       <p className="text-sm text-green-700">
                         {refugiadoEncontrado.codigo && <span>Codigo: {refugiadoEncontrado.codigo} | </span>}
-                        C.I: {refugiadoEncontrado.cedula || 'N/A'} | Edad: {edadCalculada || 'N/A'} | Cama: {refugiadoEncontrado.nro_cama || 'N/A'}
+                        C.I: {formatCedula(refugiadoEncontrado.cedula) ?? 'N/A'} | Edad: {edadCalculada || 'N/A'} | Cama: {refugiadoEncontrado.nro_cama || 'N/A'}
                       </p>
                     </div>
                   )}
@@ -449,7 +450,7 @@ export default function HistoriaClinicaModal({ isOpen, onClose, historiaToEdit, 
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Cedula</label>
-                      <p className="font-semibold text-gray-800 bg-gray-100 px-4 py-2.5 rounded-xl">{refugiadoEncontrado.cedula || 'N/A'}</p>
+                      <p className="font-semibold text-gray-800 bg-gray-100 px-4 py-2.5 rounded-xl">{formatCedula(refugiadoEncontrado.cedula) ?? 'N/A'}</p>
                     </div>
                     {refugiadoEncontrado.codigo && (
                       <div>

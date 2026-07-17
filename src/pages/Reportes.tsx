@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { FileText, Presentation, ShieldOff, Loader2 } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { FileText, Presentation, ShieldOff, Loader2, FileDown } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -9,6 +9,7 @@ import html2canvas from 'html2canvas';
 import pptxgen from 'pptxgenjs';
 import * as XLSX from 'xlsx';
 import { formatAgeParts } from '../lib/formatAge';
+import { formatCedula } from '../lib/formatCedula';
 import { obtenerHistoriasClinicas } from '../lib/salud';
 import type { HistoriaClinica } from '../types';
 
@@ -17,6 +18,8 @@ export default function Reportes() {
   const { tienePermisoPorCampamento } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
   const [logoKidsError, setLogoKidsError] = useState(false);
+  const [historias, setHistorias] = useState<HistoriaClinica[]>([]);
+  const [historiaDiscapacidadMap, setHistoriaDiscapacidadMap] = useState<Record<string, string>>({});
 
   const tieneAcceso = campamentoSeleccionado
     ? tienePermisoPorCampamento('Reportes', campamentoSeleccionado.id, 'Ver')
@@ -1186,7 +1189,7 @@ export default function Reportes() {
                               <tr key={r.id} className={`border-b border-slate-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/[.85]'}`}>
                                 <td className="py-[4.5px] px-0.5 text-base font-mono text-center border-r border-slate-200">{r.codigo || '—'}</td>
                                 <td className="py-[4.5px] px-0.5 text-base border-r border-slate-200">{r.nombres} {r.apellidos}</td>
-                                <td className="py-[4.5px] px-0.5 text-base text-center border-r border-slate-200">{r.cedula ? r.cedula.toLocaleString() : '—'}</td>
+                                <td className="py-[4.5px] px-0.5 text-base text-center border-r border-slate-200">{formatCedula(r.cedula) ?? '—'}</td>
                                 <td className="py-[4.5px] px-0.5 text-lg font-black text-center border-r border-slate-200">{r.edad}</td>
                                 <td className="py-[4.5px] px-0.5 text-base font-mono text-center border-r border-slate-200">{r.nro_cama || '—'}</td>
                                 <td className="py-[4.5px] px-0.5 text-base">{r.tipo_discapacidad}</td>

@@ -6,6 +6,7 @@ import type { Refugiado } from '../types';
 import RegistroModal from '../components/refugiados/RegistroModal';
 import FichaRefugiadoModal from '../components/refugiados/FichaRefugiadoModal';
 import { formatAge, formatAgeParts } from '../lib/formatAge';
+import { formatCedula } from '../lib/formatCedula';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 
@@ -99,7 +100,7 @@ export default function Refugiados() {
       return {
         id: r.id,
         codigo: r.codigo || '-',
-        cedula: r.cedula?.toString() || 'S/N',
+        cedula: formatCedula(r.cedula) ?? 'S/N',
         genero: r.genero,
         nombres: r.nombres,
         apellidos: r.apellidos,
@@ -152,7 +153,7 @@ export default function Refugiados() {
           }
           return {
             codigo: r.codigo || '-',
-            cedula: r.cedula?.toString() || 'S/N',
+            cedula: formatCedula(r.cedula) ?? 'S/N',
             nombre: `${r.apellidos} ${r.nombres}`,
             edad: formatAge(r.fecha_nacimiento),
             jerarquia: jerarquiaStr,
@@ -275,7 +276,7 @@ export default function Refugiados() {
           const ageParts = formatAgeParts(r.fecha_nacimiento);
           return {
             'Código': r.codigo || '-',
-            'Cédula': r.cedula?.toString() || 'S/N',
+            'Cédula': formatCedula(r.cedula) ?? 'S/N',
             'Género': r.genero ? 'M' : 'F',
             'Apellidos': r.apellidos,
             'Nombres': r.nombres,
