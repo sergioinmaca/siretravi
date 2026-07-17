@@ -12,6 +12,7 @@ import { formatAge } from '../../lib/formatAge';
 import { formatCedula } from '../../lib/formatCedula';
 import { toDisplayDate } from '../../lib/formatDate';
 import type { Refugiado } from '../../types';
+import { useAuth } from '../../context/AuthContext';
 
 
 interface FichaRefugiadoModalProps {
@@ -47,6 +48,9 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
   const canSave = !!fotoFile || !!mascotaFotoFile;
   const canDelete = !!refugiado?.foto_url;
   const canDeleteMascota = !!refugiado?.mascota_foto_url;
+
+  const { usuarioActual } = useAuth();
+  const esMaster = usuarioActual?.es_master === true;
 
   useEffect(() => {
     if (isOpen) {
@@ -709,7 +713,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
                         className="w-28 h-32 object-contain rounded-xl border-2 border-gray-200 bg-gray-100"
                       />
                     </div>
-                  ) : (
+                  ) : esMaster ? (
                     <button
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isUploading}
@@ -727,6 +731,10 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
                         </>
                       )}
                     </button>
+                  ) : (
+                    <div className="w-28 h-32 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center">
+                      <span className="text-[10px] text-gray-300 text-center leading-tight">Sin foto</span>
+                    </div>
                   )}
                   {uploadError && (
                     <p className="text-xs text-red-500 mt-1 text-center leading-tight">{uploadError}</p>
@@ -734,7 +742,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
                   {fotoFile && (
                     <p className="text-xs text-amber-600 mt-1 text-center leading-tight font-medium">Debe guardar para mantener los cambios</p>
                   )}
-                  {canDelete && (
+                  {esMaster && canDelete && (
                     <button
                       onClick={handleEliminar}
                       disabled={isUploading}
@@ -897,28 +905,34 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
                           />
                         </div>
                       ) : (
-                        <button
-                          onClick={() => mascotaFileInputRef.current?.click()}
-                          disabled={isUploading}
-                          className="w-24 h-[100px] border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-caracas-red hover:text-caracas-red hover:bg-red-50/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          {isUploading ? (
-                            <>
-                              <Loader2 size={20} className="animate-spin" />
-                              <span className="text-[8px] font-medium text-center leading-tight">Subiendo...</span>
-                            </>
-                          ) : (
-                            <>
-                              <Camera size={20} />
-                              <span className="text-[9px] font-medium text-center leading-tight">Foto<br />Mascota</span>
-                            </>
-                          )}
-                        </button>
+                        esMaster ? (
+                          <button
+                            onClick={() => mascotaFileInputRef.current?.click()}
+                            disabled={isUploading}
+                            className="w-24 h-[100px] border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-caracas-red hover:text-caracas-red hover:bg-red-50/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isUploading ? (
+                              <>
+                                <Loader2 size={20} className="animate-spin" />
+                                <span className="text-[8px] font-medium text-center leading-tight">Subiendo...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Camera size={20} />
+                                <span className="text-[9px] font-medium text-center leading-tight">Foto<br />Mascota</span>
+                              </>
+                            )}
+                          </button>
+                        ) : (
+                          <div className="w-24 h-[100px] border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center">
+                            <span className="text-[9px] text-gray-300 text-center leading-tight">Sin foto</span>
+                          </div>
+                        )
                       )}
                       {mascotaFotoFile && (
                         <p className="text-xs text-amber-600 mt-1 text-center leading-tight font-medium">Debe guardar</p>
                       )}
-                      {canDeleteMascota && (
+                      {esMaster && canDeleteMascota && (
                         <button
                           onClick={handleEliminarMascota}
                           disabled={isUploading}
@@ -1002,18 +1016,20 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
 
         {/* Footer */}
         <div className="px-8 py-5 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
-          <button
-            onClick={handleGuardar}
-            disabled={!canSave || isSaving}
-            className="flex items-center justify-center gap-2 bg-caracas-blue hover:bg-blue-800 text-white px-6 py-2.5 rounded-xl font-medium transition-all shadow-lg disabled:opacity-50"
-          >
-            {isSaving ? (
-              <Loader2 className="animate-spin" size={18} />
-            ) : (
-              <Save size={18} />
-            )}
-            {isSaving ? 'Guardando...' : 'Guardar'}
-          </button>
+          {esMaster && (
+            <button
+              onClick={handleGuardar}
+              disabled={!canSave || isSaving}
+              className="flex items-center justify-center gap-2 bg-caracas-blue hover:bg-blue-800 text-white px-6 py-2.5 rounded-xl font-medium transition-all shadow-lg disabled:opacity-50"
+            >
+              {isSaving ? (
+                <Loader2 className="animate-spin" size={18} />
+              ) : (
+                <Save size={18} />
+              )}
+              {isSaving ? 'Guardando...' : 'Guardar'}
+            </button>
+          )}
           <button
             onClick={handleExportPDF}
             disabled={isExporting}

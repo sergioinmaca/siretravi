@@ -370,6 +370,18 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       }
     }
 
+    if (!fotoFile && !fotoPreview && refugiadoToEdit?.foto_url) {
+      finalFotoUrl = null;
+      fotoChanged = true;
+      await deleteStorageFile(refugiadoToEdit.foto_url);
+    }
+
+    if (!mascotaFotoFile && !mascotaFotoPreview && refugiadoToEdit?.mascota_foto_url) {
+      finalMascotaFotoUrl = null;
+      mascotaFotoChanged = true;
+      await deleteStorageFile(refugiadoToEdit.mascota_foto_url);
+    }
+
     if (fotoChanged || mascotaFotoChanged) {
       const fotoUpdate: { foto_url?: string | null; mascota_foto_url?: string | null } = {};
       if (fotoChanged) fotoUpdate.foto_url = finalFotoUrl;

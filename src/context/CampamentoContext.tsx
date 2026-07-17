@@ -586,6 +586,18 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
 
   // ── Eliminar Refugiado ─────────────────────────────────────────────────
   const eliminarRefugiado = async (id: string) => {
+    const refugiado = refugiados.find(r => r.id === id);
+
+    if (refugiado?.foto_url) {
+      const match = refugiado.foto_url.match(/\/fotos-integrantes\/(.+)$/);
+      if (match) await supabase.storage.from('fotos-integrantes').remove([match[1]]);
+    }
+
+    if (refugiado?.mascota_foto_url) {
+      const match = refugiado.mascota_foto_url.match(/\/fotos-integrantes\/(.+)$/);
+      if (match) await supabase.storage.from('fotos-integrantes').remove([match[1]]);
+    }
+
     const { error } = await supabase.from('refugiados').delete().eq('id', id);
     if (error) {
       console.error('Error al eliminar refugiado:', error);
