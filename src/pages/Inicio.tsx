@@ -147,15 +147,34 @@ export default function Inicio() {
   const [exportandoPDF, setExportandoPDF] = useState(false);
   const croquisCanvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
 
-  // ── Exportar PDF de Distribución ──────────────────────────────────────────
+  // ── Exportar PDF de Distribución (estructura Reportes) ────────────────────
   const handleExportCroquisPDF = useCallback(async () => {
     setExportandoPDF(true);
     try {
+      // Preload images for watermark, border and footer
+      const loadImage = (src: string): Promise<HTMLImageElement> =>
+        new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.src = src;
+        });
+      const [wmImg, brdImg, logoRepublica, logoVenezuela, logoAlcaldia] = await Promise.all([
+        loadImage('/marcaagua.png'),
+        loadImage('/bordedeco.png'),
+        loadImage('/logorepublica.png'),
+        loadImage('/logovererojo.png'),
+        loadImage('/logoalcadia.png'),
+      ]);
+
       const pdf = new jsPDF('l', 'mm', 'a4');
       const pageW = 297;
       const pageH = 210;
-      const margin = 15;
-      const usableW = pageW - margin * 2;
+      const marginL = 12;
+      const marginR = 12;
+      const marginT = 8;
+      const marginB = 10.5;
+      const usableW = pageW - marginL - marginR;
       const imgPadding = 2;
       const imgMaxW = usableW - imgPadding * 2;
       const now = new Date();
@@ -167,25 +186,48 @@ export default function Inicio() {
       const totalOcupadas = occupiedBeds.length;
       const pctOcup = totalCamas > 0 ? Math.round((totalOcupadas / totalCamas) * 100) : 0;
 
-      const drawStatsHeader = (isFirstPage: boolean) => {
-        if (isFirstPage) {
-          pdf.setFontSize(14);
-          pdf.setTextColor(30, 41, 59);
-          pdf.text(`Distribuci\u00f3n \u2014 ${nombreCamp}`, margin, margin + 6);
-          pdf.setFontSize(9);
-          pdf.setTextColor(107, 114, 128);
-          pdf.text(`Emitido: ${fecha}`, pageW - margin, margin + 6, { align: 'right' });
+      for (let i = 0; i < carpas.length; i++) {
+        if (i > 0) pdf.addPage();
 
-          pdf.setDrawColor(229, 231, 235);
-          pdf.setLineWidth(0.5);
-          pdf.line(margin, margin + 10, pageW - margin, margin + 10);
-        } else {
-          pdf.setDrawColor(229, 231, 235);
-          pdf.setLineWidth(0.3);
-          pdf.line(margin, margin + 4, pageW - margin, margin + 4);
+        // ── Fondo: marca de agua (48% page, bottom-right) ────────────────────
+        if (wmImg) {
+          const wmAspect = wmImg.naturalWidth / wmImg.naturalHeight;
+          const wmW = pageW * 0.48;
+          const wmH = wmW / wmAspect;
+          pdf.addImage(wmImg, 'PNG', pageW - wmW, pageH - wmH, wmW, wmH);
         }
 
-        const statsY = isFirstPage ? margin + 16 : margin + 10;
+        // ── Borde decorativo (full page) ─────────────────────────────────────
+        if (brdImg) {
+          pdf.addImage(brdImg, 'PNG', 0, 0, pageW, pageH);
+        }
+
+        // ── Header: título + fecha ───────────────────────────────────────────
+        const headerY = marginT + 6;
+        pdf.setFontSize(14);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(30, 41, 59);
+        pdf.text('DISTRIBUCIÓN DEL CAMPAMENTO', marginL, headerY);
+
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(107, 114, 128);
+        pdf.text(`Emitido: ${fecha}`, pageW - marginR, headerY, { align: 'right' });
+
+        // Nombre del campamento en rojo
+        const campY = headerY + 8;
+        pdf.setFontSize(16);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(194, 24, 7);
+        pdf.text(nombreCamp, marginL, campY);
+
+        // ── Stats generales (separador + indicadores) ────────────────────────
+        pdf.setDrawColor(229, 231, 235);
+        pdf.setLineWidth(0.5);
+        const lineY = campY + 6;
+        pdf.line(marginL, lineY, pageW - marginR, lineY);
+
+        const statsY = lineY + 6;
         const colW = usableW / 5;
         const statItems = [
           { label: 'Literas', value: String(totalesCroquis.literas), sub: tipoContabilizacion === 'cama' ? `(${totalesCroquis.literas * 2} camas)` : `(${totalesCroquis.literas} elem.)`, color: '#3B82F6' },
@@ -194,15 +236,16 @@ export default function Inicio() {
           { label: 'Total Camas', value: String(totalCamas), sub: '', color: '#6B7280' },
           { label: 'Ocupadas', value: `${totalOcupadas} (${pctOcup}%)`, sub: '', color: '#EF4444' },
         ];
-
-        statItems.forEach((item, i) => {
-          const cx = margin + colW * i + colW / 2;
+        statItems.forEach((item, j) => {
+          const cx = marginL + colW * j + colW / 2;
           pdf.setFillColor(item.color);
           pdf.circle(cx - 1, statsY + 1.5, 2.5, 'F');
           pdf.setFontSize(13);
+          pdf.setFont('helvetica', 'bold');
           pdf.setTextColor(30, 41, 59);
           pdf.text(item.value, cx + 4, statsY + 2.5);
           pdf.setFontSize(7);
+          pdf.setFont('helvetica', 'normal');
           pdf.setTextColor(107, 114, 128);
           const valueW = pdf.getTextWidth(item.value);
           pdf.text(item.label, cx + 4, statsY + 6);
@@ -213,58 +256,72 @@ export default function Inicio() {
           }
         });
 
-        return statsY + 10;
-      };
+        // ── Sección de carpa ──────────────────────────────────────────────────
+        const carpaSectionY = statsY + 10;
 
-      let croquisStartY = drawStatsHeader(true);
-
-      for (let i = 0; i < carpas.length; i++) {
-        if (i > 0) {
-          pdf.addPage();
-          croquisStartY = drawStatsHeader(false);
-        }
-
-        // Nombre de la carpa
         pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(55, 65, 81);
-        pdf.text(`Carpa: ${carpas[i].nombre}`, margin, croquisStartY);
+        pdf.text(`Carpa: ${carpas[i].nombre}`, marginL, carpaSectionY);
 
         // Indicadores por carpa
         const tiposCarpa = contarTiposDesdeCroquis(carpas[i].croquis_data || '');
-        const tipoY = croquisStartY + 5;
+        const tipoY = carpaSectionY + 5;
         pdf.setFontSize(7);
+        pdf.setFont('helvetica', 'normal');
 
         pdf.setFillColor('#3B82F6');
-        pdf.circle(margin + 5, tipoY, 2, 'F');
+        pdf.circle(marginL + 5, tipoY, 2, 'F');
         pdf.setTextColor(107, 114, 128);
-        pdf.text(`${tiposCarpa.literas} Literas`, margin + 9, tipoY + 1.5);
+        pdf.text(`${tiposCarpa.literas} Literas`, marginL + 9, tipoY + 1.5);
 
         pdf.setFillColor('#10B981');
-        pdf.circle(margin + 60, tipoY, 2, 'F');
-        pdf.text(`${tiposCarpa.individuales} Individuales`, margin + 64, tipoY + 1.5);
+        pdf.circle(marginL + 60, tipoY, 2, 'F');
+        pdf.text(`${tiposCarpa.individuales} Individuales`, marginL + 64, tipoY + 1.5);
 
         pdf.setFillColor('#F59E0B');
-        pdf.circle(margin + 115, tipoY, 2, 'F');
-        pdf.text(`${tiposCarpa.duplex} Duplex`, margin + 119, tipoY + 1.5);
+        pdf.circle(marginL + 115, tipoY, 2, 'F');
+        pdf.text(`${tiposCarpa.duplex} Duplex`, marginL + 119, tipoY + 1.5);
 
         const labelBottom = tipoY + 5;
 
+        // ── Croquis (canvas → PNG) ──────────────────────────────────────────
         const cvs = croquisCanvasRefs.current[i];
         if (cvs) {
           const imgData = cvs.toDataURL('image/png');
           const imgH = (cvs.height / cvs.width) * imgMaxW;
           const croquisY = labelBottom + 4;
-          const availableH = pageH - croquisY - margin;
+          const footerAreaStart = pageH - marginB - 22;
+          const availableH = footerAreaStart - croquisY;
           const finalH = Math.min(imgH, availableH);
           const finalW = finalH < imgH ? (finalH / cvs.height) * cvs.width : imgMaxW;
-          const imgX = margin + imgPadding + (imgMaxW - finalW) / 2;
+          const imgX = marginL + imgPadding + (imgMaxW - finalW) / 2;
           pdf.addImage(imgData, 'PNG', imgX, croquisY, finalW, finalH);
+        }
+
+        // ── Footer: logos institucionales ─────────────────────────────────────
+        const logoH = 18;
+        const logoBottom = pageH - marginB;
+        const logoY = logoBottom - logoH;
+        const footerPaddingX = 10.6;
+
+        if (logoRepublica) {
+          const lw = (logoRepublica.naturalWidth / logoRepublica.naturalHeight) * logoH;
+          pdf.addImage(logoRepublica, 'PNG', footerPaddingX, logoY, lw, logoH);
+        }
+        if (logoVenezuela) {
+          const lw = (logoVenezuela.naturalWidth / logoVenezuela.naturalHeight) * logoH;
+          pdf.addImage(logoVenezuela, 'PNG', pageW / 2 - lw / 2, logoY, lw, logoH);
+        }
+        if (logoAlcaldia) {
+          const lw = (logoAlcaldia.naturalWidth / logoAlcaldia.naturalHeight) * logoH;
+          pdf.addImage(logoAlcaldia, 'PNG', pageW - footerPaddingX - lw, logoY, lw, logoH);
         }
       }
 
       pdf.save(`distribucion-${nombreCamp.replace(/\s+/g, '-')}-${fecha}.pdf`);
     } catch (err) {
-      console.error('Error generando PDF de distribuci\u00f3n:', err);
+      console.error('Error generando PDF de distribución:', err);
     } finally {
       setExportandoPDF(false);
     }
