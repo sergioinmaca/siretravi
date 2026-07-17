@@ -307,17 +307,7 @@ export default function Reportes() {
     });
   }, [refugiadosDelCampamento, familiasDelCampamento, historias]);
 
-  // SVG de borde bandera decorativa nacional para el reporte
-  const BorderDecoration = () => (
-    <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 1120 790" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M 30,300 L 30,50 A 20,20 0 0,1 50,30 L 400,30" stroke="#C21807" strokeWidth="8" strokeLinecap="round" />
-      <path d="M 410,30 L 710,30" stroke="#1D4ED8" strokeWidth="5" strokeLinecap="round" />
-      <path d="M 720,30 L 1070,30 A 20,20 0 0,1 1090,50 L 1090,300" stroke="#007F5F" strokeWidth="8" strokeLinecap="round" />
-      <path d="M 30,320 L 30,740 A 20,20 0 0,0 50,760 L 400,760" stroke="#007F5F" strokeWidth="8" strokeLinecap="round" />
-      <path d="M 410,760 L 710,760" stroke="#1D4ED8" strokeWidth="5" strokeLinecap="round" />
-      <path d="M 720,760 L 1070,760 A 20,20 0 0,0 1090,740 L 1090,320" stroke="#C21807" strokeWidth="8" strokeLinecap="round" />
-    </svg>
-  );
+
 
 
 

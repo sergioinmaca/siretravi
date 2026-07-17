@@ -2,6 +2,56 @@
 -- MIGRACIÓN: Módulo Actas
 -- ============================================================
 
+-- ============================================================
+-- FUNCIÓN HELPER: Verificación de permisos para RLS
+-- ============================================================
+-- Busca al usuario por auth_id (vinculado a auth.uid() de Supabase Auth),
+-- si es master retorna TRUE, si no consulta la tabla permisos.
+-- Usa SECURITY DEFINER para evitar recursión de RLS.
+-- ============================================================
+
+CREATE OR REPLACE FUNCTION tiene_permiso_modulo(
+  p_modulo TEXT,
+  p_accion TEXT,
+  p_campamento_id UUID DEFAULT NULL
+)
+RETURNS BOOLEAN
+SECURITY DEFINER
+LANGUAGE plpgsql
+AS $$
+DECLARE
+  v_usuario_id UUID;
+BEGIN
+  SELECT id INTO v_usuario_id FROM usuarios WHERE auth_id = auth.uid()::TEXT;
+  IF v_usuario_id IS NULL THEN RETURN FALSE; END IF;
+
+  IF EXISTS (SELECT 1 FROM usuarios WHERE id = v_usuario_id AND es_master = TRUE) THEN
+    RETURN TRUE;
+  END IF;
+
+  IF p_campamento_id IS NULL THEN
+    RETURN EXISTS (
+      SELECT 1 FROM permisos p
+      JOIN modulos m ON m.id = p.modulo_id
+      WHERE p.usuario_id = v_usuario_id
+        AND m.nombre = p_modulo
+        AND p.acciones @> ARRAY[p_accion]
+    );
+  ELSE
+    RETURN EXISTS (
+      SELECT 1 FROM permisos p
+      JOIN modulos m ON m.id = p.modulo_id
+      WHERE p.usuario_id = v_usuario_id
+        AND m.nombre = p_modulo
+        AND p.acciones @> ARRAY[p_accion]
+        AND (p.campamentos IS NULL OR p.campamentos @> ARRAY[p_campamento_id::TEXT])
+    );
+  END IF;
+END;
+$$;
+
+-- ============================================================
+
 -- 1. Tabla: tipo_acta
 CREATE TABLE IF NOT EXISTS tipo_acta (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -11,6 +61,22 @@ CREATE TABLE IF NOT EXISTS tipo_acta (
   activo BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- RLS: tipo_acta
+ALTER TABLE tipo_acta ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "tipo_acta_select" ON tipo_acta FOR SELECT TO authenticated
+  USING (tiene_permiso_modulo('Actas', 'Ver'));
+
+CREATE POLICY "tipo_acta_insert" ON tipo_acta FOR INSERT TO authenticated
+  WITH CHECK (tiene_permiso_modulo('Actas', 'Crear'));
+
+CREATE POLICY "tipo_acta_update" ON tipo_acta FOR UPDATE TO authenticated
+  USING (tiene_permiso_modulo('Actas', 'Modificar'))
+  WITH CHECK (tiene_permiso_modulo('Actas', 'Modificar'));
+
+CREATE POLICY "tipo_acta_delete" ON tipo_acta FOR DELETE TO authenticated
+  USING (tiene_permiso_modulo('Actas', 'Eliminar'));
 
 -- 2. Tabla: actas
 CREATE TABLE IF NOT EXISTS actas (
@@ -25,12 +91,42 @@ CREATE TABLE IF NOT EXISTS actas (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- RLS: actas
+ALTER TABLE actas ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "actas_select" ON actas FOR SELECT TO authenticated
+  USING (tiene_permiso_modulo('Actas', 'Ver', campamento_id));
+
+CREATE POLICY "actas_insert" ON actas FOR INSERT TO authenticated
+  WITH CHECK (tiene_permiso_modulo('Actas', 'Crear', campamento_id));
+
+CREATE POLICY "actas_update" ON actas FOR UPDATE TO authenticated
+  USING (tiene_permiso_modulo('Actas', 'Modificar', campamento_id))
+  WITH CHECK (tiene_permiso_modulo('Actas', 'Modificar', campamento_id));
+
+CREATE POLICY "actas_delete" ON actas FOR DELETE TO authenticated
+  USING (tiene_permiso_modulo('Actas', 'Eliminar', campamento_id));
+
 -- 3. Tabla: contadores_actas
 CREATE TABLE IF NOT EXISTS contadores_actas (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   campamento_id UUID NOT NULL UNIQUE REFERENCES campamentos(id),
   ultimo_secuencia INT NOT NULL DEFAULT 0
 );
+
+-- RLS: contadores_actas
+ALTER TABLE contadores_actas ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "contadores_select" ON contadores_actas FOR SELECT TO authenticated
+  USING (tiene_permiso_modulo('Actas', 'Ver', campamento_id)
+      OR tiene_permiso_modulo('Actas', 'Crear', campamento_id));
+
+CREATE POLICY "contadores_insert" ON contadores_actas FOR INSERT TO authenticated
+  WITH CHECK (tiene_permiso_modulo('Actas', 'Crear', campamento_id));
+
+CREATE POLICY "contadores_update" ON contadores_actas FOR UPDATE TO authenticated
+  USING (tiene_permiso_modulo('Actas', 'Crear', campamento_id))
+  WITH CHECK (tiene_permiso_modulo('Actas', 'Crear', campamento_id));
 
 -- 4. Insertar módulo "Actas" en modulos
 INSERT INTO modulos (nombre)
