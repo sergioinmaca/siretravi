@@ -180,3 +180,39 @@ export interface Tratamiento {
   dosis?: string;
   created_at: Date;
 }
+
+export interface TipoActaCampo {
+  clave: string;
+  etiqueta: string;
+  tipo: 'text' | 'textarea' | 'select' | 'date';
+  requerido: boolean;
+  placeholder?: string;
+  opciones?: string[];
+}
+
+export interface TipoActaPlantilla {
+  nombre_documento: string;
+  campos: TipoActaCampo[];
+  contenido: string;
+}
+
+export interface TipoActa {
+  id: string;
+  nombre: string;
+  descripcion?: string;
+  plantilla: TipoActaPlantilla;
+  activo: boolean;
+  created_at?: string;
+}
+
+export interface Acta {
+  id: string;
+  codigo: string;
+  tipo_acta_id: string;
+  refugiado_id: string;
+  campamento_id: string;
+  fecha: string;
+  contenido: Record<string, string>;
+  created_by?: string;
+  created_at?: string;
+}

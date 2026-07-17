@@ -58,9 +58,10 @@ interface CroquisViewerProps {
   individualesCount?: number;
   duplexCount?: number;
   disponiblesCarpa?: number;
+  bedColorMap?: Record<string, string>;
 }
 
-const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function CroquisViewer({ croquisData, carpaNombre, width = 700, height = 600, elementNumberOffset = 0, tipoContabilizacion = 'elemento', occupiedBeds = [], bedOccupants = {}, literasCount, individualesCount, duplexCount, disponiblesCarpa }, ref) {
+const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function CroquisViewer({ croquisData, carpaNombre, width = 700, height = 600, elementNumberOffset = 0, tipoContabilizacion = 'elemento', occupiedBeds = [], bedOccupants = {}, literasCount, individualesCount, duplexCount, disponiblesCarpa, bedColorMap }, ref) {
   const internalCanvasRef = useRef<HTMLCanvasElement>(null);
   const bedsRenderRef = useRef<BedRenderInfo[]>([]);
   const [hoveredBed, setHoveredBed] = useState<HoveredBed | null>(null);
@@ -128,7 +129,7 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
           ctx.drawImage(img, 0, 0);
           drawRectangles(ctx, rectangles);
           drawTexts(ctx, texts);
-          drawBedsWithNumbers(ctx, beds, elementNumberOffset, tipoContabilizacion, occupiedSet, accumulator);
+          drawBedsWithNumbers(ctx, beds, elementNumberOffset, tipoContabilizacion, occupiedSet, accumulator, bedColorMap);
           bedsRenderRef.current = accumulator;
         };
         img.src = parsed.drawingBase64;
@@ -142,7 +143,7 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
     const accumulator: BedRenderInfo[] = [];
     drawRectangles(ctx, rectangles);
     drawTexts(ctx, texts);
-    drawBedsWithNumbers(ctx, beds, elementNumberOffset, tipoContabilizacion, occupiedSet, accumulator);
+    drawBedsWithNumbers(ctx, beds, elementNumberOffset, tipoContabilizacion, occupiedSet, accumulator, bedColorMap);
     bedsRenderRef.current = accumulator;
   }, [croquisData, elementNumberOffset, tipoContabilizacion, occupiedBeds]);
 
@@ -297,7 +298,8 @@ function drawBedsWithNumbers(
   offset: number,
   modo: 'cama' | 'elemento' = 'elemento',
   occupiedBedsSet: Set<string> = new Set(),
-  bedsRenderAccumulator: BedRenderInfo[] = []
+  bedsRenderAccumulator: BedRenderInfo[] = [],
+  bedColorMap?: Record<string, string>
 ) {
   let elementCounter = offset;
 
@@ -353,7 +355,7 @@ function drawBedsWithNumbers(
     ctx.fill();
     ctx.shadowColor = 'transparent';
 
-    // Para litera en modo cama: pintar cada mitad independientemente
+      // Para litera en modo cama: pintar cada mitad independientemente
     if (modo === 'cama' && bed.type === 'litera') {
       const topOcc = occupiedNumbers.includes(actualNumbers[0]);
       const bottomOcc = occupiedNumbers.includes(actualNumbers[1]);
@@ -371,18 +373,18 @@ function drawBedsWithNumbers(
         ctx.clip();
 
         if (topOcc) {
-          ctx.fillStyle = '#EF4444';
+          ctx.fillStyle = bedColorMap?.[actualNumbers[0]] || '#EF4444';
           ctx.fillRect(-w / 2, topY, w, topH);
         }
         if (bottomOcc) {
-          ctx.fillStyle = '#EF4444';
+          ctx.fillStyle = bedColorMap?.[actualNumbers[1]] || '#EF4444';
           ctx.fillRect(-w / 2, bottomY, w, bottomH);
         }
 
         ctx.restore();
       }
     } else if (occupiedNumbers.length > 0) {
-      ctx.fillStyle = '#EF4444';
+      ctx.fillStyle = bedColorMap?.[occupiedNumbers[0]] || '#EF4444';
       ctx.beginPath();
       ctx.roundRect(-w / 2, -h / 2, w, h, 4);
       ctx.fill();
