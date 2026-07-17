@@ -304,7 +304,7 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
 
       if (integrantes.length > 0) {
         const tableHeaders = ['C\u00f3digo', 'C\u00e9dula', 'Apellidos y Nombres', 'Edad', 'G\u00e9n', 'Cama', 'Parentesco'];
-        const tableColWidths = [22, 22, 50, 12, 10, 14, 28];
+        const tableColWidths = [22, 22, 80, 10, 8, 12, 28];
 
         const tableRows = sortedIntegrantes.map(p => [
           p.codigo || '—',
