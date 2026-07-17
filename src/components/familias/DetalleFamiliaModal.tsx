@@ -69,6 +69,9 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
 
       const logoDataUrl = await loadImageAsDataUrl('/logorepublica.png');
       const mascotaPhotoDataUrl = jefe?.mascota_foto_url ? await loadImageAsDataUrl(jefe.mascota_foto_url) : null;
+      const integrantePhotos = await Promise.all(
+        sortedIntegrantes.map(m => m.foto_url ? loadImageAsDataUrl(m.foto_url) : Promise.resolve(null))
+      );
 
       const newPage = () => {
         pdf.addPage();
@@ -362,6 +365,62 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
             );
           }
         }
+      }
+
+      // ── 5. FOTOS DE LA FAMILIA ──
+
+      drawSectionHeader('5', 'Fotos de la Familia');
+
+      const photoItems: { photo: string | null; name: string }[] = [];
+
+      sortedIntegrantes.forEach((m, i) => {
+        photoItems.push({ photo: integrantePhotos[i], name: `${m.nombres} ${m.apellidos}` });
+      });
+
+      if (jefe?.mascotas) {
+        photoItems.push({
+          photo: mascotaPhotoDataUrl,
+          name: jefe.mascota_nombre || 'Mascota',
+        });
+      }
+
+      const colW = (contentW - 4) / 2;
+      const photoW = 25;
+      const photoH = 30;
+      const rowH = photoH + 9;
+
+      let colIdx = 0;
+      for (const item of photoItems) {
+        ensureSpace(rowH);
+
+        const cx = margin + colIdx * (colW + 4);
+        const imgX = cx + (colW - photoW) / 2;
+
+        if (item.photo) {
+          pdf.addImage(item.photo, 'PNG', imgX, y, photoW, photoH);
+        } else {
+          pdf.setDrawColor(156, 163, 175);
+          pdf.setLineWidth(0.3);
+          pdf.rect(imgX, y, photoW, photoH, 'S');
+          pdf.setFont('Helvetica', 'normal');
+          pdf.setFontSize(6);
+          pdf.setTextColor(156, 163, 175);
+          pdf.text('Foto', cx + colW / 2, y + photoH / 2 + 1, { align: 'center' });
+        }
+
+        pdf.setFont('Helvetica', 'normal');
+        pdf.setFontSize(8);
+        pdf.setTextColor(0, 0, 0);
+        pdf.text(item.name, cx + colW / 2, y + photoH + 5, { align: 'center' });
+
+        colIdx++;
+        if (colIdx >= 2) {
+          colIdx = 0;
+          y += rowH;
+        }
+      }
+      if (colIdx > 0) {
+        y += rowH;
       }
 
       const totalPages = pdf.getNumberOfPages();
