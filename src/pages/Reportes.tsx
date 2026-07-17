@@ -793,7 +793,7 @@ export default function Reportes() {
 
               {/* Footer */}
               <div className="flex items-end justify-between px-10 mb-px z-10 shrink-0 relative">
-                <img src="/logorepublica.png" alt="Logo República" className="h-[68px] w-auto object-contain" />
+                <img src="/logorepublica.jpg" alt="Logo República" className="h-[68px] w-auto object-contain" />
                 <img src="/logovererojo.png" alt="Logo Venezuela" className="h-[68px] w-auto object-contain" />
                 <img src="/logoalcadia.png" alt="Logo Alcaldía" className="h-[68px] w-auto object-contain" />
               </div>
@@ -886,7 +886,7 @@ export default function Reportes() {
 
               {/* Footer */}
               <div className="flex items-end justify-between px-10 mb-px z-10 shrink-0 relative">
-                <img src="/logorepublica.png" alt="Logo República" className="h-[68px] w-auto object-contain" />
+                <img src="/logorepublica.jpg" alt="Logo República" className="h-[68px] w-auto object-contain" />
                 <img src="/logovererojo.png" alt="Logo Venezuela" className="h-[68px] w-auto object-contain" />
                 <img src="/logoalcadia.png" alt="Logo Alcaldía" className="h-[68px] w-auto object-contain" />
               </div>
@@ -1013,7 +1013,7 @@ export default function Reportes() {
 
               {/* Footer */}
               <div className="flex items-end justify-between px-10 mb-px z-10 shrink-0 relative">
-                <img src="/logorepublica.png" alt="Logo República" className="h-[68px] w-auto object-contain" />
+                <img src="/logorepublica.jpg" alt="Logo República" className="h-[68px] w-auto object-contain" />
                 <img src="/logovererojo.png" alt="Logo Venezuela" className="h-[68px] w-auto object-contain" />
                 <img src="/logoalcadia.png" alt="Logo Alcaldía" className="h-[68px] w-auto object-contain" />
               </div>
@@ -1195,7 +1195,7 @@ export default function Reportes() {
                       </div>
 
                       <div className="flex items-end justify-between px-10 mb-px z-10 shrink-0 relative">
-                        <img src="/logorepublica.png" alt="Logo República" className="h-[68px] w-auto object-contain" />
+                        <img src="/logorepublica.jpg" alt="Logo República" className="h-[68px] w-auto object-contain" />
                         <img src="/logovererojo.png" alt="Logo Venezuela" className="h-[68px] w-auto object-contain" />
                         <img src="/logoalcadia.png" alt="Logo Alcaldía" className="h-[68px] w-auto object-contain" />
                       </div>
@@ -1405,7 +1405,7 @@ export default function Reportes() {
                       </div>
 
                       <div className="flex items-end justify-between px-10 mb-px z-10 shrink-0 relative">
-                        <img src="/logorepublica.png" alt="Logo República" className="h-[68px] w-auto object-contain" />
+                        <img src="/logorepublica.jpg" alt="Logo República" className="h-[68px] w-auto object-contain" />
                         <img src="/logovererojo.png" alt="Logo Venezuela" className="h-[68px] w-auto object-contain" />
                         <img src="/logoalcadia.png" alt="Logo Alcaldía" className="h-[68px] w-auto object-contain" />
                       </div>

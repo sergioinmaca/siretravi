@@ -67,7 +67,7 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
       const contentW = pageW - margin * 2;
       let y = margin;
 
-      const logoDataUrl = await loadImageAsDataUrl('/logorepublica.png');
+      const logoDataUrl = await loadImageAsDataUrl('/logorepublica.jpg');
       const mascotaPhotoDataUrl = jefe?.mascota_foto_url ? await loadImageAsDataUrl(jefe.mascota_foto_url) : null;
       const integrantePhotos = await Promise.all(
         sortedIntegrantes.map(m => m.foto_url ? loadImageAsDataUrl(m.foto_url) : Promise.resolve(null))

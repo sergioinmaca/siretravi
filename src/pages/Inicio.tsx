@@ -162,7 +162,7 @@ export default function Inicio() {
       const [wmImg, brdImg, logoRepublica, logoVenezuela, logoAlcaldia] = await Promise.all([
         loadImage('/marcaagua.png'),
         loadImage('/bordedeco.png'),
-        loadImage('/logorepublica.png'),
+        loadImage('/logorepublica.jpg'),
         loadImage('/logovererojo.png'),
         loadImage('/logoalcadia.png'),
       ]);

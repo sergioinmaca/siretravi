@@ -82,7 +82,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
 
       const campName = campamentos.find(c => c.id === refugiado.campamento_id)?.nombre || '—';
 
-      const logoDataUrl = await loadImageAsDataUrl('/logorepublica.png');
+      const logoDataUrl = await loadImageAsDataUrl('/logorepublica.jpg');
       const photoDataUrl = refugiado.foto_url ? await loadImageAsDataUrl(refugiado.foto_url) : null;
       const mascotaPhotoDataUrl = refugiado.mascota_foto_url ? await loadImageAsDataUrl(refugiado.mascota_foto_url) : null;
 
@@ -1060,13 +1060,21 @@ async function loadImageAsDataUrl(url: string): Promise<string | null> {
       img.onerror = () => reject(new Error('Failed to load'));
       img.src = url;
     });
+    const MAX = 300;
+    let w = img.naturalWidth;
+    let h = img.naturalHeight;
+    if (w > MAX || h > MAX) {
+      const ratio = Math.min(MAX / w, MAX / h);
+      w = Math.round(w * ratio);
+      h = Math.round(h * ratio);
+    }
     const canvas = document.createElement('canvas');
-    canvas.width = img.naturalWidth;
-    canvas.height = img.naturalHeight;
+    canvas.width = w;
+    canvas.height = h;
     const ctx = canvas.getContext('2d');
     if (!ctx) return null;
-    ctx.drawImage(img, 0, 0);
-    return canvas.toDataURL('image/png');
+    ctx.drawImage(img, 0, 0, w, h);
+    return canvas.toDataURL('image/jpeg', 0.7);
   } catch {
     return null;
   }
