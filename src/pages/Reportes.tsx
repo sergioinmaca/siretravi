@@ -938,7 +938,7 @@ export default function Reportes() {
           {/* REPORTE 3: DISCAPACITADOS */}
           {(() => {
             const ROWS_PAGE1 = 7;
-            const ROWS_OTHER = 18;
+            const ROWS_OTHER = 14;
             const total = discapacitadosReporte.length;
 
             const firstChunk = discapacitadosReporte.slice(0, ROWS_PAGE1);
@@ -1049,6 +1049,22 @@ export default function Reportes() {
                         </div>
                       )}
 
+                      {!isFirst && (
+                        <div className="text-center z-10 relative">
+                          <h2 className="text-[20px] font-black text-caracas-red uppercase tracking-wider">
+                            {campamentoSeleccionado.nombre}
+                          </h2>
+                          <h3 className="text-[13px] font-black text-slate-700 uppercase tracking-wider mt-3">
+                            Reporte de personas con discapacidad{' '}
+                            <span className="text-slate-400">—</span>{' '}
+                            Total: <span className="font-black text-[#C21807]">{total}</span>
+                            {totalPaginas > 1 ? (
+                              <span className="text-slate-400 ml-2">· Página {pageIdx + 1} de {totalPaginas}</span>
+                            ) : null}
+                          </h3>
+                        </div>
+                      )}
+
                       {isFirst && (
                         <div className="flex items-center justify-center gap-0 px-8 z-10 relative">
                           <div className="shrink-0">
@@ -1060,7 +1076,7 @@ export default function Reportes() {
                         </div>
                       )}
 
-                      <div className="flex-1 px-8 z-10 relative">
+                      <div className={`flex-1 px-8 z-10 relative ${!isFirst ? 'mt-[41px]' : ''}`}>
                         <table className="w-full border-collapse border border-slate-300 text-slate-800">
                           <thead>
                             <tr className="bg-slate-50 border-b border-slate-300">
@@ -1074,7 +1090,7 @@ export default function Reportes() {
                           </thead>
                           <tbody>
                             {chunk.map((r, idx) => (
-                              <tr key={r.id} className={`border-b border-slate-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                              <tr key={r.id} className={`border-b border-slate-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/[.85]'}`}>
                                 <td className="py-[4.5px] px-0.5 text-base font-mono text-center border-r border-slate-200">{r.codigo || '—'}</td>
                                 <td className="py-[4.5px] px-0.5 text-base border-r border-slate-200">{r.nombres} {r.apellidos}</td>
                                 <td className="py-[4.5px] px-0.5 text-base text-center border-r border-slate-200">{r.cedula ? r.cedula.toLocaleString() : '—'}</td>
@@ -1106,12 +1122,22 @@ export default function Reportes() {
 
           {/* REPORTE 4: MASCOTAS */}
           {(() => {
-            const ROWS_PER_PAGE = 7;
+            const ROWS_PAGE1 = 5;
+            const ROWS_OTHER = 14;
             const total = mascotasReporte.length;
-            const totalPaginas = Math.max(1, Math.ceil(total / ROWS_PER_PAGE));
-            const pages = Array.from({ length: totalPaginas }, (_, i) =>
-              mascotasReporte.slice(i * ROWS_PER_PAGE, (i + 1) * ROWS_PER_PAGE)
-            );
+
+            const firstChunk = mascotasReporte.slice(0, ROWS_PAGE1);
+            const rest = mascotasReporte.slice(ROWS_PAGE1);
+            const restPageCount = Math.ceil(rest.length / ROWS_OTHER);
+            const totalPaginas = 1 + restPageCount;
+
+            const pages = [
+              { chunk: firstChunk, isFirst: true },
+              ...Array.from({ length: restPageCount }, (_, i) => ({
+                chunk: rest.slice(i * ROWS_OTHER, (i + 1) * ROWS_OTHER),
+                isFirst: false
+              }))
+            ];
 
             const renderDonutChart = () => {
               const cx = 110;
@@ -1123,10 +1149,10 @@ export default function Reportes() {
 
               if (mascotasGrupos.length === 0) {
                 return (
-                <svg width="210" height="230" viewBox="0 0 210 230" className="mx-auto">
+                  <svg width="210" height="230" viewBox="0 0 210 230" className="mx-auto">
                     <circle cx={cx} cy={cy} r={outerR} fill="transparent" stroke="#E2E8F0" strokeWidth={outerR - innerR} />
                     <circle cx={cx} cy={cy} r={innerR} fill="white" />
-                    <text x={cx} y={cy - 5} textAnchor="middle" style={{ fontSize: '11px', fontWeight: 700, fill: '#9CA3AF' }}>Sin datos</text>
+                    <text x={cx} y={cy - 5} textAnchor="middle" style={{ fontSize: '16px', fontWeight: 700, fill: '#9CA3AF' }}>Sin datos</text>
                   </svg>
                 );
               }
@@ -1156,114 +1182,150 @@ export default function Reportes() {
                     />
                   ))}
                   <circle cx={cx} cy={cy} r={innerR} fill="white" />
-                  <text x={cx} y={cy - 6} textAnchor="middle" style={{ fontSize: '22px', fontWeight: 800, fill: '#1E293B' }}>{total}</text>
-                  <text x={cx} y={cy + 10} textAnchor="middle" style={{ fontSize: '9px', fontWeight: 600, fill: '#64748B' }}>TOTAL</text>
+                  <text x={cx} y={cy - 6} textAnchor="middle" style={{ fontSize: '28px', fontWeight: 800, fill: '#1E293B' }}>{total}</text>
+                  <text x={cx} y={cy + 10} textAnchor="middle" style={{ fontSize: '11px', fontWeight: 600, fill: '#64748B' }}>TOTAL</text>
                 </svg>
               );
             };
 
             const renderDonutLegend = () => (
-              <div className="flex flex-col gap-2 max-w-[400px] text-[11px]">
-                <div className="flex flex-wrap gap-x-6 gap-y-1">
-                  {mascotasGrupos.map((g, i) => (
-                    <div key={i} className="flex items-center gap-1.5">
-                      <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: g.color }} />
-                      <span className="text-slate-600">{g.nombre}</span>
-                      <span className="font-bold text-slate-800">{g.count}</span>
+              <div className="grid grid-rows-6 grid-flow-col gap-x-6 gap-y-0 max-w-[600px]">
+                {mascotasGrupos.map((g, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="w-3.5 h-3.5 rounded-sm shrink-0" style={{ backgroundColor: g.color }} />
+                    <div className="relative -top-[10px]">
+                      <span className="text-[16px] font-bold text-slate-600">{g.nombre}</span>{' '}
+                      <span className="text-[16px] font-black text-slate-800">{g.count}</span>
                     </div>
-                  ))}
-                </div>
-                {Array.from(mascotasRazasPorTipo.entries()).map(([tipo, razas]) => (
-                  <div key={tipo}>
-                    <span className="font-semibold text-slate-700">{tipo}:</span>{' '}
-                    <span className="text-slate-500">
-                      {Array.from(razas.entries())
-                        .sort((a, b) => b[1] - a[1])
-                        .map(([raza, count]) => `${raza} (${count})`)
-                        .join(', ')}
-                    </span>
                   </div>
                 ))}
               </div>
             );
 
+            const renderRazasDescription = () => (
+              <>
+                {Array.from(mascotasRazasPorTipo.entries()).length > 0 && (
+                  <div className="text-[14px]">
+                    {Array.from(mascotasRazasPorTipo.entries()).map(([tipo, razas]) => (
+                      <div key={tipo}>
+                        <span className="font-semibold text-slate-700">{tipo}:</span>{' '}
+                        <span className="text-slate-500">
+                          {Array.from(razas.entries())
+                            .sort((a, b) => b[1] - a[1])
+                            .map(([raza, count]) => `${raza} (${count})`)
+                            .join(', ')}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </>
+            );
+
             return (
               <div id="reporte-mascotas-render" className="flex flex-col">
-                {pages.map((chunk, pageIdx) => (
-                  <div key={pageIdx} className="report-page w-[1120px] h-[790px] bg-white relative flex flex-col justify-between px-12 pb-[40px] pt-[30px] overflow-hidden">
-                    <img src="/marcaagua.png" alt="" className="absolute right-0 bottom-0 pointer-events-none z-0 opacity-100" style={{ maxWidth: '48%', maxHeight: '48%' }} />
-                    <img src="/bordedeco.png" alt="" className="absolute inset-0 w-full h-full pointer-events-none z-[1]" />
+                {pages.map(({ chunk, isFirst }, pageIdx) => {
+                  const rowsPerPage = isFirst ? ROWS_PAGE1 : ROWS_OTHER;
 
-                    <div className="text-center mt-0 z-10 relative">
-                      <div className="flex items-center justify-center gap-4">
-                        <h1 className="text-[20px] font-black text-slate-800 uppercase tracking-wider">
-                          REPORTE DE MASCOTAS
-                        </h1>
-                        <p className="text-[16px] text-slate-500">
-                          Fecha: {fecha}
-                        </p>
-                      </div>
-                      <h2 className="text-[28px] font-bold text-caracas-red uppercase tracking-wide mt-1">
-                        {campamentoSeleccionado.nombre}
-                      </h2>
-                      <h3 className="text-[13px] font-black text-slate-700 uppercase tracking-wider mt-3">
-                        Reporte de Mascotas{' '}
-                        <span className="text-slate-400">—</span>{' '}
-                        Total: <span className="font-black text-[#C21807]">{total}</span>
-                        {totalPaginas > 1 ? <span className="text-xs text-slate-400 ml-2">· Página {pageIdx + 1} de {totalPaginas}</span> : null}
-                      </h3>
-                    </div>
+                  return (
+                    <div key={pageIdx} className="report-page w-[1120px] h-[790px] bg-white relative flex flex-col justify-between px-12 pb-[40px] pt-[30px] overflow-hidden">
+                      <img src="/marcaagua.png" alt="" className="absolute right-0 bottom-0 pointer-events-none z-0 opacity-100" style={{ maxWidth: '48%', maxHeight: '48%' }} />
+                      <img src="/bordedeco.png" alt="" className="absolute inset-0 w-full h-full pointer-events-none z-[1]" />
 
-                    <div className="px-8 mt-2 z-10 relative">
-                      <table className="w-full border-collapse border border-slate-300 text-slate-800">
-                        <thead>
-                          <tr className="bg-slate-50 border-b border-slate-300">
-                            <th className="p-2.5 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[40px]">#</th>
-                            <th className="p-2.5 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[100px]">TIPO</th>
-                            <th className="p-2.5 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[140px]">RAZA</th>
-                            <th className="p-2.5 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300">DUEÑO (JEFE DE FAMILIA)</th>
-                            <th className="p-2.5 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[120px]">MASCOTA</th>
-                            <th className="p-2.5 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[40px]">SX</th>
-                            <th className="p-2.5 text-xs font-black tracking-wide text-slate-700 w-[40px]">ED</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {chunk.map((r, idx) => (
-                            <tr key={r.id} className={`border-b border-slate-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
-                              <td className="p-3 text-base text-center border-r border-slate-200">{r.index}</td>
-                              <td className="p-3 text-base border-r border-slate-200">{r.tipo_mascota || '—'}</td>
-                              <td className="p-3 text-base border-r border-slate-200">{r.mascota_raza || '—'}</td>
-                              <td className="p-3 text-base border-r border-slate-200">{r.dueno}</td>
-                              <td className="p-3 text-base border-r border-slate-200">{r.mascota_nombre || '—'}</td>
-                              <td className="p-3 text-base text-center border-r border-slate-200">{r.mascota_sexo === true ? 'M' : r.mascota_sexo === false ? 'H' : '—'}</td>
-                              <td className="p-3 text-lg font-black text-center">{r.mascota_edad ?? '—'}</td>
+                      {isFirst && (
+                        <div className="text-center mt-0 z-10 relative">
+                          <div className="flex items-center justify-center gap-4">
+                            <h1 className="text-[20px] font-black text-slate-800 uppercase tracking-wider">
+                              REPORTE DE MASCOTAS
+                            </h1>
+                            <p className="text-[16px] text-slate-500">
+                              Fecha: {fecha}
+                            </p>
+                          </div>
+                          <h2 className="text-[28px] font-bold text-caracas-red uppercase tracking-wide mt-1">
+                            {campamentoSeleccionado.nombre}
+                          </h2>
+                          <h3 className="text-[13px] font-black text-slate-700 uppercase tracking-wider mt-3">
+                            Reporte de Mascotas{' '}
+                            <span className="text-slate-400">—</span>{' '}
+                            Total: <span className="font-black text-[#C21807]">{total}</span>
+                            {totalPaginas > 1 ? <span className="text-xs text-slate-400 ml-2">· Página {pageIdx + 1} de {totalPaginas}</span> : null}
+                          </h3>
+                        </div>
+                      )}
+
+                      {!isFirst && (
+                        <div className="text-center z-10 relative">
+                          <h2 className="text-[20px] font-black text-caracas-red uppercase tracking-wider">
+                            {campamentoSeleccionado.nombre}
+                          </h2>
+                          <h3 className="text-[13px] font-black text-slate-700 uppercase tracking-wider mt-3">
+                            Reporte de mascotas{' '}
+                            <span className="text-slate-400">—</span>{' '}
+                            Total: <span className="font-black text-[#C21807]">{total}</span>
+                            {totalPaginas > 1 ? (
+                              <span className="text-slate-400 ml-2">· Página {pageIdx + 1} de {totalPaginas}</span>
+                            ) : null}
+                          </h3>
+                        </div>
+                      )}
+
+                      {isFirst && (
+                        <div className="flex items-center gap-0 w-full z-10 relative">
+                          <div className="shrink-0">
+                            {renderDonutChart()}
+                          </div>
+                          <div className="flex-1 ml-[-85px]">
+                            {renderDonutLegend()}
+                          </div>
+                          <div className="flex-1 -mt-[60px]">
+                            {renderRazasDescription()}
+                          </div>
+                        </div>
+                      )}
+
+                      <div className={`flex-1 px-8 z-10 relative ${isFirst ? 'mt-[-20px]' : 'mt-[41px]'}`}>
+                        <table className="w-full border-collapse border border-slate-300 text-slate-800">
+                          <thead>
+                            <tr className="bg-slate-50 border-b border-slate-300">
+                              <th className="py-1.5 px-1 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[40px]">#</th>
+                              <th className="py-1.5 px-1 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[90px]">TIPO</th>
+                              <th className="py-1.5 px-1 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[130px]">RAZA</th>
+                              <th className="py-1.5 px-1 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300">DUEÑO (JEFE DE FAMILIA)</th>
+                              <th className="py-1.5 px-1 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[120px]">MASCOTA</th>
+                              <th className="py-1.5 px-1 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[40px]">SX</th>
+                              <th className="py-1.5 px-1 text-xs font-black tracking-wide text-slate-700 w-[40px]">ED</th>
                             </tr>
-                          ))}
-                          {chunk.length < ROWS_PER_PAGE && Array.from({ length: ROWS_PER_PAGE - chunk.length }).map((_, i) => (
-                            <tr key={`empty-${i}`} className="border-b border-slate-200 h-[41px]">
-                              <td colSpan={7} className="border-r border-slate-200">&nbsp;</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    <div className="flex items-center justify-center gap-16 px-8 mt-3 z-10 relative">
-                      <div className="shrink-0">
-                        {renderDonutChart()}
+                          </thead>
+                          <tbody>
+                            {chunk.map((r, idx) => (
+                              <tr key={r.id} className={`border-b border-slate-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/[.85]'}`}>
+                                <td className="py-[4.5px] px-0.5 text-base text-center border-r border-slate-200">{r.index}</td>
+                                <td className="py-[4.5px] px-0.5 text-base border-r border-slate-200">{r.tipo_mascota || '—'}</td>
+                                <td className="py-[4.5px] px-0.5 text-base border-r border-slate-200">{r.mascota_raza || '—'}</td>
+                                <td className="py-[4.5px] px-0.5 text-base border-r border-slate-200">{r.dueno}</td>
+                                <td className="py-[4.5px] px-0.5 text-base border-r border-slate-200">{r.mascota_nombre || '—'}</td>
+                                <td className="py-[4.5px] px-0.5 text-base text-center border-r border-slate-200">{r.mascota_sexo === true ? 'M' : r.mascota_sexo === false ? 'H' : '—'}</td>
+                                <td className="py-[4.5px] px-0.5 text-lg font-black text-center">{r.mascota_edad ?? '—'}</td>
+                              </tr>
+                            ))}
+                            {chunk.length < rowsPerPage && Array.from({ length: rowsPerPage - chunk.length }).map((_, i) => (
+                              <tr key={`empty-${i}`} className="border-b border-slate-200 h-[34px]">
+                                <td colSpan={7} className="border-r border-slate-200">&nbsp;</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
                       </div>
-                      <div className="flex-1">
-                        {renderDonutLegend()}
+
+                      <div className="flex items-end justify-between px-10 mb-px z-10 shrink-0 relative">
+                        <img src="/logorepublica.png" alt="Logo República" className="h-[68px] w-auto object-contain" />
+                        <img src="/logovererojo.png" alt="Logo Venezuela" className="h-[68px] w-auto object-contain" />
+                        <img src="/logoalcadia.png" alt="Logo Alcaldía" className="h-[68px] w-auto object-contain" />
                       </div>
                     </div>
-
-                    <div className="flex items-end justify-between px-10 mb-px z-10 shrink-0 relative">
-                      <img src="/logorepublica.png" alt="Logo República" className="h-[68px] w-auto object-contain" />
-                      <img src="/logovererojo.png" alt="Logo Venezuela" className="h-[68px] w-auto object-contain" />
-                      <img src="/logoalcadia.png" alt="Logo Alcaldía" className="h-[68px] w-auto object-contain" />
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             );
           })()}
