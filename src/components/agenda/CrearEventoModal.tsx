@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { X, Save } from 'lucide-react';
-import dayjs from 'dayjs';
+import dayjs from '../../lib/dayjs';
 import SelectorCategoria from './SelectorCategoria';
+import DateInput from '../ui/DateInput';
 import { fetchCategorias, crearCategoria, actualizarCategoria } from '../../lib/eventos';
 import { addOneHour } from '../../lib/formatTime';
 import type { CategoriaEvento } from '../../types';
@@ -170,15 +171,11 @@ export default function CrearEventoModal({ isOpen, onClose, onSave, selectedDate
             )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
-            <input
-              type="date"
-              value={fecha}
-              onChange={(e) => setFecha(e.target.value)}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all"
-            />
-          </div>
+          <DateInput
+            label="Fecha"
+            value={fecha}
+            onChange={(v) => setFecha(v)}
+          />
 
           <div className="grid grid-cols-2 gap-3">
             <div>

@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
-import { toDateInput } from '../lib/formatDate';
+import { toDateInput, parseDateSafe } from '../lib/formatDate';
 import type { Campamento, Refugiado, Familia, Carpa } from '../types';
 
 interface CampamentoContextType {
@@ -98,11 +98,11 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
           apellidos: r.apellidos as string,
           cedula: r.cedula as number | undefined,
           genero: r.genero as boolean,
-          fecha_nacimiento: new Date(r.fecha_nacimiento as string),
+          fecha_nacimiento: parseDateSafe(r.fecha_nacimiento as string),
           es_jefe_familia: r.es_jefe_familia as boolean,
           nro_cama: (r.nro_cama as string) || '',
           procedencia: (r.procedencia as string) || '',
-          fecha_ingreso: r.fecha_ingreso ? new Date(r.fecha_ingreso as string) : undefined,
+          fecha_ingreso: r.fecha_ingreso ? parseDateSafe(r.fecha_ingreso as string) : undefined,
           direccion_exacta: (r.direccion_exacta as string) || undefined,
           discapacidad: r.discapacidad as boolean,
           embarazo: r.embarazo as boolean,
@@ -162,11 +162,11 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         apellidos: r.apellidos,
         cedula: r.cedula || undefined,
         genero: r.genero,
-        fecha_nacimiento: new Date(r.fecha_nacimiento),
+        fecha_nacimiento: parseDateSafe(r.fecha_nacimiento),
         es_jefe_familia: r.es_jefe_familia,
         nro_cama: r.nro_cama || '',
         procedencia: r.procedencia || '',
-        fecha_ingreso: r.fecha_ingreso ? new Date(r.fecha_ingreso) : undefined,
+        fecha_ingreso: r.fecha_ingreso ? parseDateSafe(r.fecha_ingreso) : undefined,
         direccion_exacta: r.direccion_exacta || undefined,
         discapacidad: r.discapacidad,
         embarazo: r.embarazo,
@@ -543,11 +543,11 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       apellidos: data.apellidos,
       cedula: data.cedula || undefined,
       genero: data.genero,
-      fecha_nacimiento: new Date(data.fecha_nacimiento),
+      fecha_nacimiento: parseDateSafe(data.fecha_nacimiento),
       es_jefe_familia: data.es_jefe_familia,
       nro_cama: data.nro_cama || '',
       procedencia: data.procedencia || '',
-      fecha_ingreso: data.fecha_ingreso ? new Date(data.fecha_ingreso) : undefined,
+      fecha_ingreso: data.fecha_ingreso ? parseDateSafe(data.fecha_ingreso) : undefined,
       direccion_exacta: data.direccion_exacta || undefined,
       discapacidad: data.discapacidad,
       embarazo: data.embarazo,
@@ -718,11 +718,11 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       apellidos: r.apellidos as string,
       cedula: r.cedula as number | undefined,
       genero: r.genero as boolean,
-      fecha_nacimiento: new Date(r.fecha_nacimiento as string),
+      fecha_nacimiento: parseDateSafe(r.fecha_nacimiento as string),
       es_jefe_familia: r.es_jefe_familia as boolean,
       nro_cama: (r.nro_cama as string) || '',
       procedencia: (r.procedencia as string) || '',
-      fecha_ingreso: r.fecha_ingreso ? new Date(r.fecha_ingreso as string) : undefined,
+      fecha_ingreso: r.fecha_ingreso ? parseDateSafe(r.fecha_ingreso as string) : undefined,
       direccion_exacta: (r.direccion_exacta as string) || undefined,
       discapacidad: r.discapacidad as boolean,
       embarazo: r.embarazo as boolean,

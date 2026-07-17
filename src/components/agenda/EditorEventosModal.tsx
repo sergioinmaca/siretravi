@@ -1,9 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
 import { X, Save, Trash2 } from 'lucide-react';
-import dayjs from 'dayjs';
+import dayjs from '../../lib/dayjs';
 import { fetchEventos, expandirPermanentes, agruparPorDia, actualizarEvento, eliminarEvento, fetchCategorias, crearCategoria, actualizarCategoria } from '../../lib/eventos';
 import { formatTime12h, addOneHour } from '../../lib/formatTime';
 import SelectorCategoria from './SelectorCategoria';
+import DateInput from '../ui/DateInput';
 import type { Evento, EventoOcurrencia, CategoriaEvento } from '../../types';
 
 interface EditorEventosModalProps {
@@ -313,15 +314,11 @@ export default function EditorEventosModal({
                   )}
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fecha</label>
-                  <input
-                    type="date"
-                    value={formFecha}
-                    onChange={(e) => setFormFecha(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all"
-                  />
-                </div>
+                <DateInput
+                  label="Fecha"
+                  value={formFecha}
+                  onChange={(v) => setFormFecha(v)}
+                />
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>

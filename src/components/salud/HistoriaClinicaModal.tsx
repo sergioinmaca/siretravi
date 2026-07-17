@@ -6,6 +6,7 @@ import type { Refugiado, HistoriaClinica } from '../../types';
 import { formatAge } from '../../lib/formatAge';
 import { formatCedula } from '../../lib/formatCedula';
 import { toDateInput, toDisplayDate } from '../../lib/formatDate';
+import DateInput from '../ui/DateInput';
 import { agregarHistoriaClinica, actualizarHistoriaClinica } from '../../lib/salud';
 
 interface HistoriaClinicaModalProps {
@@ -845,12 +846,11 @@ export default function HistoriaClinicaModal({ isOpen, onClose, historiaToEdit, 
             {!isEditing && (
               <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="p-6">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de Apertura</label>
-                  <input
-                    type="date"
+                  <DateInput
+                    label="Fecha de Apertura"
                     value={formData.fechaApertura}
-                    onChange={(e) => setFormData(prev => ({ ...prev, fechaApertura: e.target.value }))}
-                    className="w-full md:w-64 px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all"
+                    onChange={(v) => setFormData(prev => ({ ...prev, fechaApertura: v }))}
+                    className="w-full md:w-64"
                   />
                 </div>
               </div>
