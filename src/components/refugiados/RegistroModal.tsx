@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useCampamento } from '../../context/CampamentoContext';
 import { User, Users, MapPin, Save, AlertCircle, CheckCircle2, X, Accessibility, Shirt, Loader2, Camera, FileText } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { useFotoUpload } from '../../hooks/useFotoUpload';
 import type { Refugiado } from '../../types';
 import { formatAge } from '../../lib/formatAge';
 import { toDateInput } from '../../lib/formatDate';
@@ -20,11 +20,19 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
   const submitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [fotoFile, setFotoFile] = useState<File | null>(null);
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
-  const [isUploadingFoto, setIsUploadingFoto] = useState(false);
   const [mascotaFotoFile, setMascotaFotoFile] = useState<File | null>(null);
   const [mascotaFotoPreview, setMascotaFotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mascotaFileInputRef = useRef<HTMLInputElement>(null);
+  const {
+    isUploading,
+    uploadError: fotoUploadError,
+    setUploadError: setFotoUploadError,
+    validarArchivo,
+    uploadFoto: uploadFotoHook,
+    deleteStorageFile,
+    leerArchivoComoDataURL,
+  } = useFotoUpload();
   const isEditing = !!refugiadoToEdit;
 
   const [formData, setFormData] = useState({
@@ -182,79 +190,40 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     }
   };
 
-  const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const error = validarArchivo(file);
+    if (error) {
+      setFotoUploadError(error);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
+    setFotoUploadError(null);
     setFotoFile(file);
-
-    const reader = new FileReader();
-    reader.onload = () => setFotoPreview(reader.result as string);
-    reader.readAsDataURL(file);
+    const dataUrl = await leerArchivoComoDataURL(file);
+    setFotoPreview(dataUrl);
+    if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleMascotaFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMascotaFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    const error = validarArchivo(file);
+    if (error) {
+      setFotoUploadError(error);
+      if (mascotaFileInputRef.current) mascotaFileInputRef.current.value = '';
+      return;
+    }
+
+    setFotoUploadError(null);
     setMascotaFotoFile(file);
-
-    const reader = new FileReader();
-    reader.onload = () => setMascotaFotoPreview(reader.result as string);
-    reader.readAsDataURL(file);
-  };
-
-  const deleteOldStorageFile = async (url: string | null | undefined) => {
-    if (!url) return;
-    const match = url.match(/\/fotos-integrantes\/(.+)$/);
-    if (match) {
-      await supabase.storage.from('fotos-integrantes').remove([match[1]]);
-    }
-  };
-
-  const uploadFoto = async (refugiadoId: string, campamentoId: string): Promise<string | undefined> => {
-    if (!fotoFile) return undefined;
-
-    setIsUploadingFoto(true);
-    const ext = fotoFile.name.split('.').pop();
-    const path = `${campamentoId}/${refugiadoId}/${Date.now()}.${ext}`;
-
-    const { error } = await supabase.storage
-      .from('fotos-integrantes')
-      .upload(path, fotoFile, { upsert: true, contentType: fotoFile.type });
-
-    setIsUploadingFoto(false);
-
-    if (error) {
-      console.error('Error subiendo foto:', error);
-      return undefined;
-    }
-
-    const { data } = supabase.storage
-      .from('fotos-integrantes')
-      .getPublicUrl(path);
-
-    return data.publicUrl;
-  };
-
-  const uploadMascotaFoto = async (refugiadoId: string, campamentoId: string): Promise<string | undefined> => {
-    if (!mascotaFotoFile) return undefined;
-
-    const ext = mascotaFotoFile.name.split('.').pop();
-    const path = `${campamentoId}/${refugiadoId}/mascota/${Date.now()}.${ext}`;
-
-    const { error } = await supabase.storage
-      .from('fotos-integrantes')
-      .upload(path, mascotaFotoFile, { upsert: true, contentType: mascotaFotoFile.type });
-
-    if (error) {
-      console.error('Error subiendo foto de mascota:', error);
-      return undefined;
-    }
-
-    const { data } = supabase.storage
-      .from('fotos-integrantes')
-      .getPublicUrl(path);
-
-    return data.publicUrl;
+    const dataUrl = await leerArchivoComoDataURL(file);
+    setMascotaFotoPreview(dataUrl);
+    if (mascotaFileInputRef.current) mascotaFileInputRef.current.value = '';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -341,8 +310,8 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       observaciones: formData.observaciones || undefined,
       observaciones_generales: formData.observacionesGenerales || undefined,
       parentesco: formData.parentesco || undefined,
-      foto_url: fotoFile ? undefined : (refugiadoToEdit?.foto_url || undefined),
-      mascota_foto_url: mascotaFotoFile ? undefined : (refugiadoToEdit?.mascota_foto_url || undefined),
+      foto_url: refugiadoToEdit?.foto_url || undefined,
+      mascota_foto_url: refugiadoToEdit?.mascota_foto_url || undefined,
     };
 
     let guardadoExitoso = false;
@@ -372,47 +341,56 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     let finalMascotaFotoUrl: string | null | undefined = undefined;
     let fotoChanged = false;
     let mascotaFotoChanged = false;
+    let fotoUploadFailed = false;
 
     if (fotoFile && refugiadoId) {
-      const foto_url = await uploadFoto(refugiadoId, campamentoId);
+      const foto_url = await uploadFotoHook(fotoFile, campamentoId, refugiadoId);
       if (foto_url) {
         finalFotoUrl = foto_url;
         fotoChanged = true;
+        if (refugiadoToEdit?.foto_url) {
+          await deleteStorageFile(refugiadoToEdit.foto_url);
+        }
+      } else {
+        fotoUploadFailed = true;
       }
     }
 
     if (mascotaFotoFile && refugiadoId) {
-      const mascota_foto_url = await uploadMascotaFoto(refugiadoId, campamentoId);
+      const mascota_foto_url = await uploadFotoHook(mascotaFotoFile, campamentoId, refugiadoId, 'mascota');
       if (mascota_foto_url) {
         finalMascotaFotoUrl = mascota_foto_url;
         mascotaFotoChanged = true;
+        if (refugiadoToEdit?.mascota_foto_url) {
+          await deleteStorageFile(refugiadoToEdit.mascota_foto_url);
+        }
+      } else {
+        fotoUploadFailed = true;
       }
     }
 
     if (fotoChanged || mascotaFotoChanged) {
-      if (fotoChanged && refugiadoToEdit?.foto_url) {
-        await deleteOldStorageFile(refugiadoToEdit.foto_url);
-      }
-      if (mascotaFotoChanged && refugiadoToEdit?.mascota_foto_url) {
-        await deleteOldStorageFile(refugiadoToEdit.mascota_foto_url);
-      }
-
       const fotoUpdate: { foto_url?: string | null; mascota_foto_url?: string | null } = {};
       if (fotoChanged) fotoUpdate.foto_url = finalFotoUrl;
       if (mascotaFotoChanged) fotoUpdate.mascota_foto_url = finalMascotaFotoUrl;
 
-      await actualizarFotoRefugiado(refugiadoId, fotoUpdate);
+      const ok = await actualizarFotoRefugiado(refugiadoId, fotoUpdate);
+      if (!ok) {
+        fotoUploadFailed = true;
+      }
     }
 
-    setShowSuccess(true);
-    setTimeout(() => {
-      setShowSuccess(false);
-      onClose();
-    }, 1500);
+    if (fotoUploadFailed) {
+      setShowError(true);
+    } else {
+      setShowSuccess(true);
+      setTimeout(() => {
+        setShowSuccess(false);
+        onClose();
+      }, 1500);
+    }
 
-    submitTimerRef.current = setTimeout(() => {
-      setIsSubmitting(false);
-    }, 3000);
+    setIsSubmitting(false);
   };
 
   if (!isOpen) return null;
@@ -477,7 +455,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                   <div className="flex items-start gap-4">
                     {fotoPreview ? (
                       <div className="relative group shrink-0">
-                        <img src={fotoPreview} alt="Preview" className="w-24 h-28 object-cover rounded-xl border-2 border-gray-200" />
+                        <img src={fotoPreview} alt="Preview" className="w-24 h-[100px] object-contain rounded-xl border-2 border-gray-200 bg-gray-100" />
                         <button
                           type="button"
                           onClick={() => { setFotoPreview(null); setFotoFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
@@ -490,11 +468,20 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        disabled={isUploadingFoto}
-                        className="w-24 h-28 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-caracas-red hover:text-caracas-red hover:bg-red-50/30 transition-colors disabled:opacity-50"
+                        disabled={isUploading}
+                        className="w-24 h-[100px] border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-caracas-red hover:text-caracas-red hover:bg-red-50/30 transition-colors disabled:opacity-50"
                       >
-                        <Camera size={20} />
-                        <span className="text-[9px] font-medium">Foto</span>
+                        {isUploading ? (
+                          <>
+                            <Loader2 size={20} className="animate-spin" />
+                            <span className="text-[9px] font-medium">Subiendo...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Camera size={20} />
+                            <span className="text-[9px] font-medium">Foto</span>
+                          </>
+                        )}
                       </button>
                     )}
                     <input
@@ -511,7 +498,12 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                       className="hidden"
                       onChange={handleMascotaFotoChange}
                     />
-                    <p className="text-xs text-gray-400 mt-1">Formatos JPG, PNG o WEBP. Máx. 5 MB.</p>
+                    <div>
+                      <p className="text-xs text-gray-400 mt-1">Formatos JPG, PNG o WEBP. Máx. 5 MB.</p>
+                      {fotoUploadError && (
+                        <p className="text-xs text-red-500 mt-1">{fotoUploadError}</p>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div>
@@ -840,17 +832,27 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                                 <img
                                   src={mascotaFotoPreview}
                                   alt="Foto de la mascota"
-                                  className="w-24 h-24 object-cover rounded-xl border-2 border-gray-200"
+                                  className="w-24 h-[100px] object-contain rounded-xl border-2 border-gray-200 bg-gray-100"
                                 />
                               </div>
                             ) : (
                               <button
                                 type="button"
                                 onClick={() => mascotaFileInputRef.current?.click()}
-                                className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-caracas-red hover:text-caracas-red hover:bg-red-50/30 transition-colors"
+                                disabled={isUploading}
+                                className="w-24 h-[100px] border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-caracas-red hover:text-caracas-red hover:bg-red-50/30 transition-colors disabled:opacity-50"
                               >
-                                <Camera size={20} />
-                                <span className="text-[9px] font-medium text-center leading-tight">Foto<br />Mascota</span>
+                                {isUploading ? (
+                                  <>
+                                    <Loader2 size={20} className="animate-spin" />
+                                    <span className="text-[8px] font-medium text-center leading-tight">Subiendo...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Camera size={20} />
+                                    <span className="text-[9px] font-medium text-center leading-tight">Foto<br />Mascota</span>
+                                  </>
+                                )}
                               </button>
                             )}
                             {mascotaFotoPreview && (

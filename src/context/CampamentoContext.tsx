@@ -131,6 +131,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
           observaciones_generales: (r.observaciones_generales as string) || undefined,
           parentesco: (r.parentesco as string) || undefined,
           foto_url: (r.foto_url as string) || undefined,
+          mascota_foto_url: (r.mascota_foto_url as string) || undefined,
         }));
 
         setCampamentos(campamentosMapped);
@@ -194,6 +195,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         observaciones_generales: r.observaciones_generales || undefined,
         parentesco: r.parentesco || undefined,
         foto_url: r.foto_url || undefined,
+        mascota_foto_url: r.mascota_foto_url || undefined,
       });
 
       const channel = supabase.channel('campamentos-realtime')
@@ -664,7 +666,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       .eq('id', id);
 
     if (error) {
-      console.error('Error al actualizar foto de refugiado:', error);
+      console.error('[CampamentoContext] Error al actualizar foto de refugiado:', error);
       return false;
     }
 
@@ -749,6 +751,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       observaciones_generales: (r.observaciones_generales as string) || undefined,
       parentesco: (r.parentesco as string) || undefined,
       foto_url: (r.foto_url as string) || undefined,
+      mascota_foto_url: (r.mascota_foto_url as string) || undefined,
     })) as Refugiado[];
 
     return { data: mapped, count: count || 0 };

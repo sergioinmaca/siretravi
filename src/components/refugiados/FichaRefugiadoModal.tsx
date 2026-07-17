@@ -6,7 +6,7 @@ import {
   Save, Trash2,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
-import { supabase } from '../../lib/supabase';
+import { useFotoUpload } from '../../hooks/useFotoUpload';
 import { useCampamento } from '../../context/CampamentoContext';
 import { formatAge } from '../../lib/formatAge';
 import { toDisplayDate } from '../../lib/formatDate';
@@ -26,17 +26,23 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
   const [isExporting, setIsExporting] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [fotoFile, setFotoFile] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [mascotaPreviewUrl, setMascotaPreviewUrl] = useState<string | null>(null);
   const [mascotaFotoFile, setMascotaFotoFile] = useState<File | null>(null);
-  const [isUploadingMascota, setIsUploadingMascota] = useState(false);
   const mascotaFileInputRef = useRef<HTMLInputElement>(null);
 
-  const canSelect = !refugiado?.foto_url && !fotoFile;
+  const {
+    isUploading,
+    uploadError,
+    setUploadError,
+    validarArchivo,
+    uploadFoto: uploadFotoHook,
+    deleteStorageFile,
+    leerArchivoComoDataURL,
+  } = useFotoUpload();
+
   const canSave = !!fotoFile || !!mascotaFotoFile;
   const canDelete = !!refugiado?.foto_url;
   const canDeleteMascota = !!refugiado?.mascota_foto_url;
@@ -55,7 +61,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
       setMascotaFotoFile(null);
       setUploadError(null);
     }
-  }, [isOpen, refugiado?.foto_url, refugiado?.mascota_foto_url]);
+  }, [isOpen, refugiado?.foto_url, refugiado?.mascota_foto_url, setUploadError]);
 
   if (!isOpen || !refugiado) return null;
 
@@ -480,36 +486,40 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
     }
   };
 
-  const handleSelectFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSelectFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !refugiado) return;
 
+    const error = validarArchivo(file);
+    if (error) {
+      setUploadError(error);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
+    }
+
     setUploadError(null);
-    const reader = new FileReader();
-    reader.onload = () => setPreviewUrl(reader.result as string);
-    reader.readAsDataURL(file);
+    const dataUrl = await leerArchivoComoDataURL(file);
+    setPreviewUrl(dataUrl);
     setFotoFile(file);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleSelectMascotaFoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleSelectMascotaFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file || !refugiado) return;
 
+    const error = validarArchivo(file);
+    if (error) {
+      setUploadError(error);
+      if (mascotaFileInputRef.current) mascotaFileInputRef.current.value = '';
+      return;
+    }
+
     setUploadError(null);
-    const reader = new FileReader();
-    reader.onload = () => setMascotaPreviewUrl(reader.result as string);
-    reader.readAsDataURL(file);
+    const dataUrl = await leerArchivoComoDataURL(file);
+    setMascotaPreviewUrl(dataUrl);
     setMascotaFotoFile(file);
     if (mascotaFileInputRef.current) mascotaFileInputRef.current.value = '';
-  };
-
-  const deleteStorageFile = async (url: string | null | undefined) => {
-    if (!url) return;
-    const match = url.match(/\/fotos-integrantes\/(.+)$/);
-    if (match) {
-      await supabase.storage.from('fotos-integrantes').remove([match[1]]);
-    }
   };
 
   const handleGuardar = async () => {
@@ -522,40 +532,28 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
       let mascotaChanged = false;
 
       if (fotoFile) {
-        setIsUploading(true);
-        const ext = fotoFile.name.split('.').pop();
-        const path = `${refugiado.campamento_id}/${refugiado.id}/${Date.now()}.${ext}`;
-        const { error } = await supabase.storage
-          .from('fotos-integrantes')
-          .upload(path, fotoFile, { upsert: true, contentType: fotoFile.type });
-        setIsUploading(false);
-        if (!error) {
-          const { data } = supabase.storage.from('fotos-integrantes').getPublicUrl(path);
-          newFotoUrl = data.publicUrl;
+        const url = await uploadFotoHook(fotoFile, refugiado.campamento_id, refugiado.id);
+        if (url) {
+          if (refugiado.foto_url) {
+            await deleteStorageFile(refugiado.foto_url);
+          }
+          newFotoUrl = url;
           fotoChanged = true;
-          await deleteStorageFile(refugiado.foto_url);
         } else {
-          setUploadError('No se pudo subir la foto. Intente de nuevo.');
           setIsSaving(false);
           return;
         }
       }
 
       if (mascotaFotoFile) {
-        setIsUploadingMascota(true);
-        const ext = mascotaFotoFile.name.split('.').pop();
-        const path = `${refugiado.campamento_id}/${refugiado.id}/mascota/${Date.now()}.${ext}`;
-        const { error } = await supabase.storage
-          .from('fotos-integrantes')
-          .upload(path, mascotaFotoFile, { upsert: true, contentType: mascotaFotoFile.type });
-        setIsUploadingMascota(false);
-        if (!error) {
-          const { data } = supabase.storage.from('fotos-integrantes').getPublicUrl(path);
-          newMascotaFotoUrl = data.publicUrl;
+        const url = await uploadFotoHook(mascotaFotoFile, refugiado.campamento_id, refugiado.id, 'mascota');
+        if (url) {
+          if (refugiado.mascota_foto_url) {
+            await deleteStorageFile(refugiado.mascota_foto_url);
+          }
+          newMascotaFotoUrl = url;
           mascotaChanged = true;
-          await deleteStorageFile(refugiado.mascota_foto_url);
         } else {
-          setUploadError('No se pudo subir la foto de la mascota. Intente de nuevo.');
           setIsSaving(false);
           return;
         }
@@ -565,7 +563,12 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
         const updateData: { foto_url?: string | null; mascota_foto_url?: string | null } = {};
         if (fotoChanged) updateData.foto_url = newFotoUrl;
         if (mascotaChanged) updateData.mascota_foto_url = newMascotaFotoUrl;
-        await actualizarFotoRefugiado(refugiado.id, updateData);
+        const ok = await actualizarFotoRefugiado(refugiado.id, updateData);
+        if (!ok) {
+          setUploadError('No se pudo guardar la foto en la ficha del integrante.');
+          setIsSaving(false);
+          return;
+        }
 
         if (fotoChanged) {
           onActualizarFoto(newFotoUrl ?? null);
@@ -584,8 +587,6 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
       console.error('Error guardando foto:', err);
       setUploadError('No se pudo guardar la foto en la ficha.');
     } finally {
-      setIsUploading(false);
-      setIsUploadingMascota(false);
       setIsSaving(false);
     }
   };
@@ -704,15 +705,14 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
                       <img
                         src={previewUrl}
                         alt="Foto del integrante"
-                        className="w-28 h-32 object-cover rounded-xl border-2 border-gray-200"
+                        className="w-28 h-32 object-contain rounded-xl border-2 border-gray-200 bg-gray-100"
                       />
                     </div>
                   ) : (
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      disabled={!canSelect || isUploading}
+                      disabled={isUploading}
                       className="w-28 h-32 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-caracas-red hover:text-caracas-red hover:bg-red-50/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      title={canSelect ? 'Subir foto' : 'La foto ya está guardada'}
                     >
                       {isUploading ? (
                         <>
@@ -892,17 +892,26 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
                           <img
                             src={mascotaPreviewUrl}
                             alt="Foto de la mascota"
-                            className="w-24 h-24 object-cover rounded-xl border-2 border-gray-200"
+                            className="w-24 h-[100px] object-contain rounded-xl border-2 border-gray-200 bg-gray-100"
                           />
                         </div>
                       ) : (
                         <button
                           onClick={() => mascotaFileInputRef.current?.click()}
-                          disabled={isUploadingMascota}
-                          className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-caracas-red hover:text-caracas-red hover:bg-red-50/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          disabled={isUploading}
+                          className="w-24 h-[100px] border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-caracas-red hover:text-caracas-red hover:bg-red-50/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                          <Camera size={20} />
-                          <span className="text-[9px] font-medium text-center leading-tight">Foto<br />Mascota</span>
+                          {isUploading ? (
+                            <>
+                              <Loader2 size={20} className="animate-spin" />
+                              <span className="text-[8px] font-medium text-center leading-tight">Subiendo...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Camera size={20} />
+                              <span className="text-[9px] font-medium text-center leading-tight">Foto<br />Mascota</span>
+                            </>
+                          )}
                         </button>
                       )}
                       {mascotaFotoFile && (
@@ -911,7 +920,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
                       {canDeleteMascota && (
                         <button
                           onClick={handleEliminarMascota}
-                          disabled={isUploadingMascota}
+                          disabled={isUploading}
                           className="w-24 mt-1 px-2 py-1 rounded-lg text-xs font-medium text-red-600 border border-red-200 hover:bg-red-50 transition-colors flex items-center justify-center gap-1 disabled:opacity-50"
                         >
                           <Trash2 size={12} />
