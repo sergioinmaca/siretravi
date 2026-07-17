@@ -1122,7 +1122,7 @@ export default function Reportes() {
 
           {/* REPORTE 4: MASCOTAS */}
           {(() => {
-            const ROWS_PAGE1 = 5;
+            const ROWS_PAGE1 = 7;
             const ROWS_OTHER = 14;
             const total = mascotasReporte.length;
 
@@ -1205,7 +1205,7 @@ export default function Reportes() {
             const renderRazasDescription = () => (
               <>
                 {Array.from(mascotasRazasPorTipo.entries()).length > 0 && (
-                  <div className="text-[14px]">
+                  <div className="text-[16px]">
                     {Array.from(mascotasRazasPorTipo.entries()).map(([tipo, razas]) => (
                       <div key={tipo}>
                         <span className="font-semibold text-slate-700">{tipo}:</span>{' '}
@@ -1275,10 +1275,10 @@ export default function Reportes() {
                           <div className="shrink-0">
                             {renderDonutChart()}
                           </div>
-                          <div className="flex-1 ml-[-85px]">
+                          <div className="w-[300px] ml-[-85px]">
                             {renderDonutLegend()}
                           </div>
-                          <div className="flex-1 -mt-[60px]">
+                          <div className="flex-1 ml-[-70px] -mt-[75px]">
                             {renderRazasDescription()}
                           </div>
                         </div>
