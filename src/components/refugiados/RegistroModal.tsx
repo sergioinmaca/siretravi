@@ -4,7 +4,7 @@ import { User, Users, MapPin, Save, AlertCircle, CheckCircle2, X, Accessibility,
 import { useFotoUpload } from '../../hooks/useFotoUpload';
 import type { Refugiado } from '../../types';
 import { formatAge } from '../../lib/formatAge';
-import { toDateInput } from '../../lib/formatDate';
+import { toDateInput, parseDateSafe } from '../../lib/formatDate';
 import DateInput from '../ui/DateInput';
 
 interface RegistroModalProps {
@@ -108,7 +108,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
         nroCama: refugiadoToEdit.nro_cama || '',
         procedencia: refugiadoToEdit.procedencia,
         fechaIngreso: refugiadoToEdit.fecha_ingreso
-          ? new Date(refugiadoToEdit.fecha_ingreso).toISOString().split('T')[0]
+          ? toDateInput(refugiadoToEdit.fecha_ingreso)
           : '',
         direccionExacta: refugiadoToEdit.direccion_exacta || '',
         discapacidad: refugiadoToEdit.discapacidad,
@@ -175,7 +175,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
 
   useEffect(() => {
     if (formData.fechaNacimiento) {
-      setFormData(prev => ({ ...prev, edad: formatAge(new Date(formData.fechaNacimiento)) }));
+      setFormData(prev => ({ ...prev, edad: formatAge(parseDateSafe(formData.fechaNacimiento)) }));
     }
   }, [formData.fechaNacimiento]);
 
@@ -279,11 +279,11 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       apellidos: formData.apellidos,
       cedula: formData.cedula ? parseInt(formData.cedula) : undefined,
       genero: formData.genero === 'M',
-      fecha_nacimiento: new Date(formData.fechaNacimiento),
+      fecha_nacimiento: parseDateSafe(formData.fechaNacimiento),
       es_jefe_familia: formData.esJefeFamilia,
       nro_cama: formData.nroCama || undefined,
       procedencia: formData.procedencia,
-      fecha_ingreso: formData.fechaIngreso ? new Date(formData.fechaIngreso) : undefined,
+      fecha_ingreso: formData.fechaIngreso ? parseDateSafe(formData.fechaIngreso) : undefined,
       direccion_exacta: formData.direccionExacta || undefined,
       discapacidad: formData.discapacidad,
       embarazo: formData.embarazo,
