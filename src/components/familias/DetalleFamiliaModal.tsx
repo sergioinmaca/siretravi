@@ -12,18 +12,29 @@ interface DetalleFamiliaModalProps {
   familia: Familia | null;
 }
 
-const loadImageAsDataUrl = (src: string): Promise<string | null> => {
+const loadImageAsDataUrl = (
+  src: string,
+  maxW?: number,
+  maxH?: number,
+  format?: string,
+  quality?: number
+): Promise<string | null> => {
   return new Promise((resolve) => {
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
+      let w = img.width;
+      let h = img.height;
+      if (maxW && w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+      if (maxH && h > maxH) { w = Math.round(w * maxH / h); h = maxH; }
       const canvas = document.createElement('canvas');
-      canvas.width = img.width;
-      canvas.height = img.height;
+      canvas.width = w;
+      canvas.height = h;
       const ctx = canvas.getContext('2d');
       if (ctx) {
-        ctx.drawImage(img, 0, 0);
-        resolve(canvas.toDataURL('image/png'));
+        ctx.drawImage(img, 0, 0, w, h);
+        const mime = format === 'jpeg' ? 'image/jpeg' : 'image/png';
+        resolve(canvas.toDataURL(mime, quality));
       } else {
         resolve(null);
       }
@@ -67,10 +78,10 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
       const contentW = pageW - margin * 2;
       let y = margin;
 
-      const logoDataUrl = await loadImageAsDataUrl('/logorepublica.jpg');
-      const mascotaPhotoDataUrl = jefe?.mascota_foto_url ? await loadImageAsDataUrl(jefe.mascota_foto_url) : null;
+      const logoDataUrl = await loadImageAsDataUrl('/logorepublica.jpg', 160, 160);
+      const mascotaPhotoDataUrl = jefe?.mascota_foto_url ? await loadImageAsDataUrl(jefe.mascota_foto_url, 120, 120, 'jpeg', 0.7) : null;
       const integrantePhotos = await Promise.all(
-        sortedIntegrantes.map(m => m.foto_url ? loadImageAsDataUrl(m.foto_url) : Promise.resolve(null))
+        sortedIntegrantes.map(m => m.foto_url ? loadImageAsDataUrl(m.foto_url, 150, 180, 'jpeg', 0.7) : Promise.resolve(null))
       );
 
       const newPage = () => {
