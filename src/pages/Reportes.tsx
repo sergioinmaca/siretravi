@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { FileText, Presentation, ShieldOff, Loader2 } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
@@ -7,13 +7,16 @@ import { supabase } from '../lib/supabase';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import pptxgen from 'pptxgenjs';
+import * as XLSX from 'xlsx';
+import { formatAgeParts } from '../lib/formatAge';
+import { obtenerHistoriasClinicas } from '../lib/salud';
+import type { HistoriaClinica } from '../types';
 
 export default function Reportes() {
   const { campamentoSeleccionado, refugiados = [], familias = [] } = useCampamento();
   const { tienePermisoPorCampamento } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
   const [logoKidsError, setLogoKidsError] = useState(false);
-  const [historiaDiscapacidadMap, setHistoriaDiscapacidadMap] = useState<Record<string, string>>({});
 
   const tieneAcceso = campamentoSeleccionado
     ? tienePermisoPorCampamento('Reportes', campamentoSeleccionado.id, 'Ver')
@@ -271,6 +274,36 @@ export default function Reportes() {
     return map;
   }, [mascotasReporte]);
 
+  // ── Historias Clínicas ──────────────────────────────────────────────────────
+  useEffect(() => {
+    if (campamentoSeleccionado) {
+      obtenerHistoriasClinicas(campamentoSeleccionado.id).then(setHistorias);
+    }
+  }, [campamentoSeleccionado]);
+
+  const historiasClinicasReporte = useMemo(() => {
+    const hcRefugiadoIds = new Set(historias.map(h => h.refugiado_id));
+    return refugiadosDelCampamento.map(r => {
+      const ageParts = formatAgeParts(r.fecha_nacimiento);
+      let jerarquiaStr = 'Jefe de Familia';
+      if (!r.es_jefe_familia && r.familia_id) {
+        const familia = familiasDelCampamento.find(f => f.id === r.familia_id);
+        jerarquiaStr = `Miembro (${familia?.nombre || 'Desconocida'})`;
+      }
+      return {
+        ...r,
+        edadValor: ageParts?.valor ?? '',
+        edadUnidad: ageParts?.unidad ?? '',
+        jerarquia: jerarquiaStr,
+        tieneHC: hcRefugiadoIds.has(r.id),
+      };
+    }).sort((a, b) => {
+      const ca = parseInt(a.nro_cama || '9999');
+      const cb = parseInt(b.nro_cama || '9999');
+      return ca - cb;
+    });
+  }, [refugiadosDelCampamento, familiasDelCampamento, historias]);
+
   // SVG de borde bandera decorativa nacional para el reporte
   const BorderDecoration = () => (
     <svg className="absolute inset-0 w-full h-full pointer-events-none" viewBox="0 0 1120 790" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -361,6 +394,46 @@ export default function Reportes() {
     } catch (err) {
       console.error(err);
       alert('Ocurrió un error al generar el PowerPoint.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // ── Exportar XLSX de Historias Clínicas ─────────────────────────────────────
+  const handleExportHistoriasClinicasXLSX = async () => {
+    setIsGenerating(true);
+    try {
+      const nombreCamp = campamentoSeleccionado?.nombre || 'Campamento';
+      const now = new Date();
+      const fecha = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
+
+      const data = historiasClinicasReporte.map(r => ({
+        'Código': r.codigo || '-',
+        'Nombre y Apellido': `${r.nombres} ${r.apellidos}`,
+        'Edad (Valor)': r.edadValor,
+        'Edad (Unidad)': r.edadUnidad,
+        'Nro Cama': r.nro_cama || '-',
+        'Jerarquía': r.jerarquia,
+        'Historia Clínica': r.tieneHC ? 'Sí' : 'No',
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      const colWidths = [
+        { wch: 12 },
+        { wch: 35 },
+        { wch: 12 },
+        { wch: 14 },
+        { wch: 10 },
+        { wch: 30 },
+        { wch: 18 },
+      ];
+      ws['!cols'] = colWidths;
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Historias Clinicas');
+      XLSX.writeFile(wb, `historias-clinicas-${nombreCamp.replace(/\s+/g, '-')}-${fecha}.xlsx`);
+    } catch (err) {
+      console.error('Error generando XLSX de historias clínicas:', err);
     } finally {
       setIsGenerating(false);
     }
@@ -604,6 +677,26 @@ export default function Reportes() {
             >
               <Presentation size={18} />
               Exportar PowerPoint
+            </button>
+          </div>
+        </div>
+
+        {/* Card 5: Reporte de Historias Clínicas */}
+        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
+          <div>
+            <h3 className="text-lg font-bold text-slate-800 mb-2">Reporte de Historias Clínicas</h3>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Listado completo de refugiados indicando si tienen o no historia clínica abierta. Incluye código, datos personales, ubicación de cama y jerarquía familiar.
+            </p>
+          </div>
+          <div className="flex gap-4 mt-6 pt-4 border-t border-slate-50">
+            <button
+              onClick={handleExportHistoriasClinicasXLSX}
+              disabled={!campamentoSeleccionado || isGenerating}
+              className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50"
+            >
+              <FileDown size={18} />
+              Exportar XLSX
             </button>
           </div>
         </div>

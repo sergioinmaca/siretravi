@@ -15,6 +15,7 @@ import {
   UserCircle,
   HeartPulse,
   Calendar,
+  FileText,
   Loader2,
 } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
@@ -29,6 +30,7 @@ const menuItems = [
   { path: '/reportes', icon: BarChart2, label: 'Reportes' },
   { path: '/usuarios', icon: Settings, label: 'Usuarios' },
   { path: '/agenda', icon: Calendar, label: 'Agenda' },
+  { path: '/actas', icon: FileText, label: 'Actas' },
 ];
 
 const pathToModulo: Record<string, string> = {
@@ -40,6 +42,7 @@ const pathToModulo: Record<string, string> = {
   '/reportes': 'Reportes',
   '/usuarios': 'Usuarios',
   '/agenda': 'Agenda',
+  '/actas': 'Actas',
 };
 
 export default function MainLayout() {

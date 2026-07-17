@@ -10,6 +10,7 @@ import Usuarios from './pages/Usuarios';
 import Login from './pages/Login';
 import Reportes from './pages/Reportes';
 import Agenda from './pages/Agenda';
+import Actas from './pages/Actas';
 import SaludIndex from './pages/Salud/Index';
 import HistoriasClinicas from './pages/Salud/HistoriasClinicas';
 import RegimenDiario from './pages/Salud/RegimenDiario';
@@ -55,6 +56,7 @@ function AppRoutes() {
         <Route path="salud/historias-clinicas" element={<HistoriasClinicas />} />
         <Route path="salud/regimen-diario" element={<RegimenDiario />} />
         <Route path="agenda" element={<Agenda />} />
+        <Route path="actas" element={<Actas />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -50,8 +50,9 @@ La aplicación web contará con un **sidebar retráctil** que incluirá los sigu
     *   **Croquis interactivo:** Visualización espacial de la distribución de personas en el campamento seleccionado.
 2.  **Refugiados:** Interfaz principal (Tabla y Modal) para la visualización y registro de los damnificados (se asignarán al campamento seleccionado en el Header).
 3.  **Constructor:** Herramienta administrativa para gestionar las carpas/camas del campamento seleccionado.
-4.  **Reportes:** Módulo para la extracción y consulta de métricas.
-5.  **Usuarios:** Gestión de cuentas, permisos y roles de los operadores del sistema. *(Pendiente: Implementar sistema de Autenticación/Login una vez que se completen los módulos y bocetos principales).*
+4.  **Actas:** Gestión de actas y notificaciones. Indicadores, croquis coloreado por cantidad de actas (verde=0, naranja=1-2, rojo=3+), tabla dinámica con filtros, modal para levantar actas con plantillas configurables por tipo de acta. Editor visual de plantillas. Permisos: Ver, Crear, Modificar (para crear tipos), Eliminar.
+5.  **Reportes:** Módulo para la extracción y consulta de métricas.
+6.  **Usuarios:** Gestión de cuentas, permisos y roles de los operadores del sistema. *(Pendiente: Implementar sistema de Autenticación/Login una vez que se completen los módulos y bocetos principales).*
 
 ## 6. Diseño UI/UX
 *   Interfaces modernas, estéticas y altamente interactivas, transmitiendo un nivel "Premium".
