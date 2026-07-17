@@ -281,7 +281,7 @@ export default function Inicio() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Total Refugiados */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-caracas-red flex items-center gap-4 hover:shadow-md transition-shadow">
           <div className="p-4 bg-caracas-red/10 rounded-xl text-caracas-red shrink-0">
             <Users size={32} />
           </div>
@@ -295,7 +295,7 @@ export default function Inicio() {
         </div>
 
         {/* Total Familias */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-indigo-500 flex items-center gap-4 hover:shadow-md transition-shadow">
           <div className="p-4 bg-indigo-500/10 rounded-xl text-indigo-500 shrink-0">
             <Home size={32} />
           </div>
@@ -309,7 +309,7 @@ export default function Inicio() {
         </div>
 
         {/* Capacidad / Camas */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-caracas-green flex items-center gap-4 hover:shadow-md transition-shadow">
           <div className="p-4 bg-caracas-green/10 rounded-xl text-caracas-green shrink-0">
             <BedDouble size={32} />
           </div>
@@ -323,7 +323,7 @@ export default function Inicio() {
         </div>
 
         {/* Carpas Activas */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-caracas-blue flex items-center gap-4 hover:shadow-md transition-shadow">
           <div className="p-4 bg-caracas-blue/10 rounded-xl text-caracas-blue shrink-0">
             <Tent size={32} />
           </div>
@@ -339,24 +339,24 @@ export default function Inicio() {
 
       {/* Indicadores Demográficos Detallados */}
       <div className="space-y-6">
-        {/* Niños (0-12) - card padre */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-3 bg-orange-100 rounded-xl text-orange-500">
-              <Baby size={28} />
+        {/* Cards de Niñez */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Niños (0-12) */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-orange-400 hover:shadow-md transition-shadow">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="p-3 bg-orange-100 rounded-xl text-orange-500">
+                <Baby size={28} />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-500">Niños</p>
+                <p className="text-2xl font-bold text-gray-900">{ninos.length}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-sm font-medium text-gray-500">Niños</p>
-              <p className="text-2xl font-bold text-gray-900">{ninos.length}</p>
-            </div>
+            <p className="text-xs text-gray-400">
+              0 a 12 años · <span className="text-blue-600 font-medium">{ninosH} H</span> · <span className="text-pink-600 font-medium">{ninosM} M</span>
+            </p>
           </div>
-          <p className="text-xs text-gray-400">
-            0 a 12 años · <span className="text-blue-600 font-medium">{ninosH} H</span> · <span className="text-pink-600 font-medium">{ninosM} M</span>
-          </p>
-        </div>
 
-        {/* Sub-cards de Niñez */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Niños Lactantes (0-3) */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-orange-400 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3 mb-4">
@@ -393,7 +393,7 @@ export default function Inicio() {
         {/* Adolescentes, Adultos, Adulto Mayor */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Adolescentes (13-17) */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-yellow-400 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-3 bg-yellow-100 rounded-xl text-yellow-600">
                 <Sparkles size={28} />
@@ -409,7 +409,7 @@ export default function Inicio() {
           </div>
 
           {/* Adultos (18-59 H / 18-54 M) */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-emerald-400 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-3 bg-emerald-100 rounded-xl text-emerald-600">
                 <UserCheck size={28} />
@@ -425,7 +425,7 @@ export default function Inicio() {
           </div>
 
           {/* Adulto Mayor */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-rose-400 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-3 bg-rose-100 rounded-xl text-rose-500">
                 <Heart size={28} />
