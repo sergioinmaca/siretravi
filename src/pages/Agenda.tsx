@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { ChevronLeft, ChevronRight, Plus, ShieldOff, Edit, FileDown } from 'lucide-react';
-import dayjs from 'dayjs';
+import dayjs from '../lib/dayjs';
 import { jsPDF } from 'jspdf';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';

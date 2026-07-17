@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import dayjs from 'dayjs';
+import dayjs from '../../lib/dayjs';
 import type { EventoOcurrencia, CategoriaEvento } from '../../types';
 import { formatTime12h } from '../../lib/formatTime';
 

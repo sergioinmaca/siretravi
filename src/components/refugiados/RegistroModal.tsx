@@ -5,6 +5,7 @@ import { useFotoUpload } from '../../hooks/useFotoUpload';
 import type { Refugiado } from '../../types';
 import { formatAge } from '../../lib/formatAge';
 import { toDateInput } from '../../lib/formatDate';
+import DateInput from '../ui/DateInput';
 
 interface RegistroModalProps {
   isOpen: boolean;
@@ -531,10 +532,12 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                     <option value="F">FEMENINO</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de Nacimiento <span className="text-caracas-red">*</span></label>
-                  <input required type="date" name="fechaNacimiento" value={formData.fechaNacimiento} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all" />
-                </div>
+                <DateInput
+                  label="Fecha de Nacimiento"
+                  required
+                  value={formData.fechaNacimiento}
+                  onChange={(v) => setFormData(prev => ({ ...prev, fechaNacimiento: v }))}
+                />
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Edad</label>
                   <input type="text" name="edad" value={formData.edad} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-200 rounded-xl bg-gray-100 text-gray-600 outline-none" placeholder="Calculada auto" readOnly />
@@ -628,10 +631,11 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                   <label className="block text-sm font-medium text-gray-700 mb-1">Dirección Exacta</label>
                   <input type="text" name="direccionExacta" value={formData.direccionExacta} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase" placeholder="EJ. CALLE PRINCIPAL, CASA NRO 5" />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de Ingreso</label>
-                  <input type="date" name="fechaIngreso" value={formData.fechaIngreso} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all" />
-                </div>
+                <DateInput
+                  label="Fecha de Ingreso"
+                  value={formData.fechaIngreso}
+                  onChange={(v) => setFormData(prev => ({ ...prev, fechaIngreso: v }))}
+                />
               </div>
             </div>
 

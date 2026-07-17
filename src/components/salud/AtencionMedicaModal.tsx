@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, Save, Activity } from 'lucide-react';
 import { toDateInput } from '../../lib/formatDate';
+import DateInput from '../ui/DateInput';
 import { agregarAtencionMedica } from '../../lib/salud';
 
 interface AtencionMedicaModalProps {
@@ -89,15 +90,11 @@ export default function AtencionMedicaModal({ isOpen, onClose, historiaClinicaId
                 <h3 className="font-semibold text-gray-800">Signos Vitales y Datos de la Consulta</h3>
               </div>
               <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fecha de Atencion</label>
-                  <input
-                    type="date"
-                    value={formData.fechaAtencion}
-                    onChange={(e) => setFormData(prev => ({ ...prev, fechaAtencion: e.target.value }))}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all"
-                  />
-                </div>
+                <DateInput
+                  label="Fecha de Atencion"
+                  value={formData.fechaAtencion}
+                  onChange={(v) => setFormData(prev => ({ ...prev, fechaAtencion: v }))}
+                />
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Presion Arterial</label>
                   <input

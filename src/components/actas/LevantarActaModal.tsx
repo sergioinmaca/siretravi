@@ -7,6 +7,7 @@ import { obtenerTiposActa, crearActa } from '../../lib/actas';
 import { formatAge } from '../../lib/formatAge';
 import { formatCedula } from '../../lib/formatCedula';
 import { toDateInput } from '../../lib/formatDate';
+import DateInput from '../ui/DateInput';
 import ActaPreview from './ActaPreview';
 import TipoActaModal from './TipoActaModal';
 import type { Refugiado, TipoActa } from '../../types';
@@ -428,11 +429,9 @@ export default function LevantarActaModal({ isOpen, onClose, onSaved }: Levantar
                             ))}
                           </select>
                         ) : campo.tipo === 'date' ? (
-                          <input
-                            type="date"
+                          <DateInput
                             value={valoresFormulario[campo.clave] || ''}
-                            onChange={e => actualizarValor(campo.clave, e.target.value)}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all"
+                            onChange={(v) => actualizarValor(campo.clave, v)}
                           />
                         ) : (
                           <input
