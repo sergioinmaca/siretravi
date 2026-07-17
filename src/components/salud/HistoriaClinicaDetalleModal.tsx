@@ -460,7 +460,7 @@ export default function HistoriaClinicaDetalleModal({
                     <img
                       src={refugiado.foto_url}
                       alt="Foto del integrante"
-                      className="w-28 h-32 object-cover rounded-xl border-2 border-gray-200"
+                      className="w-28 h-32 object-contain rounded-xl border-2 border-gray-200 bg-gray-100"
                     />
                   ) : (
                     <div className="w-28 h-32 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center text-gray-400">

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useCampamento } from '../../context/CampamentoContext';
 import { User, Users, MapPin, Save, AlertCircle, CheckCircle2, X, Accessibility, Shirt, Loader2, Camera, FileText } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
+import { useFotoUpload } from '../../hooks/useFotoUpload';
 import type { Refugiado } from '../../types';
 import { formatAge } from '../../lib/formatAge';
 import { toDateInput } from '../../lib/formatDate';
@@ -13,15 +13,26 @@ interface RegistroModalProps {
 }
 
 export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: RegistroModalProps) {
-  const { campamentoSeleccionado, familias = [], refugiados = [], agregarFamilia, agregarRefugiado, actualizarRefugiado, eliminarFamilia } = useCampamento();
+  const { campamentoSeleccionado, familias = [], refugiados = [], agregarFamilia, agregarRefugiado, actualizarRefugiado, actualizarFotoRefugiado, eliminarFamilia } = useCampamento();
   const [showSuccess, setShowSuccess] = useState(false);
   const [showError, setShowError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [fotoFile, setFotoFile] = useState<File | null>(null);
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
-  const [isUploadingFoto, setIsUploadingFoto] = useState(false);
+  const [mascotaFotoFile, setMascotaFotoFile] = useState<File | null>(null);
+  const [mascotaFotoPreview, setMascotaFotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mascotaFileInputRef = useRef<HTMLInputElement>(null);
+  const {
+    isUploading,
+    uploadError: fotoUploadError,
+    setUploadError: setFotoUploadError,
+    validarArchivo,
+    uploadFoto: uploadFotoHook,
+    deleteStorageFile,
+    leerArchivoComoDataURL,
+  } = useFotoUpload();
   const isEditing = !!refugiadoToEdit;
 
   const [formData, setFormData] = useState({
@@ -80,6 +91,8 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     if (refugiadoToEdit) {
       setFotoPreview(refugiadoToEdit.foto_url || null);
       setFotoFile(null);
+      setMascotaFotoPreview(refugiadoToEdit.mascota_foto_url || null);
+      setMascotaFotoFile(null);
       const birth = new Date(refugiadoToEdit.fecha_nacimiento);
 
       setFormData({
@@ -127,6 +140,8 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     } else {
       setFotoPreview(null);
       setFotoFile(null);
+      setMascotaFotoPreview(null);
+      setMascotaFotoFile(null);
       setFormData({
         nombres: '', apellidos: '', cedula: '', genero: 'M',
         fechaNacimiento: '', edad: '', esJefeFamilia: true, familiaId: '',
@@ -175,39 +190,40 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     }
   };
 
-  const handleFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setFotoFile(file);
 
-    const reader = new FileReader();
-    reader.onload = () => setFotoPreview(reader.result as string);
-    reader.readAsDataURL(file);
-  };
-
-  const uploadFoto = async (refugiadoId: string, campamentoId: string): Promise<string | undefined> => {
-    if (!fotoFile) return undefined;
-
-    setIsUploadingFoto(true);
-    const ext = fotoFile.name.split('.').pop();
-    const path = `${campamentoId}/${refugiadoId}/${Date.now()}.${ext}`;
-
-    const { error } = await supabase.storage
-      .from('fotos-integrantes')
-      .upload(path, fotoFile, { upsert: true, contentType: fotoFile.type });
-
-    setIsUploadingFoto(false);
-
+    const error = validarArchivo(file);
     if (error) {
-      console.error('Error subiendo foto:', error);
-      return undefined;
+      setFotoUploadError(error);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+      return;
     }
 
-    const { data } = supabase.storage
-      .from('fotos-integrantes')
-      .getPublicUrl(path);
+    setFotoUploadError(null);
+    setFotoFile(file);
+    const dataUrl = await leerArchivoComoDataURL(file);
+    setFotoPreview(dataUrl);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
 
-    return data.publicUrl;
+  const handleMascotaFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const error = validarArchivo(file);
+    if (error) {
+      setFotoUploadError(error);
+      if (mascotaFileInputRef.current) mascotaFileInputRef.current.value = '';
+      return;
+    }
+
+    setFotoUploadError(null);
+    setMascotaFotoFile(file);
+    const dataUrl = await leerArchivoComoDataURL(file);
+    setMascotaFotoPreview(dataUrl);
+    if (mascotaFileInputRef.current) mascotaFileInputRef.current.value = '';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -294,16 +310,22 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       observaciones: formData.observaciones || undefined,
       observaciones_generales: formData.observacionesGenerales || undefined,
       parentesco: formData.parentesco || undefined,
-      foto_url: fotoFile ? undefined : (refugiadoToEdit?.foto_url || undefined),
+      foto_url: refugiadoToEdit?.foto_url || undefined,
+      mascota_foto_url: refugiadoToEdit?.mascota_foto_url || undefined,
     };
 
     let guardadoExitoso = false;
+    let refugiadoId = refugiadoToEdit?.id || '';
+    const campamentoId = campamentoSeleccionado.id;
 
     if (isEditing && refugiadoToEdit) {
       guardadoExitoso = await actualizarRefugiado(refugiadoToEdit.id, payload);
     } else {
       const refugiadoCreado = await agregarRefugiado(payload);
       guardadoExitoso = !!refugiadoCreado;
+      if (refugiadoCreado) {
+        refugiadoId = refugiadoCreado.id;
+      }
     }
 
     if (!guardadoExitoso) {
@@ -315,22 +337,60 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       return;
     }
 
-    if (fotoFile && refugiadoToEdit) {
-      const foto_url = await uploadFoto(refugiadoToEdit.id, campamentoSeleccionado.id);
+    let finalFotoUrl: string | null | undefined = undefined;
+    let finalMascotaFotoUrl: string | null | undefined = undefined;
+    let fotoChanged = false;
+    let mascotaFotoChanged = false;
+    let fotoUploadFailed = false;
+
+    if (fotoFile && refugiadoId) {
+      const foto_url = await uploadFotoHook(fotoFile, campamentoId, refugiadoId);
       if (foto_url) {
-        await actualizarRefugiado(refugiadoToEdit.id, { ...payload, foto_url });
+        finalFotoUrl = foto_url;
+        fotoChanged = true;
+        if (refugiadoToEdit?.foto_url) {
+          await deleteStorageFile(refugiadoToEdit.foto_url);
+        }
+      } else {
+        fotoUploadFailed = true;
       }
     }
 
-    setShowSuccess(true);
-    setTimeout(() => {
-      setShowSuccess(false);
-      onClose();
-    }, 1500);
+    if (mascotaFotoFile && refugiadoId) {
+      const mascota_foto_url = await uploadFotoHook(mascotaFotoFile, campamentoId, refugiadoId, 'mascota');
+      if (mascota_foto_url) {
+        finalMascotaFotoUrl = mascota_foto_url;
+        mascotaFotoChanged = true;
+        if (refugiadoToEdit?.mascota_foto_url) {
+          await deleteStorageFile(refugiadoToEdit.mascota_foto_url);
+        }
+      } else {
+        fotoUploadFailed = true;
+      }
+    }
 
-    submitTimerRef.current = setTimeout(() => {
-      setIsSubmitting(false);
-    }, 3000);
+    if (fotoChanged || mascotaFotoChanged) {
+      const fotoUpdate: { foto_url?: string | null; mascota_foto_url?: string | null } = {};
+      if (fotoChanged) fotoUpdate.foto_url = finalFotoUrl;
+      if (mascotaFotoChanged) fotoUpdate.mascota_foto_url = finalMascotaFotoUrl;
+
+      const ok = await actualizarFotoRefugiado(refugiadoId, fotoUpdate);
+      if (!ok) {
+        fotoUploadFailed = true;
+      }
+    }
+
+    if (fotoUploadFailed) {
+      setShowError(true);
+    } else {
+      setShowSuccess(true);
+      setTimeout(() => {
+        setShowSuccess(false);
+        onClose();
+      }, 1500);
+    }
+
+    setIsSubmitting(false);
   };
 
   if (!isOpen) return null;
@@ -395,7 +455,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                   <div className="flex items-start gap-4">
                     {fotoPreview ? (
                       <div className="relative group shrink-0">
-                        <img src={fotoPreview} alt="Preview" className="w-24 h-28 object-cover rounded-xl border-2 border-gray-200" />
+                        <img src={fotoPreview} alt="Preview" className="w-24 h-[100px] object-contain rounded-xl border-2 border-gray-200 bg-gray-100" />
                         <button
                           type="button"
                           onClick={() => { setFotoPreview(null); setFotoFile(null); if (fileInputRef.current) fileInputRef.current.value = ''; }}
@@ -408,11 +468,20 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        disabled={isUploadingFoto}
-                        className="w-24 h-28 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-caracas-red hover:text-caracas-red hover:bg-red-50/30 transition-colors disabled:opacity-50"
+                        disabled={isUploading}
+                        className="w-24 h-[100px] border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-caracas-red hover:text-caracas-red hover:bg-red-50/30 transition-colors disabled:opacity-50"
                       >
-                        <Camera size={20} />
-                        <span className="text-[9px] font-medium">Foto</span>
+                        {isUploading ? (
+                          <>
+                            <Loader2 size={20} className="animate-spin" />
+                            <span className="text-[9px] font-medium">Subiendo...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Camera size={20} />
+                            <span className="text-[9px] font-medium">Foto</span>
+                          </>
+                        )}
                       </button>
                     )}
                     <input
@@ -422,7 +491,19 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                       className="hidden"
                       onChange={handleFotoChange}
                     />
-                    <p className="text-xs text-gray-400 mt-1">Formatos JPG, PNG o WEBP. Máx. 5 MB.</p>
+                    <input
+                      ref={mascotaFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleMascotaFotoChange}
+                    />
+                    <div>
+                      <p className="text-xs text-gray-400 mt-1">Formatos JPG, PNG o WEBP. Máx. 5 MB.</p>
+                      {fotoUploadError && (
+                        <p className="text-xs text-red-500 mt-1">{fotoUploadError}</p>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div>
@@ -744,39 +825,86 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                     </label>
                     {formData.mascotas && (
                       <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Mascota</label>
-                          <input
-                            type="text"
-                            value={formData.tipoMascota}
-                            onChange={(e) => setFormData(prev => ({ ...prev, tipoMascota: e.target.value.toUpperCase() }))}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase"
-                            placeholder="EJ. PERRO, GATO, AVES"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Sexo de la Mascota</label>
-                          <div className="flex gap-6">
-                            <label className="flex items-center gap-2 cursor-pointer">
+                        <div className="flex items-start gap-4">
+                          <div className="shrink-0">
+                            {mascotaFotoPreview ? (
+                              <div className="relative group">
+                                <img
+                                  src={mascotaFotoPreview}
+                                  alt="Foto de la mascota"
+                                  className="w-24 h-[100px] object-contain rounded-xl border-2 border-gray-200 bg-gray-100"
+                                />
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => mascotaFileInputRef.current?.click()}
+                                disabled={isUploading}
+                                className="w-24 h-[100px] border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-caracas-red hover:text-caracas-red hover:bg-red-50/30 transition-colors disabled:opacity-50"
+                              >
+                                {isUploading ? (
+                                  <>
+                                    <Loader2 size={20} className="animate-spin" />
+                                    <span className="text-[8px] font-medium text-center leading-tight">Subiendo...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Camera size={20} />
+                                    <span className="text-[9px] font-medium text-center leading-tight">Foto<br />Mascota</span>
+                                  </>
+                                )}
+                              </button>
+                            )}
+                            {mascotaFotoPreview && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setMascotaFotoFile(null);
+                                  setMascotaFotoPreview(null);
+                                  if (mascotaFileInputRef.current) mascotaFileInputRef.current.value = '';
+                                }}
+                                className="w-24 mt-1 px-2 py-1 rounded-lg text-xs font-medium text-red-600 border border-red-200 hover:bg-red-50 transition-colors flex items-center justify-center gap-1"
+                              >
+                                Quitar foto
+                              </button>
+                            )}
+                          </div>
+                          <div className="flex-1 space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Mascota</label>
                               <input
-                                type="radio"
-                                name="mascotaSexo"
-                                checked={formData.mascotaSexo === 'M'}
-                                onChange={() => setFormData(prev => ({ ...prev, mascotaSexo: 'M' }))}
-                                className="w-5 h-5 text-caracas-red focus:ring-caracas-red"
+                                type="text"
+                                value={formData.tipoMascota}
+                                onChange={(e) => setFormData(prev => ({ ...prev, tipoMascota: e.target.value.toUpperCase() }))}
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase"
+                                placeholder="EJ. PERRO, GATO, AVES"
                               />
-                              <span className="text-gray-700">MACHO</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                              <input
-                                type="radio"
-                                name="mascotaSexo"
-                                checked={formData.mascotaSexo === 'F'}
-                                onChange={() => setFormData(prev => ({ ...prev, mascotaSexo: 'F' }))}
-                                className="w-5 h-5 text-caracas-red focus:ring-caracas-red"
-                              />
-                              <span className="text-gray-700">HEMBRA</span>
-                            </label>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Sexo de la Mascota</label>
+                              <div className="flex gap-6">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="radio"
+                                    name="mascotaSexo"
+                                    checked={formData.mascotaSexo === 'M'}
+                                    onChange={() => setFormData(prev => ({ ...prev, mascotaSexo: 'M' }))}
+                                    className="w-5 h-5 text-caracas-red focus:ring-caracas-red"
+                                  />
+                                  <span className="text-gray-700">MACHO</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="radio"
+                                    name="mascotaSexo"
+                                    checked={formData.mascotaSexo === 'F'}
+                                    onChange={() => setFormData(prev => ({ ...prev, mascotaSexo: 'F' }))}
+                                    className="w-5 h-5 text-caracas-red focus:ring-caracas-red"
+                                  />
+                                  <span className="text-gray-700">HEMBRA</span>
+                                </label>
+                              </div>
+                            </div>
                           </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -101,6 +101,7 @@ export interface Refugiado {
   mascota_raza?: string;
   mascota_nombre?: string;
   mascota_edad?: number;
+  mascota_foto_url?: string;
   telefono?: number;
   profesion?: string;
   talla_camisa?: string;
