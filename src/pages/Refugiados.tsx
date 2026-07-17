@@ -529,6 +529,9 @@ export default function Refugiados() {
         onActualizarFoto={(foto_url) => {
           setFichaRefugiado(prev => prev ? { ...prev, foto_url: foto_url ?? undefined } : null);
         }}
+        onActualizarMascotaFoto={(mascota_foto_url) => {
+          setFichaRefugiado(prev => prev ? { ...prev, mascota_foto_url: mascota_foto_url ?? undefined } : null);
+        }}
       />
 
     </div>

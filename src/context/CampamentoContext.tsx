@@ -20,6 +20,7 @@ interface CampamentoContextType {
   agregarRefugiado: (nuevo: Refugiado) => Promise<Refugiado | null>;
   eliminarRefugiado: (id: string) => Promise<void>;
   actualizarRefugiado: (id: string, actualizado: Refugiado) => Promise<boolean>;
+  actualizarFotoRefugiado: (id: string, data: { foto_url?: string | null; mascota_foto_url?: string | null }) => Promise<boolean>;
   obtenerRefugiadosPaginados: (campamentoId: string, page: number, pageSize: number, searchTerm?: string) => Promise<{ data: Refugiado[]; count: number }>;
   contarRefugiados: (campamentoId: string, genero?: boolean) => Promise<number>;
 }
@@ -639,6 +640,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         observaciones_generales: actualizado.observaciones_generales || null,
         parentesco: actualizado.parentesco || null,
         foto_url: actualizado.foto_url || null,
+        mascota_foto_url: actualizado.mascota_foto_url || null,
       })
       .eq('id', id);
 
@@ -648,6 +650,25 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
     }
 
     setRefugiados(prev => prev.map(r => r.id === id ? { ...actualizado, id } : r));
+    return true;
+  };
+
+  const actualizarFotoRefugiado = async (id: string, data: { foto_url?: string | null; mascota_foto_url?: string | null }): Promise<boolean> => {
+    const updateData: Record<string, unknown> = {};
+    if (data.foto_url !== undefined) updateData.foto_url = data.foto_url;
+    if (data.mascota_foto_url !== undefined) updateData.mascota_foto_url = data.mascota_foto_url;
+
+    const { error } = await supabase
+      .from('refugiados')
+      .update(updateData)
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error al actualizar foto de refugiado:', error);
+      return false;
+    }
+
+    setRefugiados(prev => prev.map(r => r.id === id ? { ...r, ...updateData } as Refugiado : r));
     return true;
   };
 
@@ -757,7 +778,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       campamentos, familias, refugiados,
       campamentoSeleccionado, loading, errorCarga, seleccionarCampamento,
       agregarCampamento, actualizarCampamento, eliminarCampamento,
-      agregarFamilia, eliminarFamilia, agregarRefugiado, eliminarRefugiado, actualizarRefugiado,
+      agregarFamilia, eliminarFamilia, agregarRefugiado, eliminarRefugiado, actualizarRefugiado, actualizarFotoRefugiado,
       obtenerRefugiadosPaginados, contarRefugiados,
     }}>
       {children}

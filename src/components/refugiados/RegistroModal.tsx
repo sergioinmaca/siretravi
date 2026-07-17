@@ -13,7 +13,7 @@ interface RegistroModalProps {
 }
 
 export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: RegistroModalProps) {
-  const { campamentoSeleccionado, familias = [], refugiados = [], agregarFamilia, agregarRefugiado, actualizarRefugiado, eliminarFamilia } = useCampamento();
+  const { campamentoSeleccionado, familias = [], refugiados = [], agregarFamilia, agregarRefugiado, actualizarRefugiado, actualizarFotoRefugiado, eliminarFamilia } = useCampamento();
   const [showSuccess, setShowSuccess] = useState(false);
   const [showError, setShowError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -21,7 +21,10 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
   const [fotoFile, setFotoFile] = useState<File | null>(null);
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
   const [isUploadingFoto, setIsUploadingFoto] = useState(false);
+  const [mascotaFotoFile, setMascotaFotoFile] = useState<File | null>(null);
+  const [mascotaFotoPreview, setMascotaFotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const mascotaFileInputRef = useRef<HTMLInputElement>(null);
   const isEditing = !!refugiadoToEdit;
 
   const [formData, setFormData] = useState({
@@ -80,6 +83,8 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     if (refugiadoToEdit) {
       setFotoPreview(refugiadoToEdit.foto_url || null);
       setFotoFile(null);
+      setMascotaFotoPreview(refugiadoToEdit.mascota_foto_url || null);
+      setMascotaFotoFile(null);
       const birth = new Date(refugiadoToEdit.fecha_nacimiento);
 
       setFormData({
@@ -127,6 +132,8 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     } else {
       setFotoPreview(null);
       setFotoFile(null);
+      setMascotaFotoPreview(null);
+      setMascotaFotoFile(null);
       setFormData({
         nombres: '', apellidos: '', cedula: '', genero: 'M',
         fechaNacimiento: '', edad: '', esJefeFamilia: true, familiaId: '',
@@ -185,6 +192,24 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     reader.readAsDataURL(file);
   };
 
+  const handleMascotaFotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setMascotaFotoFile(file);
+
+    const reader = new FileReader();
+    reader.onload = () => setMascotaFotoPreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const deleteOldStorageFile = async (url: string | null | undefined) => {
+    if (!url) return;
+    const match = url.match(/\/fotos-integrantes\/(.+)$/);
+    if (match) {
+      await supabase.storage.from('fotos-integrantes').remove([match[1]]);
+    }
+  };
+
   const uploadFoto = async (refugiadoId: string, campamentoId: string): Promise<string | undefined> => {
     if (!fotoFile) return undefined;
 
@@ -200,6 +225,28 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
 
     if (error) {
       console.error('Error subiendo foto:', error);
+      return undefined;
+    }
+
+    const { data } = supabase.storage
+      .from('fotos-integrantes')
+      .getPublicUrl(path);
+
+    return data.publicUrl;
+  };
+
+  const uploadMascotaFoto = async (refugiadoId: string, campamentoId: string): Promise<string | undefined> => {
+    if (!mascotaFotoFile) return undefined;
+
+    const ext = mascotaFotoFile.name.split('.').pop();
+    const path = `${campamentoId}/${refugiadoId}/mascota/${Date.now()}.${ext}`;
+
+    const { error } = await supabase.storage
+      .from('fotos-integrantes')
+      .upload(path, mascotaFotoFile, { upsert: true, contentType: mascotaFotoFile.type });
+
+    if (error) {
+      console.error('Error subiendo foto de mascota:', error);
       return undefined;
     }
 
@@ -295,15 +342,21 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       observaciones_generales: formData.observacionesGenerales || undefined,
       parentesco: formData.parentesco || undefined,
       foto_url: fotoFile ? undefined : (refugiadoToEdit?.foto_url || undefined),
+      mascota_foto_url: mascotaFotoFile ? undefined : (refugiadoToEdit?.mascota_foto_url || undefined),
     };
 
     let guardadoExitoso = false;
+    let refugiadoId = refugiadoToEdit?.id || '';
+    const campamentoId = campamentoSeleccionado.id;
 
     if (isEditing && refugiadoToEdit) {
       guardadoExitoso = await actualizarRefugiado(refugiadoToEdit.id, payload);
     } else {
       const refugiadoCreado = await agregarRefugiado(payload);
       guardadoExitoso = !!refugiadoCreado;
+      if (refugiadoCreado) {
+        refugiadoId = refugiadoCreado.id;
+      }
     }
 
     if (!guardadoExitoso) {
@@ -315,11 +368,40 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       return;
     }
 
-    if (fotoFile && refugiadoToEdit) {
-      const foto_url = await uploadFoto(refugiadoToEdit.id, campamentoSeleccionado.id);
+    let finalFotoUrl: string | null | undefined = undefined;
+    let finalMascotaFotoUrl: string | null | undefined = undefined;
+    let fotoChanged = false;
+    let mascotaFotoChanged = false;
+
+    if (fotoFile && refugiadoId) {
+      const foto_url = await uploadFoto(refugiadoId, campamentoId);
       if (foto_url) {
-        await actualizarRefugiado(refugiadoToEdit.id, { ...payload, foto_url });
+        finalFotoUrl = foto_url;
+        fotoChanged = true;
       }
+    }
+
+    if (mascotaFotoFile && refugiadoId) {
+      const mascota_foto_url = await uploadMascotaFoto(refugiadoId, campamentoId);
+      if (mascota_foto_url) {
+        finalMascotaFotoUrl = mascota_foto_url;
+        mascotaFotoChanged = true;
+      }
+    }
+
+    if (fotoChanged || mascotaFotoChanged) {
+      if (fotoChanged && refugiadoToEdit?.foto_url) {
+        await deleteOldStorageFile(refugiadoToEdit.foto_url);
+      }
+      if (mascotaFotoChanged && refugiadoToEdit?.mascota_foto_url) {
+        await deleteOldStorageFile(refugiadoToEdit.mascota_foto_url);
+      }
+
+      const fotoUpdate: { foto_url?: string | null; mascota_foto_url?: string | null } = {};
+      if (fotoChanged) fotoUpdate.foto_url = finalFotoUrl;
+      if (mascotaFotoChanged) fotoUpdate.mascota_foto_url = finalMascotaFotoUrl;
+
+      await actualizarFotoRefugiado(refugiadoId, fotoUpdate);
     }
 
     setShowSuccess(true);
@@ -421,6 +503,13 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                       accept="image/*"
                       className="hidden"
                       onChange={handleFotoChange}
+                    />
+                    <input
+                      ref={mascotaFileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleMascotaFotoChange}
                     />
                     <p className="text-xs text-gray-400 mt-1">Formatos JPG, PNG o WEBP. Máx. 5 MB.</p>
                   </div>
@@ -744,39 +833,76 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                     </label>
                     {formData.mascotas && (
                       <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Mascota</label>
-                          <input
-                            type="text"
-                            value={formData.tipoMascota}
-                            onChange={(e) => setFormData(prev => ({ ...prev, tipoMascota: e.target.value.toUpperCase() }))}
-                            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase"
-                            placeholder="EJ. PERRO, GATO, AVES"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Sexo de la Mascota</label>
-                          <div className="flex gap-6">
-                            <label className="flex items-center gap-2 cursor-pointer">
+                        <div className="flex items-start gap-4">
+                          <div className="shrink-0">
+                            {mascotaFotoPreview ? (
+                              <div className="relative group">
+                                <img
+                                  src={mascotaFotoPreview}
+                                  alt="Foto de la mascota"
+                                  className="w-24 h-24 object-cover rounded-xl border-2 border-gray-200"
+                                />
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => mascotaFileInputRef.current?.click()}
+                                className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-caracas-red hover:text-caracas-red hover:bg-red-50/30 transition-colors"
+                              >
+                                <Camera size={20} />
+                                <span className="text-[9px] font-medium text-center leading-tight">Foto<br />Mascota</span>
+                              </button>
+                            )}
+                            {mascotaFotoPreview && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setMascotaFotoFile(null);
+                                  setMascotaFotoPreview(null);
+                                  if (mascotaFileInputRef.current) mascotaFileInputRef.current.value = '';
+                                }}
+                                className="w-24 mt-1 px-2 py-1 rounded-lg text-xs font-medium text-red-600 border border-red-200 hover:bg-red-50 transition-colors flex items-center justify-center gap-1"
+                              >
+                                Quitar foto
+                              </button>
+                            )}
+                          </div>
+                          <div className="flex-1 space-y-4">
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Mascota</label>
                               <input
-                                type="radio"
-                                name="mascotaSexo"
-                                checked={formData.mascotaSexo === 'M'}
-                                onChange={() => setFormData(prev => ({ ...prev, mascotaSexo: 'M' }))}
-                                className="w-5 h-5 text-caracas-red focus:ring-caracas-red"
+                                type="text"
+                                value={formData.tipoMascota}
+                                onChange={(e) => setFormData(prev => ({ ...prev, tipoMascota: e.target.value.toUpperCase() }))}
+                                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase"
+                                placeholder="EJ. PERRO, GATO, AVES"
                               />
-                              <span className="text-gray-700">MACHO</span>
-                            </label>
-                            <label className="flex items-center gap-2 cursor-pointer">
-                              <input
-                                type="radio"
-                                name="mascotaSexo"
-                                checked={formData.mascotaSexo === 'F'}
-                                onChange={() => setFormData(prev => ({ ...prev, mascotaSexo: 'F' }))}
-                                className="w-5 h-5 text-caracas-red focus:ring-caracas-red"
-                              />
-                              <span className="text-gray-700">HEMBRA</span>
-                            </label>
+                            </div>
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-1">Sexo de la Mascota</label>
+                              <div className="flex gap-6">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="radio"
+                                    name="mascotaSexo"
+                                    checked={formData.mascotaSexo === 'M'}
+                                    onChange={() => setFormData(prev => ({ ...prev, mascotaSexo: 'M' }))}
+                                    className="w-5 h-5 text-caracas-red focus:ring-caracas-red"
+                                  />
+                                  <span className="text-gray-700">MACHO</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="radio"
+                                    name="mascotaSexo"
+                                    checked={formData.mascotaSexo === 'F'}
+                                    onChange={() => setFormData(prev => ({ ...prev, mascotaSexo: 'F' }))}
+                                    className="w-5 h-5 text-caracas-red focus:ring-caracas-red"
+                                  />
+                                  <span className="text-gray-700">HEMBRA</span>
+                                </label>
+                              </div>
+                            </div>
                           </div>
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

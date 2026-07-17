@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { X, Users, BedDouble, Calendar, MapPin, Home, FileText, Loader2 } from 'lucide-react';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 import { useCampamento } from '../../context/CampamentoContext';
 import { toDisplayDate } from '../../lib/formatDate';
 import type { Familia } from '../../types';
@@ -11,6 +10,27 @@ interface DetalleFamiliaModalProps {
   onClose: () => void;
   familia: Familia | null;
 }
+
+const loadImageAsDataUrl = (src: string): Promise<string | null> => {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.drawImage(img, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      } else {
+        resolve(null);
+      }
+    };
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+};
 
 export default function DetalleFamiliaModal({ isOpen, onClose, familia }: DetalleFamiliaModalProps) {
   const { refugiados = [] } = useCampamento();
@@ -39,21 +59,322 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
   const handleExportPDF = async () => {
     setIsExporting(true);
     try {
-      const container = document.getElementById('ficha-familiar-pdf');
-      if (!container) return;
-
-      const canvas = await html2canvas(container, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-      });
-      const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
-      pdf.addImage(imgData, 'PNG', 0, 0, 210, 297);
+      const pageW = 210;
+      const pageH = 297;
+      const margin = 15;
+      const contentW = pageW - margin * 2;
+      let y = margin;
+
+      const logoDataUrl = await loadImageAsDataUrl('/logorepublica.png');
+      const mascotaPhotoDataUrl = jefe?.mascota_foto_url ? await loadImageAsDataUrl(jefe.mascota_foto_url) : null;
+
+      const newPage = () => {
+        pdf.addPage();
+        y = margin;
+      };
+
+      const ensureSpace = (needed: number) => {
+        if (y + needed > pageH - margin) newPage();
+      };
+
+      const truncate = (text: string, maxW: number, size = 9) => {
+        pdf.setFontSize(size);
+        let t = text;
+        while (t.length > 1 && pdf.getTextWidth(t + '…') > maxW) t = t.slice(0, -1);
+        return t.length < text.length ? t + '…' : text;
+      };
+
+      const drawSectionHeader = (num: string, title: string) => {
+        ensureSpace(8);
+        pdf.setFillColor(243, 244, 246);
+        pdf.rect(margin, y, contentW, 6, 'F');
+        pdf.setDrawColor(220, 38, 38);
+        pdf.setLineWidth(1);
+        pdf.line(margin, y, margin, y + 6);
+        pdf.setFont('Helvetica', 'bold');
+        pdf.setFontSize(9);
+        pdf.setTextColor(0, 0, 0);
+        pdf.text(`${num}. ${title}`, margin + 3, y + 4.2);
+        y += 8;
+      };
+
+      const drawFieldFull = (label: string, value: string) => {
+        ensureSpace(6);
+        pdf.setFont('Helvetica', 'bold');
+        pdf.setFontSize(9);
+        pdf.setTextColor(0, 0, 0);
+        pdf.text(label, margin, y + 4);
+        const labelW = pdf.getTextWidth(label);
+        pdf.setFont('Helvetica', 'normal');
+        const val = truncate(value || '—', contentW - labelW - 1);
+        pdf.text(val, margin + labelW + 1, y + 4);
+        y += 6;
+      };
+
+      const drawFieldRowLR = (lblL: string, valL: string, lblR: string, valR: string) => {
+        ensureSpace(6);
+        pdf.setFont('Helvetica', 'bold');
+        pdf.setFontSize(9);
+        pdf.setTextColor(0, 0, 0);
+        pdf.text(lblL, margin, y + 4);
+        const lwL = pdf.getTextWidth(lblL);
+        pdf.setFont('Helvetica', 'normal');
+        const halfW = contentW / 2 - 2;
+        pdf.text(truncate(valL || '—', halfW - lwL - 1), margin + lwL + 1, y + 4);
+
+        const rx = margin + contentW / 2 + 2;
+        pdf.setFont('Helvetica', 'bold');
+        pdf.text(lblR, rx, y + 4);
+        const lwR = pdf.getTextWidth(lblR);
+        pdf.setFont('Helvetica', 'normal');
+        pdf.text(truncate(valR || '—', halfW - lwR - 1), rx + lwR + 1, y + 4);
+        y += 6;
+      };
+
+      const drawFieldRowCols = (cols: [string, string][]) => {
+        ensureSpace(6);
+        const colW = contentW / cols.length;
+        cols.forEach(([lbl, val], i) => {
+          const cx = margin + i * (colW + 1);
+          pdf.setFont('Helvetica', 'bold');
+          pdf.setFontSize(9);
+          pdf.setTextColor(0, 0, 0);
+          pdf.text(lbl, cx, y + 4);
+          const lw = pdf.getTextWidth(lbl);
+          pdf.setFont('Helvetica', 'normal');
+          pdf.text(truncate(val || '—', colW - lw - 2), cx + lw + 1, y + 4);
+        });
+        y += 6;
+      };
+
+      const drawCheckbox = (checked: boolean, label: string, x: number) => {
+        pdf.setDrawColor(0, 0, 0);
+        pdf.setLineWidth(0.3);
+        pdf.rect(x, y + 1, 3, 3, 'S');
+        if (checked) {
+          pdf.setLineWidth(0.4);
+          pdf.line(x, y + 1, x + 3, y + 4);
+          pdf.line(x + 3, y + 1, x, y + 4);
+        }
+        pdf.setFont('Helvetica', 'normal');
+        pdf.setFontSize(9);
+        pdf.setTextColor(0, 0, 0);
+        pdf.text(label, x + 4, y + 4);
+      };
+
+      const drawCheckboxRow = (items: [boolean, string][]) => {
+        ensureSpace(6);
+        const gap = 8;
+        let cx = margin;
+        items.forEach(([chk, lbl]) => {
+          pdf.setFont('Helvetica', 'normal');
+          pdf.setFontSize(9);
+          const tw = pdf.getTextWidth(lbl) + 7;
+          drawCheckbox(chk, lbl, cx);
+          cx += tw + gap;
+        });
+        y += 6;
+      };
+
+      const drawTable = (headers: string[], rows: string[][], colWidths: number[]) => {
+        const rowH = 6;
+        const headerH = 7;
+
+        const totalW = colWidths.reduce((a, b) => a + b, 0);
+        const scaleFactor = totalW > contentW ? contentW / totalW : 1;
+        const scaledWidths = colWidths.map(w => w * scaleFactor);
+
+        ensureSpace(headerH + 2);
+        pdf.setFillColor(229, 231, 235);
+        pdf.rect(margin, y, contentW, headerH, 'F');
+
+        let cx = margin;
+        scaledWidths.forEach((w, i) => {
+          if (i < scaledWidths.length - 1) {
+            pdf.setDrawColor(180, 180, 180);
+            pdf.setLineWidth(0.2);
+            pdf.line(cx + w, y, cx + w, y + headerH);
+          }
+          pdf.setFont('Helvetica', 'bold');
+          pdf.setFontSize(7);
+          pdf.setTextColor(0, 0, 0);
+          pdf.text(headers[i], cx + 1, y + 5);
+          cx += w;
+        });
+        y += headerH;
+
+        pdf.setDrawColor(180, 180, 180);
+        pdf.setLineWidth(0.2);
+
+        rows.forEach((row) => {
+          ensureSpace(rowH + 2);
+          cx = margin;
+          row.forEach((cell, i) => {
+            pdf.setFont('Helvetica', 'normal');
+            pdf.setFontSize(7);
+            pdf.setTextColor(0, 0, 0);
+            pdf.text(truncate(cell, scaledWidths[i] - 2, 7), cx + 1, y + 4.5);
+            cx += scaledWidths[i];
+          });
+          y += rowH;
+        });
+
+        pdf.setDrawColor(0, 0, 0);
+        pdf.setLineWidth(0.5);
+        pdf.rect(margin, y - rows.length * rowH - headerH, contentW, headerH + rows.length * rowH, 'S');
+        y += 4;
+      };
+
+      // ── CABECERA ──
+
+      if (logoDataUrl) {
+        pdf.addImage(logoDataUrl, 'PNG', margin, y, 20, 20);
+      }
+
+      pdf.setFont('Helvetica', 'bold');
+      pdf.setFontSize(10);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text('FICHA FAMILIAR', pageW / 2, y + 4, { align: 'center' });
+
+      pdf.setFont('Helvetica', 'normal');
+      pdf.setFontSize(9);
+      pdf.setTextColor(80, 80, 80);
+      pdf.text(`${familia.nombre} — ${integrantes.length} integrante${integrantes.length !== 1 ? 's' : ''}`, pageW / 2, y + 11, { align: 'center' });
+
+      y += 22;
+      pdf.setDrawColor(0, 0, 0);
+      pdf.setLineWidth(0.5);
+      pdf.line(margin, y, pageW - margin, y);
+      y += 6;
+
+      // ── 1. DATOS DEL JEFE DE FAMILIA ──
+
+      if (jefe) {
+        drawSectionHeader('1', 'Datos del Jefe de Familia');
+
+        drawFieldFull('Nombres y Apellidos:', `${jefe.nombres} ${jefe.apellidos}`);
+
+        drawFieldRowLR(
+          'C\u00e9dula de Identidad:', jefe.cedula?.toString() || 'S/N',
+          'Fecha de Nacimiento:', toDisplayDate(jefe.fecha_nacimiento),
+        );
+
+        ensureSpace(6);
+        pdf.setFont('Helvetica', 'bold');
+        pdf.setFontSize(9);
+        pdf.text('Edad:', margin, y + 4);
+        pdf.setFont('Helvetica', 'normal');
+        pdf.text(`${calcularEdad(jefe.fecha_nacimiento)} a\u00f1os`, margin + pdf.getTextWidth('Edad:') + 1, y + 4);
+
+        const gX = margin + contentW / 3 + 4;
+        pdf.setFont('Helvetica', 'bold');
+        pdf.text('G\u00e9nero:', gX, y + 4);
+        drawCheckbox(jefe.genero, 'Masculino (M)', gX + pdf.getTextWidth('G\u00e9nero:') + 2);
+        drawCheckbox(!jefe.genero, 'Femenino (F)', gX + pdf.getTextWidth('G\u00e9nero:') + 2 + 35);
+        y += 6;
+
+        drawFieldRowLR(
+          'Nro de Cama:', jefe.nro_cama || '—',
+          'Fecha de Ingreso:', jefe.fecha_ingreso ? toDisplayDate(jefe.fecha_ingreso) : '—',
+        );
+
+        drawFieldFull('Procedencia:', jefe.procedencia || '—');
+        drawFieldFull('Direcci\u00f3n Exacta:', jefe.direccion_exacta || '—');
+      }
+
+      // ── 2. INTEGRANTES DE LA FAMILIA ──
+
+      drawSectionHeader('2', 'Integrantes de la Familia');
+
+      if (integrantes.length > 0) {
+        const tableHeaders = ['C\u00f3digo', 'C\u00e9dula', 'Apellidos y Nombres', 'Edad', 'G\u00e9n', 'Cama', 'Parentesco'];
+        const tableColWidths = [22, 22, 50, 12, 10, 14, 28];
+
+        const tableRows = sortedIntegrantes.map(p => [
+          p.codigo || '—',
+          p.cedula?.toString() || 'S/N',
+          `${p.apellidos}, ${p.nombres}`,
+          `${calcularEdad(p.fecha_nacimiento)}`,
+          p.genero ? 'M' : 'F',
+          p.nro_cama || '—',
+          p.es_jefe_familia ? 'Jefe' : (p.parentesco || '—'),
+        ]);
+
+        drawTable(tableHeaders, tableRows, tableColWidths);
+      } else {
+        ensureSpace(6);
+        pdf.setFont('Helvetica', 'italic');
+        pdf.setFontSize(9);
+        pdf.setTextColor(128, 128, 128);
+        pdf.text('Sin integrantes registrados', margin, y + 4);
+        y += 6;
+      }
+
+      // ── 3. SITUACIÓN SOCIOECONÓMICA ──
+
+      if (jefe) {
+        drawSectionHeader('3', 'Situaci\u00f3n Socioecon\u00f3mica de la Vivienda de Origen');
+
+        drawFieldFull('Condici\u00f3n de la vivienda tras el sismo:', jefe.condicion_vivienda || '—');
+        drawFieldFull('Tenencia de la Vivienda:', jefe.tenencia_vivienda || '—');
+        drawFieldFull('Ingreso Familiar Principal antes de la Emergencia:', jefe.ingreso_familiar || '—');
+        drawFieldFull('Observaciones:', jefe.observaciones || '—');
+      }
+
+      // ── 4. MASCOTA DE LA FAMILIA ──
+
+      if (jefe) {
+        drawSectionHeader('4', 'Mascota de la Familia');
+
+        drawCheckboxRow([
+          [jefe.mascotas, '\u00bfTiene mascotas a cargo?: S\u00ed'],
+          [!jefe.mascotas, 'No'],
+        ]);
+
+        if (jefe.mascotas) {
+          if (mascotaPhotoDataUrl) {
+            const mpX = pageW - margin - 25;
+            const mpY = y;
+            pdf.addImage(mascotaPhotoDataUrl, 'PNG', mpX, mpY, 20, 20);
+            const photoBottom = mpY + 20;
+
+            drawFieldRowCols([
+              ['Tipo:', jefe.tipo_mascota || '—'],
+              ['Nombre:', jefe.mascota_nombre || '—'],
+              ['Sexo:', jefe.mascota_sexo === true ? 'Macho' : jefe.mascota_sexo === false ? 'Hembra' : '—'],
+            ]);
+            drawFieldRowLR(
+              'Raza:', jefe.mascota_raza || '—',
+              'Edad (a\u00f1os):', jefe.mascota_edad?.toString() || '—',
+            );
+            if (y < photoBottom) y = photoBottom + 2;
+          } else {
+            drawFieldRowCols([
+              ['Tipo:', jefe.tipo_mascota || '—'],
+              ['Nombre:', jefe.mascota_nombre || '—'],
+              ['Sexo:', jefe.mascota_sexo === true ? 'Macho' : jefe.mascota_sexo === false ? 'Hembra' : '—'],
+            ]);
+            drawFieldRowLR(
+              'Raza:', jefe.mascota_raza || '—',
+              'Edad (a\u00f1os):', jefe.mascota_edad?.toString() || '—',
+            );
+          }
+        }
+      }
+
+      const totalPages = pdf.getNumberOfPages();
+      for (let p = 1; p <= totalPages; p++) {
+        pdf.setPage(p);
+        pdf.setFontSize(6);
+        pdf.setTextColor(156, 163, 175);
+        pdf.text(`P\u00e1gina ${p} de ${totalPages}`, pageW - margin, pageH - margin, { align: 'right' });
+      }
+
       pdf.save(`Ficha_Familiar_${familia.nombre.replace(/\s+/g, '_')}.pdf`);
     } catch (err) {
       console.error(err);
-      alert('Ocurrió un error al generar el PDF.');
+      alert('Ocurri\u00f3 un error al generar el PDF.');
     } finally {
       setIsExporting(false);
     }
@@ -210,210 +531,6 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
           </button>
         </div>
       </div>
-
-      {/* PDF Generation Off-Screen Template */}
-      <div
-        id="ficha-familiar-pdf"
-        className="absolute left-[-9999px] top-[-9999px] bg-white text-black font-sans w-[800px] p-12 flex flex-col select-none"
-        style={{
-          boxSizing: 'border-box',
-          lineHeight: '1.25'
-        }}
-      >
-        {/* CABECERA */}
-        <div className="flex justify-between items-start border-b-2 border-black pb-4 mb-6">
-          <div className="flex flex-col items-center w-32 shrink-0">
-            <svg className="w-12 h-12 text-red-600 animate-none" viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-            </svg>
-            <span className="text-[10px] font-black text-center mt-1 uppercase leading-none tracking-tight">
-              Alcaldía<br />de Caracas
-            </span>
-          </div>
-          <div className="flex-1 text-center px-4 mt-2">
-            <h2 className="text-sm font-black uppercase tracking-wider">
-              FICHA FAMILIAR
-            </h2>
-            <p className="text-[10px] font-semibold text-gray-600 mt-1">
-              {familia.nombre} — {integrantes.length} integrante{integrantes.length !== 1 ? 's' : ''}
-            </p>
-          </div>
-          <div className="text-right w-48 mt-2 shrink-0" />
-        </div>
-
-        {/* 1. DATOS DEL JEFE DE FAMILIA */}
-        {jefe && (
-          <div className="space-y-3 mb-6">
-            <h3 className="text-xs font-black uppercase tracking-wider bg-gray-100 p-1 border-l-4 border-red-600">
-              1. Datos del Jefe de Familia
-            </h3>
-            <div className="grid grid-cols-1 gap-2.5">
-              <div className="flex items-baseline">
-                <span className="font-bold text-xs shrink-0">Nombres y Apellidos:</span>
-                <span className="flex-1 ml-2 px-1 text-sm font-semibold text-black leading-none">
-                  {jefe.nombres} {jefe.apellidos}
-                </span>
-              </div>
-              <div className="grid grid-cols-3 gap-4">
-                <div className="flex items-baseline">
-                  <span className="font-bold text-xs shrink-0">Cédula:</span>
-                  <span className="flex-1 ml-2 px-1 text-sm font-semibold text-black leading-none">
-                    {jefe.cedula?.toString() || 'S/N'}
-                  </span>
-                </div>
-                <div className="flex items-baseline">
-                  <span className="font-bold text-xs shrink-0">Fecha Nacimiento:</span>
-                  <span className="flex-1 ml-2 px-1 text-sm font-semibold text-black leading-none">
-                    {toDisplayDate(jefe.fecha_nacimiento)}
-                  </span>
-                </div>
-                <div className="flex items-baseline">
-                  <span className="font-bold text-xs shrink-0">Edad:</span>
-                  <span className="flex-1 ml-2 px-1 text-sm font-semibold text-black leading-none">
-                    {calcularEdad(jefe.fecha_nacimiento)} años
-                  </span>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex items-center gap-4">
-                  <span className="font-bold text-xs shrink-0">Género:</span>
-                  <div className="flex gap-4">
-                    <PDFCheckbox checked={jefe.genero} label="Masculino (M)" />
-                    <PDFCheckbox checked={!jefe.genero} label="Femenino (F)" />
-                  </div>
-                </div>
-                <div className="flex items-baseline">
-                  <span className="font-bold text-xs shrink-0">Nro de Cama:</span>
-                  <span className="flex-1 ml-2 px-1 text-sm font-semibold text-black leading-none">
-                    {jefe.nro_cama || '—'}
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-baseline">
-                <span className="font-bold text-xs shrink-0">Fecha de Ingreso:</span>
-                <span className="flex-1 ml-2 px-1 text-sm font-semibold text-black leading-none">
-                  {jefe.fecha_ingreso ? toDisplayDate(jefe.fecha_ingreso) : '—'}
-                </span>
-              </div>
-              <div className="flex items-baseline">
-                <span className="font-bold text-xs shrink-0">Procedencia:</span>
-                <span className="flex-1 ml-2 px-1 text-sm font-semibold text-black leading-none">
-                  {jefe.procedencia || '—'}
-                </span>
-              </div>
-              <div className="flex items-baseline">
-                <span className="font-bold text-xs shrink-0">Dirección Exacta:</span>
-                <span className="flex-1 ml-2 px-1 text-sm font-semibold text-black leading-none">
-                  {jefe.direccion_exacta || '—'}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 2. INTEGRANTES DE LA FAMILIA */}
-        <div className="space-y-3 mb-6">
-          <h3 className="text-xs font-black uppercase tracking-wider bg-gray-100 p-1 border-l-4 border-red-600">
-            2. Integrantes de la Familia
-          </h3>
-          {integrantes.length > 0 ? (
-            <table className="w-full border-collapse border border-gray-300">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="border border-gray-300 py-1.5 px-2 text-[10px] font-bold text-left">Código</th>
-                  <th className="border border-gray-300 py-1.5 px-2 text-[10px] font-bold text-left">Cédula</th>
-                  <th className="border border-gray-300 py-1.5 px-2 text-[10px] font-bold text-left">Apellidos y Nombres</th>
-                  <th className="border border-gray-300 py-1.5 px-2 text-[10px] font-bold text-left">Edad</th>
-                  <th className="border border-gray-300 py-1.5 px-2 text-[10px] font-bold text-left">Gén</th>
-                  <th className="border border-gray-300 py-1.5 px-2 text-[10px] font-bold text-left">Cama</th>
-                  <th className="border border-gray-300 py-1.5 px-2 text-[10px] font-bold text-left">Parentesco</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sortedIntegrantes.map((p) => (
-                  <tr key={p.id}>
-                    <td className="border border-gray-300 py-1 px-2 text-[9px] font-medium">{p.codigo || '—'}</td>
-                    <td className="border border-gray-300 py-1 px-2 text-[9px] font-medium">{p.cedula?.toString() || 'S/N'}</td>
-                    <td className="border border-gray-300 py-1 px-2 text-[9px]">
-                      <span className="font-bold">{p.apellidos}</span>, {p.nombres}
-                    </td>
-                    <td className="border border-gray-300 py-1 px-2 text-[9px]">{calcularEdad(p.fecha_nacimiento)}</td>
-                    <td className="border border-gray-300 py-1 px-2 text-[9px] text-center">{p.genero ? 'M' : 'F'}</td>
-                    <td className="border border-gray-300 py-1 px-2 text-[9px]">{p.nro_cama || '—'}</td>
-                    <td className="border border-gray-300 py-1 px-2 text-[9px]">
-                      {p.es_jefe_familia ? 'Jefe' : (p.parentesco || '—')}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <p className="text-xs text-gray-500 italic">Sin integrantes registrados</p>
-          )}
-        </div>
-
-        {/* 3. SITUACIÓN SOCIOECONÓMICA */}
-        {jefe && (
-          <div className="space-y-3">
-            <h3 className="text-xs font-black uppercase tracking-wider bg-gray-100 p-1 border-l-4 border-red-600">
-              3. Situación Socioeconómica de la Vivienda de Origen
-            </h3>
-            <div className="grid grid-cols-1 gap-2.5">
-              <div className="flex items-baseline">
-                <span className="font-bold text-xs shrink-0">Condición de la vivienda tras el sismo:</span>
-                <span className="flex-1 ml-2 px-1 text-sm font-semibold text-black leading-none">
-                  {jefe.condicion_vivienda || '—'}
-                </span>
-              </div>
-              <div className="flex items-baseline">
-                <span className="font-bold text-xs shrink-0">Tenencia de la Vivienda:</span>
-                <span className="flex-1 ml-2 px-1 text-sm font-semibold text-black leading-none">
-                  {jefe.tenencia_vivienda || '—'}
-                </span>
-              </div>
-              <div className="flex items-baseline">
-                <span className="font-bold text-xs shrink-0">Ingreso Familiar Principal antes de la Emergencia:</span>
-                <span className="flex-1 ml-2 px-1 text-sm font-semibold text-black leading-none">
-                  {jefe.ingreso_familiar || '—'}
-                </span>
-              </div>
-              <div className="flex items-baseline">
-                <span className="font-bold text-xs shrink-0">Observaciones:</span>
-                <span className="flex-1 ml-2 px-1 text-sm font-semibold text-black leading-none">
-                  {jefe.observaciones || '—'}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
     </div>
-  );
-}
-
-function PDFCheckbox({ checked, label }: { checked: boolean; label: string }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 text-xs">
-      <svg
-        width="12"
-        height="12"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="3.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="shrink-0 text-black"
-      >
-        <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-        {checked && (
-          <>
-            <line x1="8" y1="8" x2="16" y2="16" />
-            <line x1="16" y1="8" x2="8" y2="16" />
-          </>
-        )}
-      </svg>
-      <span className="text-xs text-black font-medium">{label}</span>
-    </span>
   );
 }
