@@ -1,24 +1,26 @@
-import { useState, useEffect, useMemo } from 'react';
-import { X, Save, Search, User, Users, MapPin, Plus, FileText, AlertCircle, Eye } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { X, Save, Search, User, Users, MapPin, Plus, FileText, AlertCircle, Eye, Loader2 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCampamento } from '../../context/CampamentoContext';
 import { useAuth } from '../../context/AuthContext';
-import { obtenerTiposActa, crearActa } from '../../lib/actas';
+import { obtenerTipoActa, crearActa } from '../../lib/actas';
 import { formatAge } from '../../lib/formatAge';
 import { formatCedula } from '../../lib/formatCedula';
 import { toDateInput } from '../../lib/formatDate';
 import DateInput from '../ui/DateInput';
 import ActaPreview from './ActaPreview';
 import TipoActaModal from './TipoActaModal';
-import type { Refugiado, TipoActa } from '../../types';
+import type { Refugiado, TipoActa, TipoActaResumen } from '../../types';
 
 interface LevantarActaModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSaved: () => void;
+  tiposActa: TipoActaResumen[];
+  onRefreshTiposActa: () => void;
 }
 
-export default function LevantarActaModal({ isOpen, onClose, onSaved }: LevantarActaModalProps) {
+export default function LevantarActaModal({ isOpen, onClose, onSaved, tiposActa, onRefreshTiposActa }: LevantarActaModalProps) {
   const { campamentoSeleccionado, refugiados, familias } = useCampamento();
   const { tienePermiso } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -27,8 +29,9 @@ export default function LevantarActaModal({ isOpen, onClose, onSaved }: Levantar
   const [cedulaBusqueda, setCedulaBusqueda] = useState('');
   const [refugiadoEncontrado, setRefugiadoEncontrado] = useState<Refugiado | null>(null);
   const [resultadosBusqueda, setResultadosBusqueda] = useState<Refugiado[]>([]);
-  const [tiposActa, setTiposActa] = useState<TipoActa[]>([]);
   const [tipoActaId, setTipoActaId] = useState('');
+  const [tipoActaCompleto, setTipoActaCompleto] = useState<TipoActa | null>(null);
+  const [cargandoPlantilla, setCargandoPlantilla] = useState(false);
   const [tipoActaModalOpen, setTipoActaModalOpen] = useState(false);
   const [valoresFormulario, setValoresFormulario] = useState<Record<string, string>>({});
   const [edadCalculada, setEdadCalculada] = useState('');
@@ -42,13 +45,27 @@ export default function LevantarActaModal({ isOpen, onClose, onSaved }: Levantar
     setValoresFormulario({});
     setErrorMsg('');
     setEdadCalculada('');
-    obtenerTiposActa().then(setTiposActa);
+
+    if (tiposActa.length === 0) {
+      console.warn('[Actas] POSIBLE BUG: Modal abierto con 0 tipos. Causas posibles: error de red, RLS bloqueando, o BD sin tipos activos.');
+    }
   }, [isOpen]);
 
-  const tipoActaSeleccionado = useMemo(
-    () => tiposActa.find(t => t.id === tipoActaId) || null,
-    [tiposActa, tipoActaId]
-  );
+  useEffect(() => {
+    if (!tipoActaId) {
+      setTipoActaCompleto(null);
+      return;
+    }
+    setCargandoPlantilla(true);
+    setTipoActaCompleto(null);
+    obtenerTipoActa(tipoActaId).then(data => {
+      setTipoActaCompleto(data);
+      setCargandoPlantilla(false);
+    }).catch((err) => {
+      setErrorMsg(err?.message || 'Error al cargar la plantilla del acta');
+      setCargandoPlantilla(false);
+    });
+  }, [tipoActaId]);
 
   const resetValoresFormulario = () => {
     setValoresFormulario({});
@@ -110,7 +127,7 @@ export default function LevantarActaModal({ isOpen, onClose, onSaved }: Levantar
       return;
     }
 
-    const camposRequeridos = tipoActaSeleccionado?.plantilla.campos.filter(c => c.requerido) || [];
+    const camposRequeridos = tipoActaCompleto?.plantilla.campos.filter(c => c.requerido) || [];
     for (const campo of camposRequeridos) {
       if (!valoresFormulario[campo.clave]?.trim()) {
         setErrorMsg(`El campo "${campo.etiqueta}" es obligatorio.`);
@@ -186,7 +203,7 @@ export default function LevantarActaModal({ isOpen, onClose, onSaved }: Levantar
     nro_cama: refugiadoEncontrado?.nro_cama || '',
   };
 
-  const puedeCrearTipo = tienePermiso('Actas', 'Modificar');
+  const puedeCrearTipo = tienePermiso('Actas', 'Crear');
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
@@ -401,9 +418,16 @@ export default function LevantarActaModal({ isOpen, onClose, onSaved }: Levantar
                   </div>
                 </div>
 
-                {tipoActaSeleccionado && (
+                {cargandoPlantilla && (
+                  <div className="flex items-center gap-2 py-4 text-gray-500">
+                    <Loader2 size={18} className="animate-spin" />
+                    <span className="text-sm">Cargando plantilla...</span>
+                  </div>
+                )}
+
+                {!cargandoPlantilla && tipoActaCompleto && (
                   <div className="space-y-4 border-t border-gray-100 pt-4">
-                    {tipoActaSeleccionado.plantilla.campos.map(campo => (
+                    {tipoActaCompleto.plantilla.campos.map(campo => (
                       <div key={campo.clave}>
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                           {campo.etiqueta}
@@ -447,14 +471,14 @@ export default function LevantarActaModal({ isOpen, onClose, onSaved }: Levantar
                   </div>
                 )}
 
-                {tipoActaSeleccionado && (
+                {tipoActaCompleto && (
                   <div className="border-t border-gray-100 pt-4">
                     <div className="flex items-center gap-2 mb-3">
                       <Eye size={18} className="text-gray-500" />
                       <h4 className="font-semibold text-gray-700">Vista Previa del Documento</h4>
                     </div>
                     <ActaPreview
-                      contenido={tipoActaSeleccionado.plantilla.contenido}
+                      contenido={tipoActaCompleto.plantilla.contenido}
                       sistema={sistemaVars}
                       valores={valoresFormulario}
                     />
@@ -485,7 +509,7 @@ export default function LevantarActaModal({ isOpen, onClose, onSaved }: Levantar
         isOpen={tipoActaModalOpen}
         onClose={() => setTipoActaModalOpen(false)}
         onSaved={() => {
-          obtenerTiposActa().then(setTiposActa);
+          onRefreshTiposActa();
         }}
       />
     </div>

@@ -207,6 +207,14 @@ export interface TipoActa {
   created_at?: string;
 }
 
+export interface TipoActaResumen {
+  id: string;
+  nombre: string;
+  descripcion?: string;
+  activo: boolean;
+  created_at: string;
+}
+
 export interface Acta {
   id: string;
   codigo: string;

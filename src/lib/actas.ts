@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import type { Acta, TipoActa } from '../types';
+import type { Acta, TipoActa, TipoActaResumen } from '../types';
 
 function mapTipoActa(row: Record<string, unknown>): TipoActa {
   return {
@@ -7,6 +7,16 @@ function mapTipoActa(row: Record<string, unknown>): TipoActa {
     nombre: row.nombre as string,
     descripcion: (row.descripcion as string) || undefined,
     plantilla: row.plantilla as TipoActa['plantilla'],
+    activo: row.activo as boolean,
+    created_at: row.created_at as string,
+  };
+}
+
+function mapTipoActaResumen(row: Record<string, unknown>): TipoActaResumen {
+  return {
+    id: row.id as string,
+    nombre: row.nombre as string,
+    descripcion: (row.descripcion as string) || undefined,
     activo: row.activo as boolean,
     created_at: row.created_at as string,
   };
@@ -26,19 +36,26 @@ function mapActa(row: Record<string, unknown>): Acta {
   };
 }
 
-export async function obtenerTiposActa(): Promise<TipoActa[]> {
+export async function obtenerTiposActa(): Promise<TipoActaResumen[]> {
   const { data, error } = await supabase
     .from('tipo_acta')
-    .select('*')
+    .select('id, nombre, descripcion, activo, created_at')
     .eq('activo', true)
     .order('nombre', { ascending: true });
 
   if (error) {
-    console.error('Error al obtener tipos de acta:', error);
-    return [];
+    throw new Error('Error al obtener tipos de acta');
   }
 
-  return ((data || []) as Record<string, unknown>[]).map(mapTipoActa);
+  const tipos = ((data || []) as Record<string, unknown>[]).map(mapTipoActaResumen);
+
+  console.log('[Actas] Conexión OK — Tipos obtenidos:', tipos.length, tipos.map(t => t.nombre));
+
+  if (tipos.length === 0) {
+    console.warn('[Actas] POSIBLE BUG: 0 tipos de acta retornados. ¿Hay registros con activo=true en tipo_acta?');
+  }
+
+  return tipos;
 }
 
 export async function obtenerTipoActa(id: string): Promise<TipoActa | null> {
@@ -113,7 +130,7 @@ export async function crearActa(acta: Omit<Acta, 'id' | 'codigo' | 'created_at'>
     .from('contadores_actas')
     .select('ultimo_secuencia')
     .eq('campamento_id', acta.campamento_id)
-    .single();
+    .maybeSingle();
 
   if (actual) {
     secuencia = (actual.ultimo_secuencia as number) + 1;

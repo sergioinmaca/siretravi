@@ -1,25 +1,26 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { FileText, Search, Plus, MoreVertical, Trash2, ShieldOff, Loader2, Tent } from 'lucide-react';
+import { FileText, Search, Plus, MoreVertical, Trash2, ShieldOff, Loader2, Tent, AlertCircle } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
-import { contarActasPorRefugiado, obtenerActas, eliminarActa, obtenerTiposActa } from '../lib/actas';
+import { obtenerActas, eliminarActa, obtenerTiposActa } from '../lib/actas';
 import { toDisplayDate } from '../lib/formatDate';
 import { formatCedula } from '../lib/formatCedula';
-import CroquisViewer, { countElements, contarTiposDesdeCroquis } from '../components/constructor/CroquisViewer';
+import CroquisViewer2, { countElements, contarTiposDesdeCroquis } from '../components/constructor/CroquisViewer2';
 import LevantarActaModal from '../components/actas/LevantarActaModal';
-import type { Acta, TipoActa } from '../types';
+import type { Acta, TipoActaResumen } from '../types';
 
 export default function Actas() {
   const { campamentoSeleccionado, refugiados = [] } = useCampamento();
   const { tienePermisoPorCampamento, tienePermiso } = useAuth();
 
   const [actas, setActas] = useState<Acta[]>([]);
-  const [tiposActa, setTiposActa] = useState<TipoActa[]>([]);
+  const [tiposActa, setTiposActa] = useState<TipoActaResumen[]>([]);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
   const [contextMenuId, setContextMenuId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const perPage = 15;
 
   const campId = campamentoSeleccionado?.id || '';
@@ -31,16 +32,31 @@ export default function Actas() {
     : false;
   const puedeEliminar = tienePermiso('Actas', 'Eliminar');
 
+  const refrescarTiposActa = useCallback(async () => {
+    try {
+      const tiposData = await obtenerTiposActa();
+      setTiposActa(tiposData);
+    } catch (err: any) {
+      setError(err?.message || 'Error al refrescar tipos de acta');
+    }
+  }, []);
+
   const cargarDatos = useCallback(async () => {
     if (!campId) return;
     setLoading(true);
-    const [actasData, tiposData] = await Promise.all([
-      obtenerActas(campId),
-      obtenerTiposActa(),
-    ]);
-    setActas(actasData);
-    setTiposActa(tiposData);
-    setLoading(false);
+    setError('');
+    try {
+      const [actasData, tiposData] = await Promise.all([
+        obtenerActas(campId),
+        obtenerTiposActa(),
+      ]);
+      setActas(actasData);
+      setTiposActa(tiposData);
+    } catch (err: any) {
+      setError(err?.message || 'Error al cargar los datos');
+    } finally {
+      setLoading(false);
+    }
   }, [campId]);
 
   useEffect(() => { cargarDatos(); }, [cargarDatos]);
@@ -48,30 +64,6 @@ export default function Actas() {
   const refugiadosDelCampamento = campamentoSeleccionado
     ? refugiados.filter(r => r.campamento_id === campamentoSeleccionado.id)
     : [];
-
-  // ── Mapa de colores para el croquis basado en conteo de actas ──
-  const [conteoActasPorRefugiado, setConteoActasPorRefugiado] = useState<Record<string, number>>({});
-
-  useEffect(() => {
-    if (!campId) return;
-    contarActasPorRefugiado(campId).then(setConteoActasPorRefugiado);
-  }, [campId, actas]);
-
-  const bedColorMap = useMemo(() => {
-    const map: Record<string, string> = {};
-    refugiadosDelCampamento.forEach(r => {
-      if (!r.nro_cama) return;
-      const count = conteoActasPorRefugiado[r.id] || 0;
-      if (count === 0) {
-        map[r.nro_cama] = '#22C55E';
-      } else if (count <= 2) {
-        map[r.nro_cama] = '#F97316';
-      } else {
-        map[r.nro_cama] = '#EF4444';
-      }
-    });
-    return map;
-  }, [refugiadosDelCampamento, conteoActasPorRefugiado]);
 
   // ── Indicadores ──
   const totalActas = actas.length;
@@ -139,6 +131,13 @@ export default function Actas() {
         </p>
       </div>
 
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-xl flex items-center gap-3 shadow-sm">
+          <AlertCircle size={20} className="text-red-600 shrink-0" />
+          <p className="font-medium text-sm">{error}</p>
+        </div>
+      )}
+
       {/* Indicadores */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-4 hover:shadow-md transition-shadow">
@@ -163,10 +162,10 @@ export default function Actas() {
         ))}
       </div>
 
-      {/* Croquis con colores por actas */}
+      {/* Croquis */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">
-          Distribución por Actas
+          Distribución
         </h3>
         <div className="flex items-center gap-6 text-sm text-gray-500 mb-4 pb-4 border-b border-gray-100">
           <span className="flex items-center gap-1.5">
@@ -210,22 +209,20 @@ export default function Actas() {
               const disponiblesCarpa = Math.max(0, totalCamasCarpa - ocupadasCarpa);
 
               return (
-                <CroquisViewer
+                <CroquisViewer2
                   ref={(el) => { refCanvasRefs.current[index] = el; }}
                   key={carpa.id}
                   croquisData={carpa.croquis_data || '{}'}
                   carpaNombre={carpa.nombre}
+                  campamentoId={campId}
                   elementNumberOffset={offset}
                   width={1100}
                   height={700}
                   tipoContabilizacion={campamentoSeleccionado?.tipo_contabilizacion || 'elemento'}
-                  occupiedBeds={refugiadosDelCampamento.map(r => r.nro_cama).filter((c): c is string => !!c)}
-                  bedOccupants={{}}
                   literasCount={tiposCarpa.literas}
                   individualesCount={tiposCarpa.individuales}
                   duplexCount={tiposCarpa.duplex}
                   disponiblesCarpa={disponiblesCarpa}
-                  bedColorMap={bedColorMap}
                 />
               );
             })}
@@ -392,6 +389,8 @@ export default function Actas() {
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         onSaved={cargarDatos}
+        tiposActa={tiposActa}
+        onRefreshTiposActa={refrescarTiposActa}
       />
     </div>
   );
