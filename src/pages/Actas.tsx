@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { FileText, Search, Plus, MoreVertical, Trash2, ShieldOff, Loader2, Tent, AlertCircle } from 'lucide-react';
+import { FileText, Search, Plus, Trash2, ShieldOff, Loader2, Tent, AlertCircle, Eye } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
 import { obtenerActas, eliminarActa, obtenerTiposActa } from '../lib/actas';
@@ -7,6 +7,7 @@ import { toDisplayDate } from '../lib/formatDate';
 import { formatCedula } from '../lib/formatCedula';
 import CroquisViewer2, { countElements, contarTiposDesdeCroquis } from '../components/constructor/CroquisViewer2';
 import LevantarActaModal from '../components/actas/LevantarActaModal';
+import ActaLecturaModal from '../components/actas/ActaLecturaModal';
 import type { Acta, TipoActaResumen } from '../types';
 
 export default function Actas() {
@@ -18,7 +19,7 @@ export default function Actas() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
-  const [contextMenuId, setContextMenuId] = useState<string | null>(null);
+  const [lecturaActaId, setLecturaActaId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const perPage = 15;
@@ -101,12 +102,18 @@ export default function Actas() {
   const totalPages = Math.ceil(filtered.length / perPage);
   const paginated = filtered.slice((page - 1) * perPage, page * perPage);
 
+  const actaLecturaData = useMemo(() => {
+    if (!lecturaActaId) return null;
+    return actasConInfo.find(item => item.acta.id === lecturaActaId) || null;
+  }, [lecturaActaId, actasConInfo]);
+
   const handleEliminar = async (id: string) => {
-    setContextMenuId(null);
     if (!window.confirm('¿Estás seguro de que deseas eliminar esta acta?')) return;
     const ok = await eliminarActa(id);
     if (ok) {
       setActas(prev => prev.filter(a => a.id !== id));
+    } else {
+      setError('No se pudo eliminar el acta. Verifica permisos o revisa la consola.');
     }
   };
 
@@ -260,7 +267,7 @@ export default function Actas() {
 
       {/* Tabla */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto overflow-y-auto max-h-[640px]">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-50 text-left">
@@ -319,26 +326,25 @@ export default function Actas() {
                     <td className="px-6 py-4 text-gray-600">
                       {refugiado?.nro_cama || 'N/A'}
                     </td>
-                    <td className="px-6 py-4 text-center relative">
-                      {puedeEliminar && (
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex items-center justify-center gap-2">
                         <button
-                          onClick={() => setContextMenuId(contextMenuId === acta.id ? null : acta.id)}
-                          className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                          onClick={() => setLecturaActaId(acta.id)}
+                          className="p-2 hover:bg-blue-50 rounded-lg transition-colors text-caracas-blue"
+                          title="Leer acta"
                         >
-                          <MoreVertical size={18} className="text-gray-500" />
+                          <Eye size={18} />
                         </button>
-                      )}
-                      {contextMenuId === acta.id && (
-                        <div className="absolute right-6 top-12 z-20 bg-white border border-gray-200 rounded-xl shadow-lg py-1 min-w-[160px]">
+                        {puedeEliminar && (
                           <button
                             onClick={() => handleEliminar(acta.id)}
-                            className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                            className="p-2 hover:bg-red-50 rounded-lg transition-colors text-red-600"
+                            title="Eliminar"
                           >
-                            <Trash2 size={16} />
-                            Eliminar
+                            <Trash2 size={18} />
                           </button>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -391,6 +397,13 @@ export default function Actas() {
         onSaved={cargarDatos}
         tiposActa={tiposActa}
         onRefreshTiposActa={refrescarTiposActa}
+      />
+
+      <ActaLecturaModal
+        isOpen={!!lecturaActaId}
+        acta={actaLecturaData?.acta || null}
+        refugiado={actaLecturaData?.refugiado}
+        onClose={() => setLecturaActaId(null)}
       />
     </div>
   );

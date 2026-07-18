@@ -169,16 +169,18 @@ export async function crearActa(acta: Omit<Acta, 'id' | 'codigo' | 'created_at'>
 }
 
 export async function eliminarActa(id: string): Promise<boolean> {
+  console.log('[Actas] Eliminando acta:', id);
   const { error } = await supabase
     .from('actas')
     .delete()
     .eq('id', id);
 
   if (error) {
-    console.error('Error al eliminar acta:', error);
+    console.error('[Actas] Error al eliminar acta:', error);
     return false;
   }
 
+  console.log('[Actas] Acta eliminada OK');
   return true;
 }
 
