@@ -138,9 +138,11 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         setFamilias(familiasMapped);
         setRefugiados(refugiadosMapped);
 
-        // Auto-seleccionar el primero si existe
+        // Restaurar campamento guardado o seleccionar el primero
         if (campamentosMapped.length > 0) {
-          setCampamentoSeleccionado(campamentosMapped[0]);
+          const savedId = localStorage.getItem('campamentoId');
+          const saved = savedId ? campamentosMapped.find(c => c.id === savedId) : null;
+          setCampamentoSeleccionado(saved || campamentosMapped[0]);
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Error desconocido';
@@ -232,7 +234,10 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
   // ── Seleccionar Campamento ─────────────────────────────────────────────────
   const seleccionarCampamento = (id: string) => {
     const encontrado = campamentos.find(c => c.id === id);
-    if (encontrado) setCampamentoSeleccionado(encontrado);
+    if (encontrado) {
+      setCampamentoSeleccionado(encontrado);
+      localStorage.setItem('campamentoId', id);
+    }
   };
 
   // ── Agregar Campamento ─────────────────────────────────────────────────────
