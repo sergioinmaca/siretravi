@@ -267,6 +267,19 @@ export default function Refugiados() {
 
       const data = refugiados
         .filter(r => r.campamento_id === campamentoSeleccionado?.id)
+        .sort((a, b) => {
+          if (a.familia_id && b.familia_id) {
+            if (a.familia_id === b.familia_id) {
+              return a.es_jefe_familia ? -1 : b.es_jefe_familia ? 1 : 0;
+            }
+            const famA = familias.find(f => f.id === a.familia_id)?.nombre || '';
+            const famB = familias.find(f => f.id === b.familia_id)?.nombre || '';
+            return famA.localeCompare(famB);
+          }
+          if (a.familia_id) return -1;
+          if (b.familia_id) return 1;
+          return (a.codigo || '').localeCompare(b.codigo || '', undefined, { numeric: true });
+        })
         .map(r => {
           let jerarquiaStr = 'Jefe de Familia';
           if (!r.es_jefe_familia && r.familia_id) {
