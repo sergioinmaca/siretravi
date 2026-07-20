@@ -201,19 +201,19 @@ export default function MainLayout() {
               <ChevronDown size={16} className="text-gray-400 ml-2" />
             </div>
 
-            <div className="absolute right-0 mt-2 w-64 bg-white border border-gray-100 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 overflow-hidden">
+            <div className="absolute right-0 mt-2 min-w-[498px] bg-white border border-gray-100 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 overflow-hidden">
               <div className="p-2">
-                <p className="text-xs font-semibold text-gray-400 uppercase px-3 mb-2 mt-1">Sedes Activas</p>
-                {campamentosPermitidos.length > 0 ? (
-                  campamentosPermitidos.map((camp) => (
-                    <button
-                      key={camp.id}
-                      onClick={() => seleccionarCampamento(camp.id)}
-                      className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors flex items-center gap-2 ${camp.id === campamentoSeleccionado?.id
-                        ? 'bg-caracas-red/10 text-caracas-red font-medium'
-                        : 'text-gray-600 hover:bg-gray-50'
-                        }`}
-                    >
+                <p className="text-xs font-semibold text-caracas-red uppercase px-3 mb-2 mt-1 text-right">Sedes Activas</p>
+                  {campamentosPermitidos.length > 0 ? (
+                    campamentosPermitidos.map((camp, idx) => (
+                      <button
+                        key={camp.id}
+                        onClick={() => seleccionarCampamento(camp.id)}
+                        className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors flex items-center justify-end gap-2 ${camp.id === campamentoSeleccionado?.id
+                          ? 'bg-caracas-red/10 text-caracas-red font-medium'
+                          : `text-gray-600 hover:bg-gray-200 ${idx % 2 === 0 ? 'bg-gray-100' : ''}`
+                          }`}
+                      >
                       <MapPin size={16} className={camp.id === campamentoSeleccionado?.id ? 'text-caracas-red' : 'text-gray-400'} />
                       <span className="truncate">{camp.nombre}</span>
                     </button>
