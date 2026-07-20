@@ -122,6 +122,17 @@ export interface Refugiado {
   foto_url?: string;
 }
 
+export interface Mascota {
+  id: string;
+  refugiado_id: string;
+  tipo?: string;
+  sexo?: boolean;
+  raza?: string;
+  nombre?: string;
+  edad?: number;
+  foto_url?: string;
+}
+
 export interface HistoriaClinica {
   id: string;
   refugiado_id: string;

@@ -2,12 +2,13 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import type { ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { toDateInput, parseDateSafe } from '../lib/formatDate';
-import type { Campamento, Refugiado, Familia, Carpa } from '../types';
+import type { Campamento, Refugiado, Familia, Carpa, Mascota } from '../types';
 
 interface CampamentoContextType {
   campamentos: Campamento[];
   familias: Familia[];
   refugiados: Refugiado[];
+  mascotas: Mascota[];
   campamentoSeleccionado: Campamento | null;
   loading: boolean;
   errorCarga: string | null;
@@ -23,6 +24,10 @@ interface CampamentoContextType {
   actualizarFotoRefugiado: (id: string, data: { foto_url?: string | null; mascota_foto_url?: string | null }) => Promise<boolean>;
   obtenerRefugiadosPaginados: (campamentoId: string, page: number, pageSize: number, searchTerm?: string) => Promise<{ data: Refugiado[]; count: number }>;
   contarRefugiados: (campamentoId: string, genero?: boolean) => Promise<number>;
+  mascotasPorRefugiado: (refugiadoId: string) => Mascota[];
+  agregarMascota: (data: Omit<Mascota, 'id'>) => Promise<Mascota | null>;
+  actualizarMascota: (id: string, data: Partial<Mascota>) => Promise<boolean>;
+  eliminarMascota: (id: string) => Promise<boolean>;
 }
 
 const CampamentoContext = createContext<CampamentoContextType | undefined>(undefined);
@@ -59,6 +64,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
   const [campamentos, setCampamentos] = useState<Campamento[]>([]);
   const [familias, setFamilias] = useState<Familia[]>([]);
   const [refugiados, setRefugiados] = useState<Refugiado[]>([]);
+  const [mascotas, setMascotas] = useState<Mascota[]>([]);
   const [campamentoSeleccionado, setCampamentoSeleccionado] = useState<Campamento | null>(null);
   const [loading, setLoading] = useState(true);
   const [errorCarga, setErrorCarga] = useState<string | null>(null);
@@ -69,17 +75,19 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       setLoading(true);
       try {
         // Traer campamentos y carpas en paralelo
-        const [{ data: campsData }, { data: carpasData }, { data: famData }, { data: refData }] = await Promise.all([
+        const [{ data: campsData }, { data: carpasData }, { data: famData }, { data: refData }, { data: mascData }] = await Promise.all([
           supabase.from('campamentos').select('*').order('created_at', { ascending: true }),
           supabase.from('carpas').select('*').order('orden', { ascending: true }),
           supabase.from('familias').select('*').order('created_at', { ascending: true }),
           supabase.from('refugiados').select('*').order('created_at', { ascending: true }),
+          supabase.from('mascotas').select('*').order('created_at', { ascending: true }),
         ]);
 
         const campsRows = (campsData || []) as Record<string, unknown>[];
         const carpasRows = (carpasData || []) as Record<string, unknown>[];
         const famRows = (famData || []) as Record<string, unknown>[];
         const refRows = (refData || []) as Record<string, unknown>[];
+        const mascRows = (mascData || []) as Record<string, unknown>[];
 
         const campamentosMapped = campsRows.map(c => mapCampamento(c, carpasRows));
 
@@ -134,9 +142,21 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
           mascota_foto_url: (r.mascota_foto_url as string) || undefined,
         }));
 
+        const mascotasMapped: Mascota[] = mascRows.map(m => ({
+          id: m.id as string,
+          refugiado_id: m.refugiado_id as string,
+          tipo: (m.tipo as string) || undefined,
+          sexo: (m.sexo as boolean) ?? undefined,
+          raza: (m.raza as string) || undefined,
+          nombre: (m.nombre as string) || undefined,
+          edad: (m.edad as number) || undefined,
+          foto_url: (m.foto_url as string) || undefined,
+        }));
+
         setCampamentos(campamentosMapped);
         setFamilias(familiasMapped);
         setRefugiados(refugiadosMapped);
+        setMascotas(mascotasMapped);
 
         // Restaurar campamento guardado o seleccionar el primero
         if (campamentosMapped.length > 0) {
@@ -221,6 +241,28 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
             });
           } else if (payload.eventType === 'DELETE') {
             setFamilias(prev => prev.filter(f => f.id !== payload.old.id));
+          }
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'mascotas' }, (payload) => {
+          const mapMascota = (r: Record<string, any>): Mascota => ({
+            id: r.id,
+            refugiado_id: r.refugiado_id,
+            tipo: r.tipo || undefined,
+            sexo: r.sexo ?? undefined,
+            raza: r.raza || undefined,
+            nombre: r.nombre || undefined,
+            edad: r.edad || undefined,
+            foto_url: r.foto_url || undefined,
+          });
+          if (payload.eventType === 'INSERT') {
+            setMascotas(prev => {
+              if (prev.find(m => m.id === payload.new.id)) return prev;
+              return [...prev, mapMascota(payload.new)];
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            setMascotas(prev => prev.map(m => m.id === payload.new.id ? mapMascota(payload.new) : m));
+          } else if (payload.eventType === 'DELETE') {
+            setMascotas(prev => prev.filter(m => m.id !== payload.old.id));
           }
         })
 
@@ -598,9 +640,13 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       if (match) await supabase.storage.from('fotos-integrantes').remove([match[1]]);
     }
 
-    if (refugiado?.mascota_foto_url) {
-      const match = refugiado.mascota_foto_url.match(/\/fotos-integrantes\/(.+)$/);
-      if (match) await supabase.storage.from('fotos-integrantes').remove([match[1]]);
+    // Limpiar fotos de todas las mascotas del refugiado
+    const mascotasDelRefugiado = mascotas.filter(m => m.refugiado_id === id);
+    for (const mascota of mascotasDelRefugiado) {
+      if (mascota.foto_url) {
+        const match = mascota.foto_url.match(/\/fotos-integrantes\/(.+)$/);
+        if (match) await supabase.storage.from('fotos-integrantes').remove([match[1]]);
+      }
     }
 
     const { error } = await supabase.from('refugiados').delete().eq('id', id);
@@ -609,6 +655,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       return;
     }
     setRefugiados(prev => prev.filter(r => r.id !== id));
+    setMascotas(prev => prev.filter(m => m.refugiado_id !== id));
   };
 
   // ── Actualizar Refugiado ───────────────────────────────────────────────
@@ -774,6 +821,79 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
     return { data: mapped, count: count || 0 };
   }, []);
 
+  // ── Mascotas CRUD ─────────────────────────────────────────────────────────
+
+  const mascotasPorRefugiado = useCallback((refugiadoId: string): Mascota[] => {
+    return mascotas.filter(m => m.refugiado_id === refugiadoId);
+  }, [mascotas]);
+
+  const agregarMascota = async (data: Omit<Mascota, 'id'>): Promise<Mascota | null> => {
+    const { data: result, error } = await supabase
+      .from('mascotas')
+      .insert({
+        refugiado_id: data.refugiado_id,
+        tipo: data.tipo || null,
+        sexo: data.sexo ?? null,
+        raza: data.raza || null,
+        nombre: data.nombre || null,
+        edad: data.edad || null,
+        foto_url: data.foto_url || null,
+      })
+      .select()
+      .single();
+
+    if (error || !result) {
+      console.error('Error al agregar mascota:', error);
+      return null;
+    }
+
+    const mascotaCreada: Mascota = {
+      id: result.id,
+      refugiado_id: result.refugiado_id,
+      tipo: result.tipo || undefined,
+      sexo: result.sexo ?? undefined,
+      raza: result.raza || undefined,
+      nombre: result.nombre || undefined,
+      edad: result.edad || undefined,
+      foto_url: result.foto_url || undefined,
+    };
+    setMascotas(prev => [...prev, mascotaCreada]);
+    return mascotaCreada;
+  };
+
+  const actualizarMascota = async (id: string, data: Partial<Mascota>): Promise<boolean> => {
+    const updateData: Record<string, unknown> = {};
+    if (data.tipo !== undefined) updateData.tipo = data.tipo || null;
+    if (data.sexo !== undefined) updateData.sexo = data.sexo;
+    if (data.raza !== undefined) updateData.raza = data.raza || null;
+    if (data.nombre !== undefined) updateData.nombre = data.nombre || null;
+    if (data.edad !== undefined) updateData.edad = data.edad || null;
+    if (data.foto_url !== undefined) updateData.foto_url = data.foto_url || null;
+
+    const { error } = await supabase
+      .from('mascotas')
+      .update(updateData)
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error al actualizar mascota:', error);
+      return false;
+    }
+
+    setMascotas(prev => prev.map(m => m.id === id ? { ...m, ...data } : m));
+    return true;
+  };
+
+  const eliminarMascota = async (id: string): Promise<boolean> => {
+    const { error } = await supabase.from('mascotas').delete().eq('id', id);
+    if (error) {
+      console.error('Error al eliminar mascota:', error);
+      return false;
+    }
+    setMascotas(prev => prev.filter(m => m.id !== id));
+    return true;
+  };
+
   // ── Contar Refugiados ───────────────────────────────────────────────────────
   const contarRefugiados = useCallback(async (campamentoId: string, genero?: boolean): Promise<number> => {
     let query = supabase
@@ -795,11 +915,12 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
 
   return (
     <CampamentoContext.Provider value={{
-      campamentos, familias, refugiados,
+      campamentos, familias, refugiados, mascotas,
       campamentoSeleccionado, loading, errorCarga, seleccionarCampamento,
       agregarCampamento, actualizarCampamento, eliminarCampamento,
       agregarFamilia, eliminarFamilia, agregarRefugiado, eliminarRefugiado, actualizarRefugiado, actualizarFotoRefugiado,
       obtenerRefugiadosPaginados, contarRefugiados,
+      mascotasPorRefugiado, agregarMascota, actualizarMascota, eliminarMascota,
     }}>
       {children}
     </CampamentoContext.Provider>

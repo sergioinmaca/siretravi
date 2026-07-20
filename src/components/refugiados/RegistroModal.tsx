@@ -2,10 +2,38 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useCampamento } from '../../context/CampamentoContext';
 import { User, Users, MapPin, Save, AlertCircle, CheckCircle2, X, Accessibility, Shirt, Loader2, Camera, FileText } from 'lucide-react';
 import { useFotoUpload } from '../../hooks/useFotoUpload';
-import type { Refugiado } from '../../types';
+import type { Refugiado, Mascota } from '../../types';
 import { formatAge } from '../../lib/formatAge';
 import { toDateInput, parseDateSafe } from '../../lib/formatDate';
 import DateInput from '../ui/DateInput';
+
+const MAX_MASCOTAS = 3;
+
+interface MascotaFormEntry {
+  key: string;
+  tipo: string;
+  sexo: string;
+  raza: string;
+  nombre: string;
+  edad: string;
+  fotoFile: File | null;
+  fotoPreview: string | null;
+  existingId?: string;
+  existingFotoUrl?: string;
+}
+
+function createEmptyMascotaEntry(): MascotaFormEntry {
+  return {
+    key: crypto.randomUUID(),
+    tipo: '',
+    sexo: '',
+    raza: '',
+    nombre: '',
+    edad: '',
+    fotoFile: null,
+    fotoPreview: null,
+  };
+}
 
 interface RegistroModalProps {
   isOpen: boolean;
@@ -14,17 +42,15 @@ interface RegistroModalProps {
 }
 
 export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: RegistroModalProps) {
-  const { campamentoSeleccionado, familias = [], refugiados = [], agregarFamilia, agregarRefugiado, actualizarRefugiado, actualizarFotoRefugiado, eliminarFamilia } = useCampamento();
+  const { campamentoSeleccionado, familias = [], refugiados = [], mascotasPorRefugiado, agregarFamilia, agregarRefugiado, actualizarRefugiado, actualizarFotoRefugiado, eliminarFamilia, agregarMascota, actualizarMascota, eliminarMascota } = useCampamento();
   const [showSuccess, setShowSuccess] = useState(false);
   const [showError, setShowError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [fotoFile, setFotoFile] = useState<File | null>(null);
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
-  const [mascotaFotoFile, setMascotaFotoFile] = useState<File | null>(null);
-  const [mascotaFotoPreview, setMascotaFotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const mascotaFileInputRef = useRef<HTMLInputElement>(null);
+  const mascotaFileInputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const {
     isUploading,
     uploadError: fotoUploadError,
@@ -35,6 +61,9 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     leerArchivoComoDataURL,
   } = useFotoUpload();
   const isEditing = !!refugiadoToEdit;
+
+  const [mascotaCount, setMascotaCount] = useState(0);
+  const [mascotasEntries, setMascotasEntries] = useState<MascotaFormEntry[]>([]);
 
   const [formData, setFormData] = useState({
     nombres: '',
@@ -52,12 +81,6 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     discapacidad: false,
     embarazo: false,
     tiempoEmbarazo: '',
-    mascotas: false,
-    tipoMascota: '',
-    mascotaSexo: '',
-    mascotaRaza: '',
-    mascotaNombre: '',
-    mascotaEdad: '',
     telefono: '',
     profesion: '',
     tallaCamisa: '',
@@ -77,6 +100,10 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     parentesco: '',
   });
 
+  const updateMascotaEntry = (index: number, patch: Partial<MascotaFormEntry>) => {
+    setMascotasEntries(prev => prev.map((e, i) => i === index ? { ...e, ...patch } : e));
+  };
+
   // Precargar datos cuando se edita
   useEffect(() => {
     if (!isOpen) return;
@@ -88,12 +115,11 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     setIsSubmitting(false);
     setShowSuccess(false);
     setShowError(false);
+    mascotaFileInputRefs.current = [];
 
     if (refugiadoToEdit) {
       setFotoPreview(refugiadoToEdit.foto_url || null);
       setFotoFile(null);
-      setMascotaFotoPreview(refugiadoToEdit.mascota_foto_url || null);
-      setMascotaFotoFile(null);
       const birth = new Date(refugiadoToEdit.fecha_nacimiento);
 
       setFormData({
@@ -114,12 +140,6 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
         discapacidad: refugiadoToEdit.discapacidad,
         embarazo: refugiadoToEdit.embarazo,
         tiempoEmbarazo: refugiadoToEdit.tiempo_embarazo?.toString() || '',
-        mascotas: refugiadoToEdit.mascotas,
-        tipoMascota: refugiadoToEdit.tipo_mascota || '',
-        mascotaSexo: refugiadoToEdit.mascota_sexo === true ? 'M' : refugiadoToEdit.mascota_sexo === false ? 'F' : '',
-        mascotaRaza: refugiadoToEdit.mascota_raza || '',
-        mascotaNombre: refugiadoToEdit.mascota_nombre || '',
-        mascotaEdad: refugiadoToEdit.mascota_edad?.toString() || '',
         telefono: refugiadoToEdit.telefono?.toString() || '',
         profesion: refugiadoToEdit.profesion || '',
         tallaCamisa: refugiadoToEdit.talla_camisa || '',
@@ -138,18 +158,32 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
         observacionesGenerales: refugiadoToEdit.observaciones_generales || '',
         parentesco: refugiadoToEdit.parentesco || '',
       });
+
+      const mascotasExistentes = mascotasPorRefugiado(refugiadoToEdit.id);
+      setMascotaCount(mascotasExistentes.length);
+      setMascotasEntries(mascotasExistentes.map(m => ({
+        key: crypto.randomUUID(),
+        tipo: m.tipo || '',
+        sexo: m.sexo === true ? 'M' : m.sexo === false ? 'F' : '',
+        raza: m.raza || '',
+        nombre: m.nombre || '',
+        edad: m.edad?.toString() || '',
+        fotoFile: null,
+        fotoPreview: m.foto_url || null,
+        existingId: m.id,
+        existingFotoUrl: m.foto_url,
+      })));
     } else {
       setFotoPreview(null);
       setFotoFile(null);
-      setMascotaFotoPreview(null);
-      setMascotaFotoFile(null);
+      setMascotaCount(0);
+      setMascotasEntries([]);
       setFormData({
         nombres: '', apellidos: '', cedula: '', genero: 'M',
         fechaNacimiento: '', edad: '', esJefeFamilia: true, familiaId: '',
         nroCama: '', procedencia: '', fechaIngreso: '', direccionExacta: '',
         discapacidad: false,
-        embarazo: false, tiempoEmbarazo: '', mascotas: false, tipoMascota: '',
-        mascotaSexo: '', mascotaRaza: '', mascotaNombre: '', mascotaEdad: '',
+        embarazo: false, tiempoEmbarazo: '',
         telefono: '', profesion: '',
         tallaCamisa: '', tallaPantalon: '', tallaZapatos: '',
         alergias: false,
@@ -209,22 +243,39 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const handleMascotaFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleMascotaCountToggle = (level: number) => {
+    if (level > mascotaCount) {
+      const nuevas = [...mascotasEntries];
+      for (let i = mascotaCount; i < level; i++) {
+        nuevas.push(createEmptyMascotaEntry());
+      }
+      setMascotasEntries(nuevas);
+      setMascotaCount(level);
+    } else {
+      setMascotasEntries(prev => prev.slice(0, level));
+      setMascotaCount(level);
+    }
+  };
+
+  const handleMascotaFieldChange = (index: number, field: keyof Pick<MascotaFormEntry, 'tipo' | 'raza' | 'nombre' | 'edad'>, value: string) => {
+    updateMascotaEntry(index, { [field]: value.toUpperCase() });
+  };
+
+  const handleMascotaFotoChange = async (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
     const error = validarArchivo(file);
     if (error) {
       setFotoUploadError(error);
-      if (mascotaFileInputRef.current) mascotaFileInputRef.current.value = '';
+      if (mascotaFileInputRefs.current[index]) mascotaFileInputRefs.current[index]!.value = '';
       return;
     }
 
     setFotoUploadError(null);
-    setMascotaFotoFile(file);
     const dataUrl = await leerArchivoComoDataURL(file);
-    setMascotaFotoPreview(dataUrl);
-    if (mascotaFileInputRef.current) mascotaFileInputRef.current.value = '';
+    updateMascotaEntry(index, { fotoFile: file, fotoPreview: dataUrl });
+    if (mascotaFileInputRefs.current[index]) mascotaFileInputRefs.current[index]!.value = '';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -242,6 +293,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
 
     let familiaCreadaEnEsteSubmit: string | null = null;
     let finalFamiliaId = formData.familiaId;
+    const existingMascotas = refugiadoToEdit ? mascotasPorRefugiado(refugiadoToEdit.id) : [];
 
     if (formData.esJefeFamilia) {
       if (isEditing && refugiadoToEdit?.familia_id) {
@@ -288,12 +340,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       discapacidad: formData.discapacidad,
       embarazo: formData.embarazo,
       tiempo_embarazo: formData.tiempoEmbarazo ? parseInt(formData.tiempoEmbarazo) : undefined,
-      mascotas: formData.mascotas,
-      tipo_mascota: formData.tipoMascota,
-      mascota_sexo: formData.mascotaSexo === 'M' ? true : formData.mascotaSexo === 'F' ? false : undefined,
-      mascota_raza: formData.mascotaRaza || undefined,
-      mascota_nombre: formData.mascotaNombre || undefined,
-      mascota_edad: formData.mascotaEdad ? parseInt(formData.mascotaEdad) : undefined,
+      mascotas: mascotaCount > 0,
       telefono: formData.telefono ? parseInt(formData.telefono) : undefined,
       profesion: formData.profesion || undefined,
       talla_camisa: formData.tallaCamisa || undefined,
@@ -312,7 +359,6 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       observaciones_generales: formData.observacionesGenerales || undefined,
       parentesco: formData.parentesco || undefined,
       foto_url: refugiadoToEdit?.foto_url || undefined,
-      mascota_foto_url: refugiadoToEdit?.mascota_foto_url || undefined,
     };
 
     let guardadoExitoso = false;
@@ -338,58 +384,93 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       return;
     }
 
-    let finalFotoUrl: string | null | undefined = undefined;
-    let finalMascotaFotoUrl: string | null | undefined = undefined;
-    let fotoChanged = false;
-    let mascotaFotoChanged = false;
     let fotoUploadFailed = false;
 
+    // Subir foto de la persona (si cambió)
     if (fotoFile && refugiadoId) {
       const foto_url = await uploadFotoHook(fotoFile, campamentoId, refugiadoId);
       if (foto_url) {
-        finalFotoUrl = foto_url;
-        fotoChanged = true;
         if (refugiadoToEdit?.foto_url) {
           await deleteStorageFile(refugiadoToEdit.foto_url);
         }
-      } else {
-        fotoUploadFailed = true;
-      }
-    }
-
-    if (mascotaFotoFile && refugiadoId) {
-      const mascota_foto_url = await uploadFotoHook(mascotaFotoFile, campamentoId, refugiadoId, 'mascota');
-      if (mascota_foto_url) {
-        finalMascotaFotoUrl = mascota_foto_url;
-        mascotaFotoChanged = true;
-        if (refugiadoToEdit?.mascota_foto_url) {
-          await deleteStorageFile(refugiadoToEdit.mascota_foto_url);
-        }
+        const ok = await actualizarFotoRefugiado(refugiadoId, { foto_url });
+        if (!ok) fotoUploadFailed = true;
       } else {
         fotoUploadFailed = true;
       }
     }
 
     if (!fotoFile && !fotoPreview && refugiadoToEdit?.foto_url) {
-      finalFotoUrl = null;
-      fotoChanged = true;
       await deleteStorageFile(refugiadoToEdit.foto_url);
+      await actualizarFotoRefugiado(refugiadoId, { foto_url: null });
     }
 
-    if (!mascotaFotoFile && !mascotaFotoPreview && refugiadoToEdit?.mascota_foto_url) {
-      finalMascotaFotoUrl = null;
-      mascotaFotoChanged = true;
-      await deleteStorageFile(refugiadoToEdit.mascota_foto_url);
+    // ── PASO 1: Limpiar fotos de mascotas ELIMINADAS ──
+    // Comparar entries actuales vs. existingMascotas (cargadas al abrir modal)
+    for (const existing of existingMascotas) {
+      const stillExists = mascotasEntries.some(e => e.existingId === existing.id);
+      if (!stillExists) {
+        if (existing.foto_url) {
+          const match = existing.foto_url.match(/\/fotos-integrantes\/(.+)$/);
+          if (match) await deleteStorageFile(match[1]);
+        }
+        await eliminarMascota(existing.id);
+      }
     }
 
-    if (fotoChanged || mascotaFotoChanged) {
-      const fotoUpdate: { foto_url?: string | null; mascota_foto_url?: string | null } = {};
-      if (fotoChanged) fotoUpdate.foto_url = finalFotoUrl;
-      if (mascotaFotoChanged) fotoUpdate.mascota_foto_url = finalMascotaFotoUrl;
+    // ── PASO 2: Guardar/Crear mascotas ──
+    for (let i = 0; i < mascotaCount; i++) {
+      const entry = mascotasEntries[i];
+      if (!entry) continue;
 
-      const ok = await actualizarFotoRefugiado(refugiadoId, fotoUpdate);
-      if (!ok) {
-        fotoUploadFailed = true;
+      let fotoUrl: string | null | undefined = entry.existingFotoUrl || undefined;
+
+      // Subir foto nueva si cambió
+      if (entry.fotoFile && refugiadoId) {
+        const newFotoUrl = await uploadFotoHook(entry.fotoFile, campamentoId, refugiadoId, `mascota/${entry.existingId || 'new'}`);
+        if (newFotoUrl) {
+          // Borrar foto anterior si existía
+          if (entry.existingFotoUrl) {
+            const match = entry.existingFotoUrl.match(/\/fotos-integrantes\/(.+)$/);
+            if (match) await deleteStorageFile(match[1]);
+          }
+          fotoUrl = newFotoUrl;
+        } else {
+          fotoUploadFailed = true;
+          continue;
+        }
+      }
+
+      // Si se quitó la foto (no hay file, no hay preview, pero había URL antes)
+      if (!entry.fotoFile && !entry.fotoPreview && entry.existingFotoUrl) {
+        const match = entry.existingFotoUrl.match(/\/fotos-integrantes\/(.+)$/);
+        if (match) await deleteStorageFile(match[1]);
+        fotoUrl = null;
+      }
+
+      if (entry.existingId) {
+        // Actualizar mascota existente
+        const ok = await actualizarMascota(entry.existingId, {
+          tipo: entry.tipo || undefined,
+          sexo: entry.sexo === 'M' ? true : entry.sexo === 'F' ? false : undefined,
+          raza: entry.raza || undefined,
+          nombre: entry.nombre || undefined,
+          edad: entry.edad ? parseInt(entry.edad) : undefined,
+          foto_url: fotoUrl || undefined,
+        });
+        if (!ok) fotoUploadFailed = true;
+      } else {
+        // Crear nueva mascota
+        const nuevaMascota = await agregarMascota({
+          refugiado_id: refugiadoId,
+          tipo: entry.tipo || undefined,
+          sexo: entry.sexo === 'M' ? true : entry.sexo === 'F' ? false : undefined,
+          raza: entry.raza || undefined,
+          nombre: entry.nombre || undefined,
+          edad: entry.edad ? parseInt(entry.edad) : undefined,
+          foto_url: fotoUrl || undefined,
+        });
+        if (!nuevaMascota) fotoUploadFailed = true;
       }
     }
 
@@ -407,6 +488,131 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
   };
 
   if (!isOpen) return null;
+
+  const renderMascotaForm = (entry: MascotaFormEntry, index: number) => (
+    <div key={entry.key} className="border border-gray-200 rounded-xl p-4 space-y-4 bg-gray-50/50">
+      <div className="flex items-center justify-between">
+        <h4 className="text-sm font-semibold text-gray-700">Mascota #{index + 1}</h4>
+      </div>
+      <div className="flex items-start gap-4">
+        <div className="shrink-0">
+          {entry.fotoPreview ? (
+            <div className="relative group">
+              <img
+                src={entry.fotoPreview}
+                alt={`Foto mascota #${index + 1}`}
+                className="w-24 h-[100px] object-contain rounded-xl border-2 border-gray-200 bg-gray-100"
+              />
+              <button
+                type="button"
+                onClick={() => updateMascotaEntry(index, { fotoFile: null, fotoPreview: null })}
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-0.5 shadow"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => mascotaFileInputRefs.current[index]?.click()}
+              disabled={isUploading}
+              className="w-24 h-[100px] border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-caracas-red hover:text-caracas-red hover:bg-red-50/30 transition-colors disabled:opacity-50"
+            >
+              {isUploading ? (
+                <>
+                  <Loader2 size={20} className="animate-spin" />
+                  <span className="text-[8px] font-medium text-center leading-tight">Subiendo...</span>
+                </>
+              ) : (
+                <>
+                  <Camera size={20} />
+                  <span className="text-[9px] font-medium text-center leading-tight">Foto<br />Mascota</span>
+                </>
+              )}
+            </button>
+          )}
+          <input
+            ref={el => { mascotaFileInputRefs.current[index] = el; }}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => handleMascotaFotoChange(index, e)}
+          />
+        </div>
+        <div className="flex-1 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Mascota</label>
+            <input
+              type="text"
+              value={entry.tipo}
+              onChange={(e) => handleMascotaFieldChange(index, 'tipo', e.target.value)}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase"
+              placeholder="EJ. PERRO, GATO, AVES"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Sexo de la Mascota</label>
+            <div className="flex gap-6">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name={`mascotaSexo-${entry.key}`}
+                  checked={entry.sexo === 'M'}
+                  onChange={() => updateMascotaEntry(index, { sexo: 'M' })}
+                  className="w-5 h-5 text-caracas-red focus:ring-caracas-red"
+                />
+                <span className="text-gray-700">MACHO</span>
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name={`mascotaSexo-${entry.key}`}
+                  checked={entry.sexo === 'F'}
+                  onChange={() => updateMascotaEntry(index, { sexo: 'F' })}
+                  className="w-5 h-5 text-caracas-red focus:ring-caracas-red"
+                />
+                <span className="text-gray-700">HEMBRA</span>
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Raza</label>
+          <input
+            type="text"
+            value={entry.raza}
+            onChange={(e) => handleMascotaFieldChange(index, 'raza', e.target.value)}
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase"
+            placeholder="EJ. PASTOR ALEMÁN"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+          <input
+            type="text"
+            value={entry.nombre}
+            onChange={(e) => handleMascotaFieldChange(index, 'nombre', e.target.value)}
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase"
+            placeholder="EJ. FIRULAIS"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Edad</label>
+          <input
+            type="number"
+            min={0}
+            max={99}
+            value={entry.edad}
+            onChange={(e) => handleMascotaFieldChange(index, 'edad', e.target.value)}
+            className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all"
+            placeholder="Ej. 3"
+          />
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
@@ -503,13 +709,6 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                       accept="image/*"
                       className="hidden"
                       onChange={handleFotoChange}
-                    />
-                    <input
-                      ref={mascotaFileInputRef}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={handleMascotaFotoChange}
                     />
                     <div>
                       <p className="text-xs text-gray-400 mt-1">Formatos JPG, PNG o WEBP. Máx. 5 MB.</p>
@@ -828,135 +1027,57 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                   </div>
                 )}
 
+                {/* Sección de Mascotas - Checkboxes en Cascada */}
                 {formData.esJefeFamilia && (
                   <div className="space-y-3 border-t border-gray-100 pt-4">
+                    {/* Checkbox 1 */}
                     <label className="flex items-center gap-3 cursor-pointer">
                       <input
                         type="checkbox"
-                        checked={formData.mascotas}
-                        onChange={(e) => setFormData(prev => ({ ...prev, mascotas: e.target.checked }))}
+                        checked={mascotaCount >= 1}
+                        onChange={(e) => handleMascotaCountToggle(e.target.checked ? 1 : 0)}
                         className="w-5 h-5 text-caracas-red focus:ring-caracas-red rounded"
                       />
                       <span className="text-gray-700 font-medium">¿Tiene mascotas a su cargo?</span>
                     </label>
-                    {formData.mascotas && (
-                      <div className="space-y-4">
-                        <div className="flex items-start gap-4">
-                          <div className="shrink-0">
-                            {mascotaFotoPreview ? (
-                              <div className="relative group">
-                                <img
-                                  src={mascotaFotoPreview}
-                                  alt="Foto de la mascota"
-                                  className="w-24 h-[100px] object-contain rounded-xl border-2 border-gray-200 bg-gray-100"
-                                />
-                              </div>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => mascotaFileInputRef.current?.click()}
-                                disabled={isUploading}
-                                className="w-24 h-[100px] border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-caracas-red hover:text-caracas-red hover:bg-red-50/30 transition-colors disabled:opacity-50"
-                              >
-                                {isUploading ? (
-                                  <>
-                                    <Loader2 size={20} className="animate-spin" />
-                                    <span className="text-[8px] font-medium text-center leading-tight">Subiendo...</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Camera size={20} />
-                                    <span className="text-[9px] font-medium text-center leading-tight">Foto<br />Mascota</span>
-                                  </>
-                                )}
-                              </button>
-                            )}
-                            {mascotaFotoPreview && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setMascotaFotoFile(null);
-                                  setMascotaFotoPreview(null);
-                                  if (mascotaFileInputRef.current) mascotaFileInputRef.current.value = '';
-                                }}
-                                className="w-24 mt-1 px-2 py-1 rounded-lg text-xs font-medium text-red-600 border border-red-200 hover:bg-red-50 transition-colors flex items-center justify-center gap-1"
-                              >
-                                Quitar foto
-                              </button>
-                            )}
-                          </div>
-                          <div className="flex-1 space-y-4">
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de Mascota</label>
-                              <input
-                                type="text"
-                                value={formData.tipoMascota}
-                                onChange={(e) => setFormData(prev => ({ ...prev, tipoMascota: e.target.value.toUpperCase() }))}
-                                className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase"
-                                placeholder="EJ. PERRO, GATO, AVES"
-                              />
-                            </div>
-                            <div>
-                              <label className="block text-sm font-medium text-gray-700 mb-1">Sexo de la Mascota</label>
-                              <div className="flex gap-6">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                  <input
-                                    type="radio"
-                                    name="mascotaSexo"
-                                    checked={formData.mascotaSexo === 'M'}
-                                    onChange={() => setFormData(prev => ({ ...prev, mascotaSexo: 'M' }))}
-                                    className="w-5 h-5 text-caracas-red focus:ring-caracas-red"
-                                  />
-                                  <span className="text-gray-700">MACHO</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                  <input
-                                    type="radio"
-                                    name="mascotaSexo"
-                                    checked={formData.mascotaSexo === 'F'}
-                                    onChange={() => setFormData(prev => ({ ...prev, mascotaSexo: 'F' }))}
-                                    className="w-5 h-5 text-caracas-red focus:ring-caracas-red"
-                                  />
-                                  <span className="text-gray-700">HEMBRA</span>
-                                </label>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Raza</label>
-                            <input
-                              type="text"
-                              value={formData.mascotaRaza}
-                              onChange={(e) => setFormData(prev => ({ ...prev, mascotaRaza: e.target.value.toUpperCase() }))}
-                              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase"
-                              placeholder="EJ. PASTOR ALEMÁN"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
-                            <input
-                              type="text"
-                              value={formData.mascotaNombre}
-                              onChange={(e) => setFormData(prev => ({ ...prev, mascotaNombre: e.target.value.toUpperCase() }))}
-                              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase"
-                              placeholder="EJ. FIRULAIS"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Edad</label>
-                            <input
-                              type="number"
-                              min={0}
-                              max={99}
-                              value={formData.mascotaEdad}
-                              onChange={(e) => setFormData(prev => ({ ...prev, mascotaEdad: e.target.value }))}
-                              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all"
-                              placeholder="Ej. 3"
-                            />
-                          </div>
-                        </div>
+
+                    {mascotaCount >= 1 && (
+                      <div className="pl-7 space-y-3">
+                        {mascotasEntries[0] && renderMascotaForm(mascotasEntries[0], 0)}
+
+                        {/* Checkbox 2 */}
+                        <label className="flex items-center gap-3 cursor-pointer pt-2">
+                          <input
+                            type="checkbox"
+                            checked={mascotaCount >= 2}
+                            onChange={(e) => handleMascotaCountToggle(e.target.checked ? 2 : 1)}
+                            className="w-5 h-5 text-caracas-red focus:ring-caracas-red rounded"
+                          />
+                          <span className="text-gray-700 font-medium">¿Tiene 2 mascotas a su cargo?</span>
+                        </label>
+                      </div>
+                    )}
+
+                    {mascotaCount >= 2 && (
+                      <div className="pl-7 space-y-3">
+                        {mascotasEntries[1] && renderMascotaForm(mascotasEntries[1], 1)}
+
+                        {/* Checkbox 3 */}
+                        <label className="flex items-center gap-3 cursor-pointer pt-2">
+                          <input
+                            type="checkbox"
+                            checked={mascotaCount >= 3}
+                            onChange={(e) => handleMascotaCountToggle(e.target.checked ? 3 : 2)}
+                            className="w-5 h-5 text-caracas-red focus:ring-caracas-red rounded"
+                          />
+                          <span className="text-gray-700 font-medium">¿Tiene 3 mascotas a su cargo?</span>
+                        </label>
+                      </div>
+                    )}
+
+                    {mascotaCount >= 3 && mascotasEntries[2] && (
+                      <div className="pl-7">
+                        {renderMascotaForm(mascotasEntries[2], 2)}
                       </div>
                     )}
                   </div>

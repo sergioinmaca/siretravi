@@ -14,7 +14,7 @@ import { obtenerHistoriasClinicas } from '../lib/salud';
 import type { HistoriaClinica } from '../types';
 
 export default function Reportes() {
-  const { campamentoSeleccionado, refugiados = [], familias = [] } = useCampamento();
+  const { campamentoSeleccionado, refugiados = [], familias = [], mascotas = [] } = useCampamento();
   const { tienePermisoPorCampamento } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
   const [logoKidsError, setLogoKidsError] = useState(false);
@@ -236,28 +236,38 @@ export default function Reportes() {
 
   // ── Datos para Reporte de Mascotas ───────────────────────────────────────
   const mascotasReporte = useMemo(() => {
-    return refugiadosDelCampamento
-      .filter(r => r.mascotas && r.tipo_mascota)
-      .map((r, i) => {
-        const jefe = refugiadosDelCampamento.find(j => j.familia_id === r.familia_id && j.es_jefe_familia);
+    const refCampIds = new Set(refugiadosDelCampamento.map(r => r.id));
+    const mascotasCampamento = mascotas.filter(m => refCampIds.has(m.refugiado_id));
+
+    return mascotasCampamento
+      .filter(m => m.tipo)
+      .map((m, i) => {
+        const dueno = refugiadosDelCampamento.find(r => r.id === m.refugiado_id);
         return {
-          ...r,
+          ...m,
           index: i + 1,
-          dueno: jefe ? `${jefe.nombres} ${jefe.apellidos}` : (r.nombres + ' ' + r.apellidos),
+          dueno: dueno ? `${dueno.nombres} ${dueno.apellidos}` : '—',
+          familia_id: dueno?.familia_id,
+          nro_cama: dueno?.nro_cama,
+          codigo: dueno?.codigo,
+          nombres_dueno: dueno?.nombres,
+          apellidos_dueno: dueno?.apellidos,
+          genero_dueno: dueno?.genero,
+          fecha_nacimiento_dueno: dueno?.fecha_nacimiento,
         };
       })
       .sort((a, b) => {
-        const tipoComp = (a.tipo_mascota || '').localeCompare(b.tipo_mascota || '');
+        const tipoComp = (a.tipo || '').localeCompare(b.tipo || '');
         if (tipoComp !== 0) return tipoComp;
-        return (a.mascota_nombre || '').localeCompare(b.mascota_nombre || '');
+        return (a.nombre || '').localeCompare(b.nombre || '');
       });
-  }, [refugiadosDelCampamento]);
+  }, [refugiadosDelCampamento, mascotas]);
 
   const mascotasGrupos = useMemo(() => {
     const COLORS = ['#EF4444', '#3B82F6', '#10B981', '#F59E0B', '#8B5CF6', '#06B6D4', '#EC4899', '#F97316'];
     const map = new Map<string, number>();
     mascotasReporte.forEach(r => {
-      const tipo = r.tipo_mascota || 'Sin tipo';
+      const tipo = r.tipo || 'Sin tipo';
       map.set(tipo, (map.get(tipo) || 0) + 1);
     });
     return Array.from(map.entries())
@@ -268,8 +278,8 @@ export default function Reportes() {
   const mascotasRazasPorTipo = useMemo(() => {
     const map = new Map<string, Map<string, number>>();
     mascotasReporte.forEach(r => {
-      const tipo = r.tipo_mascota || 'Sin tipo';
-      const raza = r.mascota_raza?.trim() || 'Sin raza';
+      const tipo = r.tipo || 'Sin tipo';
+      const raza = r.raza?.trim() || 'Sin raza';
       if (!map.has(tipo)) map.set(tipo, new Map());
       const razaMap = map.get(tipo)!;
       razaMap.set(raza, (razaMap.get(raza) || 0) + 1);
@@ -1387,12 +1397,12 @@ export default function Reportes() {
                             {chunk.map((r, idx) => (
                               <tr key={r.id} className={`border-b border-slate-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/[.85]'}`}>
                                 <td className="py-[4.5px] px-0.5 text-base text-center border-r border-slate-200">{r.index}</td>
-                                <td className="py-[4.5px] px-0.5 text-base border-r border-slate-200">{r.tipo_mascota || '—'}</td>
-                                <td className="py-[4.5px] px-0.5 text-base border-r border-slate-200">{r.mascota_raza || '—'}</td>
+                                <td className="py-[4.5px] px-0.5 text-base border-r border-slate-200">{r.tipo || '—'}</td>
+                                <td className="py-[4.5px] px-0.5 text-base border-r border-slate-200">{r.raza || '—'}</td>
                                 <td className="py-[4.5px] px-0.5 text-base border-r border-slate-200">{r.dueno}</td>
-                                <td className="py-[4.5px] px-0.5 text-base border-r border-slate-200">{r.mascota_nombre || '—'}</td>
-                                <td className="py-[4.5px] px-0.5 text-base text-center border-r border-slate-200">{r.mascota_sexo === true ? 'M' : r.mascota_sexo === false ? 'H' : '—'}</td>
-                                <td className="py-[4.5px] px-0.5 text-lg font-black text-center">{r.mascota_edad ?? '—'}</td>
+                                <td className="py-[4.5px] px-0.5 text-base border-r border-slate-200">{r.nombre || '—'}</td>
+                                <td className="py-[4.5px] px-0.5 text-base text-center border-r border-slate-200">{r.sexo === true ? 'M' : r.sexo === false ? 'H' : '—'}</td>
+                                <td className="py-[4.5px] px-0.5 text-lg font-black text-center">{r.edad ?? '—'}</td>
                               </tr>
                             ))}
                             {chunk.length < rowsPerPage && Array.from({ length: rowsPerPage - chunk.length }).map((_, i) => (

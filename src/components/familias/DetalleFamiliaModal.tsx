@@ -4,7 +4,7 @@ import jsPDF from 'jspdf';
 import { useCampamento } from '../../context/CampamentoContext';
 import { toDisplayDate } from '../../lib/formatDate';
 import { formatCedula } from '../../lib/formatCedula';
-import type { Familia } from '../../types';
+import type { Familia, Mascota } from '../../types';
 
 interface DetalleFamiliaModalProps {
   isOpen: boolean;
@@ -45,13 +45,14 @@ const loadImageAsDataUrl = (
 };
 
 export default function DetalleFamiliaModal({ isOpen, onClose, familia }: DetalleFamiliaModalProps) {
-  const { refugiados = [] } = useCampamento();
+  const { refugiados = [], mascotasPorRefugiado } = useCampamento();
   const [isExporting, setIsExporting] = useState(false);
 
   if (!isOpen || !familia) return null;
 
   const integrantes = refugiados.filter(r => r.familia_id === familia.id);
   const jefe = integrantes.find(r => r.es_jefe_familia);
+  const mascotasDelJefe: Mascota[] = jefe ? mascotasPorRefugiado(jefe.id) : [];
 
   const sortedIntegrantes = [...integrantes].sort((a, b) =>
     a.es_jefe_familia ? -1 : b.es_jefe_familia ? 1 : 0
@@ -79,7 +80,9 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
       let y = margin;
 
       const logoDataUrl = await loadImageAsDataUrl('/logorepublica.jpg', 160, 160);
-      const mascotaPhotoDataUrl = jefe?.mascota_foto_url ? await loadImageAsDataUrl(jefe.mascota_foto_url, 120, 120, 'jpeg', 0.7) : null;
+      const mascotasPhotoDataUrls: (string | null)[] = await Promise.all(
+        mascotasDelJefe.map(m => m.foto_url ? loadImageAsDataUrl(m.foto_url, 120, 120, 'jpeg', 0.7) : Promise.resolve(null))
+      );
       const integrantePhotos = await Promise.all(
         sortedIntegrantes.map(m => m.foto_url ? loadImageAsDataUrl(m.foto_url, 150, 180, 'jpeg', 0.7) : Promise.resolve(null))
       );
@@ -337,44 +340,55 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
         drawFieldFull('Observaciones:', jefe.observaciones || '—');
       }
 
-      // ── 4. MASCOTA DE LA FAMILIA ──
+      // ── 4. MASCOTAS DE LA FAMILIA ──
 
       if (jefe) {
-        drawSectionHeader('4', 'Mascota de la Familia');
+        drawSectionHeader('4', 'Mascotas de la Familia');
 
+        const tieneMascotas = mascotasDelJefe.length > 0;
         drawCheckboxRow([
-          [jefe.mascotas, '\u00bfTiene mascotas a cargo?: S\u00ed'],
-          [!jefe.mascotas, 'No'],
+          [tieneMascotas, `${tieneMascotas ? `\u00bfTiene mascotas a cargo?: S\u00ed (${mascotasDelJefe.length})` : '\u00bfTiene mascotas a cargo?: No'}`],
         ]);
 
-        if (jefe.mascotas) {
-          if (mascotaPhotoDataUrl) {
-            const mpX = pageW - margin - 25;
-            const mpY = y;
-            pdf.addImage(mascotaPhotoDataUrl, 'PNG', mpX, mpY, 20, 20);
-            const photoBottom = mpY + 20;
+        if (tieneMascotas) {
+          mascotasDelJefe.forEach((mascota, idx) => {
+            ensureSpace(8);
+            pdf.setFont('Helvetica', 'bold');
+            pdf.setFontSize(8);
+            pdf.setTextColor(100, 100, 100);
+            y += 2;
+            pdf.text(`Mascota #${idx + 1}${mascota.nombre ? ` - ${mascota.nombre}` : ''}`, margin, y + 4);
+            y += 6;
 
-            drawFieldRowCols([
-              ['Tipo:', jefe.tipo_mascota || '—'],
-              ['Nombre:', jefe.mascota_nombre || '—'],
-              ['Sexo:', jefe.mascota_sexo === true ? 'Macho' : jefe.mascota_sexo === false ? 'Hembra' : '—'],
-            ]);
-            drawFieldRowLR(
-              'Raza:', jefe.mascota_raza || '—',
-              'Edad (a\u00f1os):', jefe.mascota_edad?.toString() || '—',
-            );
-            if (y < photoBottom) y = photoBottom + 2;
-          } else {
-            drawFieldRowCols([
-              ['Tipo:', jefe.tipo_mascota || '—'],
-              ['Nombre:', jefe.mascota_nombre || '—'],
-              ['Sexo:', jefe.mascota_sexo === true ? 'Macho' : jefe.mascota_sexo === false ? 'Hembra' : '—'],
-            ]);
-            drawFieldRowLR(
-              'Raza:', jefe.mascota_raza || '—',
-              'Edad (a\u00f1os):', jefe.mascota_edad?.toString() || '—',
-            );
-          }
+            const photoDataUrl = mascotasPhotoDataUrls[idx];
+            if (photoDataUrl) {
+              const mpX = pageW - margin - 22;
+              const mpY = y;
+              pdf.addImage(photoDataUrl, 'PNG', mpX, mpY, 18, 18);
+              const photoBottom = mpY + 18;
+              drawFieldRowCols([
+                ['Tipo:', mascota.tipo || '—'],
+                ['Nombre:', mascota.nombre || '—'],
+                ['Sexo:', mascota.sexo === true ? 'Macho' : mascota.sexo === false ? 'Hembra' : '—'],
+              ]);
+              drawFieldRowLR(
+                'Raza:', mascota.raza || '—',
+                'Edad (a\u00f1os):', mascota.edad?.toString() || '—',
+              );
+              if (y < photoBottom) y = photoBottom + 2;
+            } else {
+              drawFieldRowCols([
+                ['Tipo:', mascota.tipo || '—'],
+                ['Nombre:', mascota.nombre || '—'],
+                ['Sexo:', mascota.sexo === true ? 'Macho' : mascota.sexo === false ? 'Hembra' : '—'],
+              ]);
+              drawFieldRowLR(
+                'Raza:', mascota.raza || '—',
+                'Edad (a\u00f1os):', mascota.edad?.toString() || '—',
+              );
+            }
+            y += 2;
+          });
         }
       }
 
@@ -388,12 +402,12 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
         photoItems.push({ photo: integrantePhotos[i], name: `${m.nombres} ${m.apellidos}` });
       });
 
-      if (jefe?.mascotas) {
+      mascotasDelJefe.forEach((mascota, i) => {
         photoItems.push({
-          photo: mascotaPhotoDataUrl,
-          name: jefe.mascota_nombre || 'Mascota',
+          photo: mascotasPhotoDataUrls[i],
+          name: mascota.nombre || `Mascota #${i + 1}`,
         });
-      }
+      });
 
       const colW = (contentW - 4) / 2;
       const photoW = 25;
