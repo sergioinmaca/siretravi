@@ -298,6 +298,7 @@ export default function Refugiados() {
             'Jerarquía': jerarquiaStr,
             'Cama': r.nro_cama || '-',
             'Teléfono': r.telefono?.toString() || '—',
+            'Parentesco': r.parentesco || '—',
           };
         });
 
@@ -313,6 +314,7 @@ export default function Refugiados() {
         { wch: 30 },
         { wch: 8 },
         { wch: 16 },
+        { wch: 20 },
       ];
       ws['!cols'] = colWidths;
 
