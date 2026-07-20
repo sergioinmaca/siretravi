@@ -297,6 +297,7 @@ export default function Refugiados() {
             'Edad (Unidad)': ageParts?.unidad ?? '',
             'Jerarquía': jerarquiaStr,
             'Cama': r.nro_cama || '-',
+            'Teléfono': r.telefono?.toString() || '—',
           };
         });
 
@@ -311,6 +312,7 @@ export default function Refugiados() {
         { wch: 14 },
         { wch: 30 },
         { wch: 8 },
+        { wch: 16 },
       ];
       ws['!cols'] = colWidths;
 
