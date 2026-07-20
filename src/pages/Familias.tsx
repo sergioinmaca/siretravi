@@ -93,21 +93,17 @@ export default function Familias() {
               <div className="bg-gradient-to-r from-caracas-blue to-blue-700 p-5 relative overflow-hidden">
                 <div className="absolute top-0 right-0 w-24 h-24 bg-white/5 rounded-full -translate-y-8 translate-x-8" />
                 <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/5 rounded-full translate-y-6 -translate-x-6" />
-                <div className="flex items-center gap-3 relative z-10">
-                  <div className="p-2 bg-white/20 rounded-xl">
-                    <Users size={24} className="text-white" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-lg font-bold text-white truncate">{fam.nombre}</h3>
-                    <p className="text-sm text-white/70">{fam.integrantes} integrante{fam.integrantes !== 1 ? 's' : ''}</p>
-                  </div>
+                  <div className="flex items-center gap-3 relative z-10">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-lg font-bold text-white break-words">{fam.nombre.replace('FAMILIA ', 'FLIA. ')}</h3>
+                    </div>
                   <ChevronRight size={20} className="text-white/50 group-hover:text-white transition-colors shrink-0" />
                 </div>
               </div>
               <div className="p-5 flex items-center justify-between">
                 <div className="flex items-center gap-2 text-sm text-gray-500">
                   <Users size={16} className="text-caracas-blue" />
-                  <span className="font-medium">{fam.integrantes} miembro{fam.integrantes !== 1 ? 's' : ''}</span>
+                  <span className="font-medium text-base">{fam.integrantes} miembro{fam.integrantes !== 1 ? 's' : ''}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-caracas-blue font-medium group-hover:underline">Ver detalle</span>
