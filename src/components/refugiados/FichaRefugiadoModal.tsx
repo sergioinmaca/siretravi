@@ -490,6 +490,118 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
         (refugiado as any).observaciones_generales || '',
       );
 
+      // ── 8. ATENCIONES, BENEFICIOS Y DONACIONES ──
+
+      drawSectionHeader('8', 'Atenciones, Beneficios y Donaciones');
+
+      if (atencionesFiltradas.length === 0) {
+        ensureSpace(6);
+        pdf.setFont('Helvetica', 'normal');
+        pdf.setFontSize(9);
+        pdf.setTextColor(156, 163, 175);
+        pdf.text('Sin registros', margin + 3, y + 4);
+        y += 8;
+      } else {
+        atencionesFiltradas.forEach((a, idx) => {
+          if (idx > 0) {
+            ensureSpace(4);
+            pdf.setDrawColor(200, 200, 200);
+            pdf.setLineWidth(0.3);
+            pdf.line(margin, y, pageW - margin, y);
+            y += 4;
+          }
+
+          ensureSpace(10);
+
+          const indentX = margin + 8;
+          const indentW = contentW - 8;
+
+          const fechaStr = a.fecha_atencion instanceof Date
+            ? `${a.fecha_atencion.getDate().toString().padStart(2, '0')}/${(a.fecha_atencion.getMonth() + 1).toString().padStart(2, '0')}/${a.fecha_atencion.getFullYear()}`
+            : '';
+
+          let subLabel = '';
+          if (a.tipo === 'medica') {
+            subLabel = (a as any).especialidad_1 || '';
+          } else {
+            const prefix = a.tipo === 'beneficio' ? 'beneficio' : 'donacion';
+            subLabel = (a as any)[`${prefix}_tipo_1`] || '';
+          }
+
+          const tipoLabel = a.tipo === 'medica' ? 'ATENCIÓN MÉDICA' : a.tipo === 'beneficio' ? 'BENEFICIO' : 'DONACIÓN';
+          const tituloLinea = subLabel ? `${tipoLabel} — ${subLabel} — ${fechaStr}` : `${tipoLabel} — ${fechaStr}`;
+
+          pdf.setFillColor(243, 244, 246);
+          pdf.rect(indentX, y, indentW, 6, 'F');
+          pdf.setDrawColor(220, 38, 38);
+          pdf.setLineWidth(1);
+          pdf.line(indentX, y, indentX, y + 6);
+          pdf.setFont('Helvetica', 'bold');
+          pdf.setFontSize(9);
+          pdf.setTextColor(0, 0, 0);
+          pdf.text(tituloLinea, indentX + 3, y + 4.2);
+          y += 8;
+
+          pdf.setFont('Helvetica', 'normal');
+          pdf.setFontSize(8.5);
+          pdf.setTextColor(60, 60, 60);
+
+          if (a.tipo === 'medica') {
+            for (let i = 1; i <= 10; i++) {
+              const esp = (a as any)[`especialidad_${i}`];
+              const diag = (a as any)[`diagnostico_${i}`];
+              const resp = (a as any)[`responsable_${i}`];
+              const trat = (a as any)[`tratamiento_${i}`];
+              if (!esp) break;
+
+              const lines: string[] = [`Especialidad: ${esp}`];
+              if (diag) lines.push(`Diagnóstico: ${diag}`);
+              if (resp) lines.push(`Responsable: ${resp}`);
+              if (trat) lines.push(`Tratamiento: ${trat}`);
+
+              lines.forEach(line => {
+                ensureSpace(5);
+                pdf.text(`  ${line}`, indentX + 3, y + 4);
+                y += 5;
+              });
+
+              if (i < 10 && (a as any)[`especialidad_${i + 1}`]) {
+                y += 1;
+              }
+            }
+          } else {
+            const prefix = a.tipo === 'beneficio' ? 'beneficio' : 'donacion';
+            for (let i = 1; i <= 10; i++) {
+              const tipo = (a as any)[`${prefix}_tipo_${i}`];
+              const desc = (a as any)[`${prefix}_descripcion_${i}`];
+              const entregado = (a as any)[`${prefix}_entregado_por_${i}`];
+              const fecha = (a as any)[`${prefix}_fecha_${i}`];
+              if (!tipo) break;
+
+              const lines: string[] = [`Tipo: ${tipo}`];
+              if (desc) lines.push(`Descripción: ${desc}`);
+              if (entregado) lines.push(`Entregado por: ${entregado}`);
+              if (fecha) {
+                const d = fecha instanceof Date ? fecha : new Date(fecha);
+                lines.push(`Fecha: ${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`);
+              }
+
+              lines.forEach(line => {
+                ensureSpace(5);
+                pdf.text(`  ${line}`, indentX + 3, y + 4);
+                y += 5;
+              });
+
+              if (i < 10 && (a as any)[`${prefix}_tipo_${i + 1}`]) {
+                y += 1;
+              }
+            }
+          }
+
+          y += 2;
+        });
+      }
+
       // ── page numbers ──
 
       const totalPages = pdf.getNumberOfPages();
