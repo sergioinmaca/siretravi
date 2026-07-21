@@ -438,6 +438,7 @@ export default function TipoActaModal({ isOpen, onClose, onSaved, tipoToEdit }: 
                   contenido={contenido}
                   sistema={previewSistema}
                   valores={previewValores}
+                  tituloActa={nombre}
                 />
               </div>
             </div>
