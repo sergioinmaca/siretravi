@@ -3,7 +3,7 @@ import {
   X, User, Users, MapPin, Accessibility, Shirt,
   Calendar, Phone, Briefcase, GraduationCap, Heart,
   PawPrint, AlertTriangle, Baby, Stethoscope, FileText, Loader2, Camera,
-  Save, Trash2,
+  Save, Trash2, ChevronLeft, ChevronRight, Activity, Gift, HeartHandshake,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { useFotoUpload } from '../../hooks/useFotoUpload';
@@ -11,7 +11,8 @@ import { useCampamento } from '../../context/CampamentoContext';
 import { formatAge } from '../../lib/formatAge';
 import { formatCedula } from '../../lib/formatCedula';
 import { toDisplayDate } from '../../lib/formatDate';
-import type { Refugiado } from '../../types';
+import { obtenerHistoriaClinicaPorRefugiado, obtenerAtencionesPorHistoriaClinica } from '../../lib/salud';
+import type { Refugiado, AtencionMedica } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 
 
@@ -30,6 +31,9 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
   const [fotoFile, setFotoFile] = useState<File | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [pagina, setPagina] = useState<1 | 2>(1);
+  const [atenciones, setAtenciones] = useState<AtencionMedica[]>([]);
+  const [loadingRegistros, setLoadingRegistros] = useState(false);
 
   const [mascotaPreviewUrl, setMascotaPreviewUrl] = useState<string | null>(null);
   const [mascotaFotoFile, setMascotaFotoFile] = useState<File | null>(null);
@@ -59,14 +63,28 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
       setFotoFile(null);
       setMascotaFotoFile(null);
       setUploadError(null);
+      setPagina(1);
+
+      if (refugiado?.id) {
+        setLoadingRegistros(true);
+        obtenerHistoriaClinicaPorRefugiado(refugiado.id).then(async (hc) => {
+          if (hc) {
+            const atts = await obtenerAtencionesPorHistoriaClinica(hc.id);
+            setAtenciones(atts);
+          } else {
+            setAtenciones([]);
+          }
+        }).finally(() => setLoadingRegistros(false));
+      }
     } else {
       setPreviewUrl(null);
       setMascotaPreviewUrl(null);
       setFotoFile(null);
       setMascotaFotoFile(null);
       setUploadError(null);
+      setAtenciones([]);
     }
-  }, [isOpen, refugiado?.foto_url, refugiado?.mascota_foto_url, setUploadError]);
+  }, [isOpen, refugiado?.id, refugiado?.foto_url, refugiado?.mascota_foto_url, setUploadError]);
 
   if (!isOpen || !refugiado) return null;
 
@@ -659,6 +677,12 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
     ? 'Jefe de Familia'
     : `Miembro (${familia?.nombre || 'Familia Desconocida'})`;
 
+  const atencionesFiltradas = atenciones.filter(a => {
+    if (a.tipo === 'beneficio' || a.tipo === 'donacion') return true;
+    if (a.tipo === 'medica' && a.especialidad_1) return true;
+    return false;
+  });
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
@@ -692,15 +716,114 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
         </div>
 
         {/* Body */}
-        <div className="p-8 overflow-y-auto flex-1 bg-gray-50/30 space-y-6">
+        <div className="p-8 overflow-y-auto flex-1 bg-gray-50/30 space-y-6 min-h-[600px]">
 
-          {/* Tarjeta 1: Datos Personales */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
-              <div className="p-2 bg-caracas-blue/10 rounded-lg">
-                <User size={18} className="text-caracas-blue" />
+          {pagina === 2 ? (
+            /* ── Página 2: Atenciones, Beneficios y Donaciones ── */
+            <div className="space-y-6">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
+                  <div className="p-2 bg-teal-100 rounded-lg">
+                    <Activity size={18} className="text-teal-600" />
+                  </div>
+                  <h3 className="font-semibold text-gray-800">Atenciones, Beneficios y Donaciones</h3>
+                </div>
+                <div className="p-6">
+                  {loadingRegistros ? (
+                    <div className="flex items-center justify-center py-12 text-gray-400">
+                      <Loader2 size={32} className="animate-spin" />
+                    </div>
+                  ) : atencionesFiltradas.length === 0 ? (
+                    <div className="text-center py-12 text-gray-400">
+                      <Activity size={40} className="mx-auto mb-3 opacity-50" />
+                      <p className="font-medium">No hay registros de atenciones, beneficios o donaciones</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {atencionesFiltradas.map((a) => (
+                        <div key={a.id} className="border border-gray-200 rounded-xl p-4 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              {a.tipo === 'medica' && <Activity size={16} className="text-caracas-red" />}
+                              {a.tipo === 'beneficio' && <Gift size={16} className="text-green-600" />}
+                              {a.tipo === 'donacion' && <HeartHandshake size={16} className="text-purple-600" />}
+                              <span className="font-semibold text-sm text-gray-700 uppercase">
+                                {a.tipo === 'medica' ? 'Atención Médica' : a.tipo === 'beneficio' ? 'Beneficio' : 'Donación'}
+                              </span>
+                            </div>
+                            <span className="text-xs text-gray-500">
+                              {a.fecha_atencion instanceof Date ? toDisplayDate(a.fecha_atencion) : ''}
+                            </span>
+                          </div>
+                          {a.tipo === 'medica' && (
+                            <div className="space-y-1 text-sm text-gray-600">
+                              {Array.from({ length: 10 }, (_, i) => i + 1).map(i => {
+                                const esp = (a as any)[`especialidad_${i}`];
+                                const diag = (a as any)[`diagnostico_${i}`];
+                                const trat = (a as any)[`tratamiento_${i}`];
+                                if (!esp) return null;
+                                return (
+                                  <div key={i} className="pl-6 border-l-2 border-caracas-red/30 ml-1 py-1">
+                                    <p><span className="font-medium">Especialidad:</span> {esp}</p>
+                                    {diag && <p><span className="font-medium">Diagnóstico:</span> {diag}</p>}
+                                    {trat && <p><span className="font-medium">Tratamiento:</span> {trat}</p>}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                          {(a.tipo === 'beneficio' || a.tipo === 'donacion') && (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-gray-600">
+                              {(() => {
+                                const rows: any[] = [];
+                                for (let i = 1; i <= 10; i++) {
+                                  const prefix = a.tipo === 'beneficio' ? 'beneficio' : 'donacion';
+                                  const tipo = (a as any)[`${prefix}_tipo_${i}`];
+                                  const desc = (a as any)[`${prefix}_descripcion_${i}`];
+                                  const entregado = (a as any)[`${prefix}_entregado_por_${i}`];
+                                  const fecha = (a as any)[`${prefix}_fecha_${i}`];
+                                  if (!tipo) continue;
+                                  rows.push(
+                                    <div key={i} className={i === 1 ? '' : 'col-span-3 border-t border-gray-100 pt-2 mt-2'}>
+                                      {i === 1 ? (
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                                          <div><span className="font-medium">Tipo:</span> {tipo}</div>
+                                          {desc && <div className="md:col-span-1"><span className="font-medium">Descripción:</span> {desc}</div>}
+                                          {entregado && <div><span className="font-medium">Entregado por:</span> {entregado}</div>}
+                                          {fecha && <div><span className="font-medium">Fecha:</span> {fecha instanceof Date ? toDisplayDate(fecha) : ''}</div>}
+                                        </div>
+                                      ) : (
+                                        <>
+                                          <p className="font-medium">Ítem #{i}: {tipo}</p>
+                                          {desc && <p>{desc}</p>}
+                                          {entregado && <p className="text-gray-500">Entregado por: {entregado}</p>}
+                                          {fecha && <p className="text-gray-500">Fecha: {fecha instanceof Date ? toDisplayDate(fecha) : ''}</p>}
+                                        </>
+                                      )}
+                                    </div>
+                                  );
+                                }
+                                return rows;
+                              })()}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
-              <h3 className="font-semibold text-gray-800">Datos Personales</h3>
+            </div>
+          ) : (
+            /* ── Página 1: Datos del Integrante ── */
+            <div className="space-y-6">
+            {/* Tarjeta 1: Datos Personales */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
+                <div className="p-2 bg-caracas-blue/10 rounded-lg">
+                  <User size={18} className="text-caracas-blue" />
+                </div>
+                <h3 className="font-semibold text-gray-800">Datos Personales</h3>
             </div>
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="md:col-span-2 flex items-start gap-6">
@@ -1012,39 +1135,72 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
               </p>
             </div>
           </div>
+            </div>
+          )}
+
         </div>
 
         {/* Footer */}
-        <div className="px-8 py-5 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
-          {esMaster && (
-            <button
-              onClick={handleGuardar}
-              disabled={!canSave || isSaving}
-              className="flex items-center justify-center gap-2 bg-caracas-blue hover:bg-blue-800 text-white px-6 py-2.5 rounded-xl font-medium transition-all shadow-lg disabled:opacity-50"
-            >
-              {isSaving ? (
-                <Loader2 className="animate-spin" size={18} />
-              ) : (
-                <Save size={18} />
+        <div className="px-8 py-5 border-t border-gray-100 bg-gray-50 shrink-0">
+          <div className="flex items-center justify-between">
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPagina(1)}
+                disabled={pagina === 1}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                  pagina === 1
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200 shadow-sm'
+                }`}
+              >
+                <ChevronLeft size={16} />
+                Información del Integrante
+              </button>
+              <button
+                onClick={() => setPagina(2)}
+                disabled={pagina === 2}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                  pagina === 2
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-200 shadow-sm'
+                }`}
+              >
+                Atenciones y Registros
+                <ChevronRight size={16} />
+              </button>
+            </div>
+            <div className="flex items-center gap-3">
+              {esMaster && pagina === 1 && (
+                <button
+                  onClick={handleGuardar}
+                  disabled={!canSave || isSaving}
+                  className="flex items-center justify-center gap-2 bg-caracas-blue hover:bg-blue-800 text-white px-6 py-2.5 rounded-xl font-medium transition-all shadow-lg disabled:opacity-50"
+                >
+                  {isSaving ? (
+                    <Loader2 className="animate-spin" size={18} />
+                  ) : (
+                    <Save size={18} />
+                  )}
+                  {isSaving ? 'Guardando...' : 'Guardar'}
+                </button>
               )}
-              {isSaving ? 'Guardando...' : 'Guardar'}
-            </button>
-          )}
-          <button
-            onClick={handleExportPDF}
-            disabled={isExporting}
-            className="flex items-center justify-center gap-2 bg-caracas-red hover:bg-red-800 text-white px-6 py-2.5 rounded-xl font-medium transition-all shadow-lg shadow-caracas-red/20 disabled:opacity-50"
-          >
-            {isExporting ? (
-              <Loader2 className="animate-spin" size={18} />
-            ) : (
-              <FileText size={18} />
-            )}
-            {isExporting ? 'Exportando...' : 'Exportar PDF'}
-          </button>
-          <button onClick={handleClose} className="px-6 py-2.5 rounded-xl text-gray-600 font-medium hover:bg-gray-200 transition-colors">
-            Cerrar
-          </button>
+              <button
+                onClick={handleExportPDF}
+                disabled={isExporting}
+                className="flex items-center justify-center gap-2 bg-caracas-red hover:bg-red-800 text-white px-6 py-2.5 rounded-xl font-medium transition-all shadow-lg shadow-caracas-red/20 disabled:opacity-50"
+              >
+                {isExporting ? (
+                  <Loader2 className="animate-spin" size={18} />
+                ) : (
+                  <FileText size={18} />
+                )}
+                {isExporting ? 'Exportando...' : 'Exportar PDF'}
+              </button>
+              <button onClick={handleClose} className="px-6 py-2.5 rounded-xl text-gray-600 font-medium hover:bg-gray-200 transition-colors">
+                Cerrar
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

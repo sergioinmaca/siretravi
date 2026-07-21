@@ -163,6 +163,7 @@ export interface HistoriaClinica {
 export interface AtencionMedica {
   id: string;
   historia_clinica_id: string;
+  tipo: 'medica' | 'beneficio' | 'donacion';
   fecha_atencion: Date;
   presion_arterial?: string;
   temperatura?: number;
@@ -172,6 +173,39 @@ export interface AtencionMedica {
   saturacion_oxigeno?: number;
   observaciones?: string;
   created_at: Date;
+  // tipo = 'medica' — especialidades
+  especialidad_1?: string; diagnostico_1?: string; tratamiento_1?: string;
+  especialidad_2?: string; diagnostico_2?: string; tratamiento_2?: string;
+  especialidad_3?: string; diagnostico_3?: string; tratamiento_3?: string;
+  especialidad_4?: string; diagnostico_4?: string; tratamiento_4?: string;
+  especialidad_5?: string; diagnostico_5?: string; tratamiento_5?: string;
+  especialidad_6?: string; diagnostico_6?: string; tratamiento_6?: string;
+  especialidad_7?: string; diagnostico_7?: string; tratamiento_7?: string;
+  especialidad_8?: string; diagnostico_8?: string; tratamiento_8?: string;
+  especialidad_9?: string; diagnostico_9?: string; tratamiento_9?: string;
+  especialidad_10?: string; diagnostico_10?: string; tratamiento_10?: string;
+  // tipo = 'beneficio'
+  beneficio_tipo_1?: string; beneficio_descripcion_1?: string; beneficio_entregado_por_1?: string; beneficio_fecha_1?: Date;
+  beneficio_tipo_2?: string; beneficio_descripcion_2?: string; beneficio_entregado_por_2?: string; beneficio_fecha_2?: Date;
+  beneficio_tipo_3?: string; beneficio_descripcion_3?: string; beneficio_entregado_por_3?: string; beneficio_fecha_3?: Date;
+  beneficio_tipo_4?: string; beneficio_descripcion_4?: string; beneficio_entregado_por_4?: string; beneficio_fecha_4?: Date;
+  beneficio_tipo_5?: string; beneficio_descripcion_5?: string; beneficio_entregado_por_5?: string; beneficio_fecha_5?: Date;
+  beneficio_tipo_6?: string; beneficio_descripcion_6?: string; beneficio_entregado_por_6?: string; beneficio_fecha_6?: Date;
+  beneficio_tipo_7?: string; beneficio_descripcion_7?: string; beneficio_entregado_por_7?: string; beneficio_fecha_7?: Date;
+  beneficio_tipo_8?: string; beneficio_descripcion_8?: string; beneficio_entregado_por_8?: string; beneficio_fecha_8?: Date;
+  beneficio_tipo_9?: string; beneficio_descripcion_9?: string; beneficio_entregado_por_9?: string; beneficio_fecha_9?: Date;
+  beneficio_tipo_10?: string; beneficio_descripcion_10?: string; beneficio_entregado_por_10?: string; beneficio_fecha_10?: Date;
+  // tipo = 'donacion'
+  donacion_tipo_1?: string; donacion_descripcion_1?: string; donacion_entregado_por_1?: string; donacion_fecha_1?: Date;
+  donacion_tipo_2?: string; donacion_descripcion_2?: string; donacion_entregado_por_2?: string; donacion_fecha_2?: Date;
+  donacion_tipo_3?: string; donacion_descripcion_3?: string; donacion_entregado_por_3?: string; donacion_fecha_3?: Date;
+  donacion_tipo_4?: string; donacion_descripcion_4?: string; donacion_entregado_por_4?: string; donacion_fecha_4?: Date;
+  donacion_tipo_5?: string; donacion_descripcion_5?: string; donacion_entregado_por_5?: string; donacion_fecha_5?: Date;
+  donacion_tipo_6?: string; donacion_descripcion_6?: string; donacion_entregado_por_6?: string; donacion_fecha_6?: Date;
+  donacion_tipo_7?: string; donacion_descripcion_7?: string; donacion_entregado_por_7?: string; donacion_fecha_7?: Date;
+  donacion_tipo_8?: string; donacion_descripcion_8?: string; donacion_entregado_por_8?: string; donacion_fecha_8?: Date;
+  donacion_tipo_9?: string; donacion_descripcion_9?: string; donacion_entregado_por_9?: string; donacion_fecha_9?: Date;
+  donacion_tipo_10?: string; donacion_descripcion_10?: string; donacion_entregado_por_10?: string; donacion_fecha_10?: Date;
 }
 
 export interface Tratamiento {
