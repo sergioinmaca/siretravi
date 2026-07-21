@@ -14,6 +14,7 @@ import Actas from './pages/Actas';
 import SaludIndex from './pages/Salud/Index';
 import HistoriasClinicas from './pages/Salud/HistoriasClinicas';
 import RegimenDiario from './pages/Salud/RegimenDiario';
+import Atenciones from './pages/Salud/Atenciones';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { usuarioActual, cargando } = useAuth();
@@ -55,6 +56,7 @@ function AppRoutes() {
         <Route path="salud" element={<SaludIndex />} />
         <Route path="salud/historias-clinicas" element={<HistoriasClinicas />} />
         <Route path="salud/regimen-diario" element={<RegimenDiario />} />
+        <Route path="salud/atenciones" element={<Atenciones />} />
         <Route path="agenda" element={<Agenda />} />
         <Route path="actas" element={<Actas />} />
       </Route>

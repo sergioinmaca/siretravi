@@ -5,15 +5,16 @@ import { formatCedula } from '../../lib/formatCedula';
 import { formatAge } from '../../lib/formatAge';
 import DateInput from '../ui/DateInput';
 import { supabase } from '../../lib/supabase';
-import { agregarRegistroAtencion } from '../../lib/salud';
+import { agregarRegistroAtencion, actualizarAtencionMedica } from '../../lib/salud';
 import { useCampamento } from '../../context/CampamentoContext';
-import type { Refugiado } from '../../types';
+import type { Refugiado, AtencionMedica } from '../../types';
 
 interface AtencionMedicaModalProps {
   isOpen: boolean;
   onClose: () => void;
   historiaClinicaId?: string;
   refugiadoNombre?: string;
+  atencionToEdit?: AtencionMedica | null;
 }
 
 type TipoAtencion = 'medica' | 'beneficio' | 'donacion';
@@ -29,12 +30,12 @@ const CANTIDAD_OPTIONS = Array.from({ length: 10 }, (_, i) => i + 1);
 function buildFilasVacias(cantidad: number) {
   if (cantidad > 10) cantidad = 10;
   return Array.from({ length: cantidad }, () => ({
-    especialidad: '', diagnostico: '', tratamiento: '',
+    especialidad: '', diagnostico: '', tratamiento: '', responsable: '',
     tipo: '', descripcion: '', entregadoPor: '', fecha: '',
   }));
 }
 
-export default function AtencionMedicaModal({ isOpen, onClose, historiaClinicaId, refugiadoNombre }: AtencionMedicaModalProps) {
+export default function AtencionMedicaModal({ isOpen, onClose, historiaClinicaId, refugiadoNombre, atencionToEdit }: AtencionMedicaModalProps) {
   const { campamentoSeleccionado, refugiados } = useCampamento();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -66,27 +67,77 @@ export default function AtencionMedicaModal({ isOpen, onClose, historiaClinicaId
 
   useEffect(() => {
     if (isOpen) {
-      setTipo('medica');
-      setFechaAtencion(toDateInput(new Date()));
-      setPresionArterial('');
-      setTemperatura('');
-      setFrecuenciaCardiaca('');
-      setPeso('');
-      setTalla('');
-      setSaturacionOxigeno('');
-      setObservaciones('');
-      setSeccionActiva(false);
-      setCantidad(1);
-      setFilas(buildFilasVacias(1));
-      setErrorMsg('');
-      if (!historiaClinicaId) {
-        setCedulaBusqueda('');
-        setResultadosBusqueda([]);
-        setRefugiadoEncontrado(null);
-        setHcIdLocal('');
+      if (atencionToEdit) {
+        setTipo(atencionToEdit.tipo);
+        setFechaAtencion(toDateInput(new Date(atencionToEdit.fecha_atencion)));
+        setPresionArterial(atencionToEdit.presion_arterial || '');
+        setTemperatura(atencionToEdit.temperatura?.toString() || '');
+        setFrecuenciaCardiaca(atencionToEdit.frecuencia_cardiaca?.toString() || '');
+        setPeso(atencionToEdit.peso?.toString() || '');
+        setTalla(atencionToEdit.talla?.toString() || '');
+        setSaturacionOxigeno(atencionToEdit.saturacion_oxigeno?.toString() || '');
+        setObservaciones(atencionToEdit.observaciones || '');
+
+        // Parsear filas dinámicas
+        const filasData: any[] = [];
+        for (let i = 1; i <= 10; i++) {
+          if (atencionToEdit.tipo === 'medica') {
+            const esp = (atencionToEdit as any)[`especialidad_${i}`];
+            if (!esp) break;
+            filasData.push({
+              especialidad: esp || '',
+              diagnostico: (atencionToEdit as any)[`diagnostico_${i}`] || '',
+              tratamiento: (atencionToEdit as any)[`tratamiento_${i}`] || '',
+              responsable: (atencionToEdit as any)[`responsable_${i}`] || '',
+              tipo: '', descripcion: '', entregadoPor: '', fecha: '',
+            });
+          } else {
+            const prefix = atencionToEdit.tipo === 'beneficio' ? 'beneficio' : 'donacion';
+            const tipo = (atencionToEdit as any)[`${prefix}_tipo_${i}`];
+            if (!tipo) break;
+            filasData.push({
+              especialidad: '', diagnostico: '', tratamiento: '', responsable: '',
+              tipo: tipo || '',
+              descripcion: (atencionToEdit as any)[`${prefix}_descripcion_${i}`] || '',
+              entregadoPor: (atencionToEdit as any)[`${prefix}_entregado_por_${i}`] || '',
+              fecha: (atencionToEdit as any)[`${prefix}_fecha_${i}`]
+                ? toDateInput(new Date((atencionToEdit as any)[`${prefix}_fecha_${i}`])) : '',
+            });
+          }
+        }
+        if (filasData.length > 0) {
+          setSeccionActiva(true);
+          setCantidad(filasData.length);
+          setFilas(filasData);
+        } else {
+          setSeccionActiva(false);
+          setCantidad(1);
+          setFilas(buildFilasVacias(1));
+        }
+        setErrorMsg('');
+      } else {
+        setTipo('medica');
+        setFechaAtencion(toDateInput(new Date()));
+        setPresionArterial('');
+        setTemperatura('');
+        setFrecuenciaCardiaca('');
+        setPeso('');
+        setTalla('');
+        setSaturacionOxigeno('');
+        setObservaciones('');
+        setSeccionActiva(false);
+        setCantidad(1);
+        setFilas(buildFilasVacias(1));
+        setErrorMsg('');
+        if (!historiaClinicaId) {
+          setCedulaBusqueda('');
+          setResultadosBusqueda([]);
+          setRefugiadoEncontrado(null);
+          setHcIdLocal('');
+        }
       }
     }
-  }, [isOpen, historiaClinicaId]);
+  }, [isOpen, historiaClinicaId, atencionToEdit]);
 
   const necesitaBusqueda = !historiaClinicaId && !hcIdLocal;
 
@@ -139,7 +190,7 @@ export default function AtencionMedicaModal({ isOpen, onClose, historiaClinicaId
     setFilas(prev => {
       const nuevas = [...prev];
       while (nuevas.length < n) {
-        nuevas.push({ especialidad: '', diagnostico: '', tratamiento: '', tipo: '', descripcion: '', entregadoPor: '', fecha: '' });
+        nuevas.push({ especialidad: '', diagnostico: '', tratamiento: '', responsable: '', tipo: '', descripcion: '', entregadoPor: '', fecha: '' });
       }
       return nuevas.slice(0, n);
     });
@@ -181,6 +232,15 @@ export default function AtencionMedicaModal({ isOpen, onClose, historiaClinicaId
       };
 
       if (seccionActiva) {
+        if (tipo === 'medica') {
+          for (let i = 0; i < cantidad; i++) {
+            if (!filas[i].responsable.trim()) {
+              setErrorMsg(`El campo "Responsable" es obligatorio en la especialidad #${i + 1}`);
+              setIsSubmitting(false);
+              return;
+            }
+          }
+        }
         for (let i = 0; i < cantidad; i++) {
           const idx = i + 1;
           const fila = filas[i];
@@ -188,6 +248,7 @@ export default function AtencionMedicaModal({ isOpen, onClose, historiaClinicaId
             (payload as any)[`especialidad_${idx}`] = fila.especialidad || undefined;
             (payload as any)[`diagnostico_${idx}`] = fila.diagnostico || undefined;
             (payload as any)[`tratamiento_${idx}`] = fila.tratamiento || undefined;
+            (payload as any)[`responsable_${idx}`] = fila.responsable || undefined;
           } else if (tipo === 'beneficio') {
             (payload as any)[`beneficio_tipo_${idx}`] = fila.tipo || undefined;
             (payload as any)[`beneficio_descripcion_${idx}`] = fila.descripcion || undefined;
@@ -202,7 +263,11 @@ export default function AtencionMedicaModal({ isOpen, onClose, historiaClinicaId
         }
       }
 
-      await agregarRegistroAtencion(payload);
+      if (atencionToEdit) {
+        await actualizarAtencionMedica(atencionToEdit.id, payload);
+      } else {
+        await agregarRegistroAtencion(payload);
+      }
       setShowSuccess(true);
       setTimeout(() => { setShowSuccess(false); onClose(); }, 1500);
     } catch (err: any) {
@@ -214,10 +279,11 @@ export default function AtencionMedicaModal({ isOpen, onClose, historiaClinicaId
 
   if (!isOpen) return null;
 
+  const prefix = atencionToEdit ? 'Modificar' : 'Registrar';
   const titulo = {
-    medica: 'Registrar Atención Médica',
-    beneficio: 'Registrar Beneficio',
-    donacion: 'Registrar Donación',
+    medica: `${prefix} Atención Médica`,
+    beneficio: `${prefix} Beneficio`,
+    donacion: `${prefix} Donación`,
   }[tipo];
 
   const IconoTipo = TIPOS.find(t => t.value === tipo)?.icon || Activity;
@@ -329,11 +395,10 @@ export default function AtencionMedicaModal({ isOpen, onClose, historiaClinicaId
                         key={value}
                         type="button"
                         onClick={() => handleTipoChange(value)}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium transition-all ${
-                          tipo === value
+                        className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-xl text-sm font-medium transition-all ${tipo === value
                             ? 'bg-caracas-red text-white shadow-md'
                             : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                        }`}
+                          }`}
                       >
                         <Icon size={18} />
                         {label}
@@ -511,6 +576,16 @@ export default function AtencionMedicaModal({ isOpen, onClose, historiaClinicaId
                                   />
                                 </div>
                                 <div>
+                                  <label className="block text-xs font-medium text-gray-500 mb-1">Responsable*</label>
+                                  <input
+                                    type="text"
+                                    value={filas[i]?.responsable || ''}
+                                    onChange={e => actualizarFila(i, 'responsable', e.target.value)}
+                                    className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase"
+                                    placeholder="Médico responsable"
+                                  />
+                                </div>
+                                <div>
                                   <label className="block text-xs font-medium text-gray-500 mb-1">Tratamiento</label>
                                   <input
                                     type="text"
@@ -580,7 +655,7 @@ export default function AtencionMedicaModal({ isOpen, onClose, historiaClinicaId
             </button>
             <button form="atencion-form" type="submit" disabled={isSubmitting} className="flex items-center gap-2 bg-caracas-red hover:bg-red-800 text-white px-8 py-2.5 rounded-xl font-medium transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed">
               <Save size={18} />
-              {isSubmitting ? 'Guardando...' : 'Registrar'}
+              {isSubmitting ? 'Guardando...' : atencionToEdit ? 'Guardar Cambios' : 'Registrar'}
             </button>
           </div>
         )}

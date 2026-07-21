@@ -63,16 +63,16 @@ function mapAtencionMedica(row: Record<string, unknown>): AtencionMedica {
     observaciones: r('observaciones'),
     created_at: new Date(row.created_at as string),
     // especialidades (tipo = 'medica')
-    especialidad_1: r('especialidad_1'), diagnostico_1: r('diagnostico_1'), tratamiento_1: r('tratamiento_1'),
-    especialidad_2: r('especialidad_2'), diagnostico_2: r('diagnostico_2'), tratamiento_2: r('tratamiento_2'),
-    especialidad_3: r('especialidad_3'), diagnostico_3: r('diagnostico_3'), tratamiento_3: r('tratamiento_3'),
-    especialidad_4: r('especialidad_4'), diagnostico_4: r('diagnostico_4'), tratamiento_4: r('tratamiento_4'),
-    especialidad_5: r('especialidad_5'), diagnostico_5: r('diagnostico_5'), tratamiento_5: r('tratamiento_5'),
-    especialidad_6: r('especialidad_6'), diagnostico_6: r('diagnostico_6'), tratamiento_6: r('tratamiento_6'),
-    especialidad_7: r('especialidad_7'), diagnostico_7: r('diagnostico_7'), tratamiento_7: r('tratamiento_7'),
-    especialidad_8: r('especialidad_8'), diagnostico_8: r('diagnostico_8'), tratamiento_8: r('tratamiento_8'),
-    especialidad_9: r('especialidad_9'), diagnostico_9: r('diagnostico_9'), tratamiento_9: r('tratamiento_9'),
-    especialidad_10: r('especialidad_10'), diagnostico_10: r('diagnostico_10'), tratamiento_10: r('tratamiento_10'),
+    especialidad_1: r('especialidad_1'), diagnostico_1: r('diagnostico_1'), tratamiento_1: r('tratamiento_1'), responsable_1: r('responsable_1'),
+    especialidad_2: r('especialidad_2'), diagnostico_2: r('diagnostico_2'), tratamiento_2: r('tratamiento_2'), responsable_2: r('responsable_2'),
+    especialidad_3: r('especialidad_3'), diagnostico_3: r('diagnostico_3'), tratamiento_3: r('tratamiento_3'), responsable_3: r('responsable_3'),
+    especialidad_4: r('especialidad_4'), diagnostico_4: r('diagnostico_4'), tratamiento_4: r('tratamiento_4'), responsable_4: r('responsable_4'),
+    especialidad_5: r('especialidad_5'), diagnostico_5: r('diagnostico_5'), tratamiento_5: r('tratamiento_5'), responsable_5: r('responsable_5'),
+    especialidad_6: r('especialidad_6'), diagnostico_6: r('diagnostico_6'), tratamiento_6: r('tratamiento_6'), responsable_6: r('responsable_6'),
+    especialidad_7: r('especialidad_7'), diagnostico_7: r('diagnostico_7'), tratamiento_7: r('tratamiento_7'), responsable_7: r('responsable_7'),
+    especialidad_8: r('especialidad_8'), diagnostico_8: r('diagnostico_8'), tratamiento_8: r('tratamiento_8'), responsable_8: r('responsable_8'),
+    especialidad_9: r('especialidad_9'), diagnostico_9: r('diagnostico_9'), tratamiento_9: r('tratamiento_9'), responsable_9: r('responsable_9'),
+    especialidad_10: r('especialidad_10'), diagnostico_10: r('diagnostico_10'), tratamiento_10: r('tratamiento_10'), responsable_10: r('responsable_10'),
     // beneficios
     beneficio_tipo_1: r('beneficio_tipo_1'), beneficio_descripcion_1: r('beneficio_descripcion_1'), beneficio_entregado_por_1: r('beneficio_entregado_por_1'), beneficio_fecha_1: d('beneficio_fecha_1'),
     beneficio_tipo_2: r('beneficio_tipo_2'), beneficio_descripcion_2: r('beneficio_descripcion_2'), beneficio_entregado_por_2: r('beneficio_entregado_por_2'), beneficio_fecha_2: d('beneficio_fecha_2'),
@@ -225,6 +225,7 @@ function buildInsertPayload(nueva: AtencionMedica): Record<string, unknown> {
     payload[`especialidad_${s}`] = (nueva as any)[`especialidad_${s}`] || null;
     payload[`diagnostico_${s}`] = (nueva as any)[`diagnostico_${s}`] || null;
     payload[`tratamiento_${s}`] = (nueva as any)[`tratamiento_${s}`] || null;
+    payload[`responsable_${s}`] = (nueva as any)[`responsable_${s}`] || null;
     payload[`beneficio_tipo_${s}`] = (nueva as any)[`beneficio_tipo_${s}`] || null;
     payload[`beneficio_descripcion_${s}`] = (nueva as any)[`beneficio_descripcion_${s}`] || null;
     payload[`beneficio_entregado_por_${s}`] = (nueva as any)[`beneficio_entregado_por_${s}`] || null;
@@ -358,4 +359,31 @@ export async function obtenerAtencionesPorHistoriaClinica(historiaClinicaId: str
   }
 
   return ((data || []) as Record<string, unknown>[]).map(mapAtencionMedica);
+}
+
+export async function obtenerAtencionesPorRefugiado(refugiadoId: string): Promise<AtencionMedica[]> {
+  const hc = await obtenerHistoriaClinicaPorRefugiado(refugiadoId);
+  if (!hc) return [];
+  return obtenerAtencionesPorHistoriaClinica(hc.id);
+}
+
+export async function actualizarAtencionMedica(id: string, data: AtencionMedica): Promise<AtencionMedica> {
+  const { data: result, error } = await supabase
+    .from('atenciones_medicas')
+    .update(buildInsertPayload(data))
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error || !result) throw new Error(error?.message || 'Error al actualizar atención');
+  return mapAtencionMedica(result as Record<string, unknown>);
+}
+
+export async function eliminarAtencionMedica(id: string): Promise<void> {
+  const { error } = await supabase
+    .from('atenciones_medicas')
+    .delete()
+    .eq('id', id);
+
+  if (error) throw new Error(error?.message || 'Error al eliminar atención');
 }

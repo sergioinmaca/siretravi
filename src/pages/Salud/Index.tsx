@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useCampamento } from '../../context/CampamentoContext';
-import { Stethoscope, Pill, ClipboardList } from 'lucide-react';
+import { Stethoscope, Pill, ClipboardList, History } from 'lucide-react';
 import AtencionMedicaModal from '../../components/salud/AtencionMedicaModal';
 
 const submodulos = [
@@ -68,6 +68,26 @@ export default function SaludIndex() {
               </h3>
               <p className="text-gray-500 leading-relaxed">
                 Registre atenciones médicas, beneficios o donaciones recibidas por los integrantes del campamento.
+              </p>
+            </div>
+          </div>
+        </button>
+
+        <button
+          onClick={() => navigate('/salud/atenciones')}
+          className="bg-white rounded-2xl shadow-sm border border-gray-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 p-8 text-left group overflow-hidden relative"
+        >
+          <div className="absolute top-0 left-0 w-2 h-full bg-orange-600 rounded-l-full" />
+          <div className="flex items-start gap-6">
+            <div className="p-4 bg-orange-100 rounded-2xl shrink-0">
+              <History size={36} className="text-orange-600" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-gray-800 group-hover:text-caracas-red transition-colors mb-2">
+                Atenciones, Beneficios y Donaciones
+              </h3>
+              <p className="text-gray-500 leading-relaxed">
+                Consulte el historial completo de atenciones, beneficios y donaciones registrados por integrante.
               </p>
             </div>
           </div>

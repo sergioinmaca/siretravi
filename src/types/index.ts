@@ -174,16 +174,16 @@ export interface AtencionMedica {
   observaciones?: string;
   created_at: Date;
   // tipo = 'medica' — especialidades
-  especialidad_1?: string; diagnostico_1?: string; tratamiento_1?: string;
-  especialidad_2?: string; diagnostico_2?: string; tratamiento_2?: string;
-  especialidad_3?: string; diagnostico_3?: string; tratamiento_3?: string;
-  especialidad_4?: string; diagnostico_4?: string; tratamiento_4?: string;
-  especialidad_5?: string; diagnostico_5?: string; tratamiento_5?: string;
-  especialidad_6?: string; diagnostico_6?: string; tratamiento_6?: string;
-  especialidad_7?: string; diagnostico_7?: string; tratamiento_7?: string;
-  especialidad_8?: string; diagnostico_8?: string; tratamiento_8?: string;
-  especialidad_9?: string; diagnostico_9?: string; tratamiento_9?: string;
-  especialidad_10?: string; diagnostico_10?: string; tratamiento_10?: string;
+  especialidad_1?: string; diagnostico_1?: string; tratamiento_1?: string; responsable_1?: string;
+  especialidad_2?: string; diagnostico_2?: string; tratamiento_2?: string; responsable_2?: string;
+  especialidad_3?: string; diagnostico_3?: string; tratamiento_3?: string; responsable_3?: string;
+  especialidad_4?: string; diagnostico_4?: string; tratamiento_4?: string; responsable_4?: string;
+  especialidad_5?: string; diagnostico_5?: string; tratamiento_5?: string; responsable_5?: string;
+  especialidad_6?: string; diagnostico_6?: string; tratamiento_6?: string; responsable_6?: string;
+  especialidad_7?: string; diagnostico_7?: string; tratamiento_7?: string; responsable_7?: string;
+  especialidad_8?: string; diagnostico_8?: string; tratamiento_8?: string; responsable_8?: string;
+  especialidad_9?: string; diagnostico_9?: string; tratamiento_9?: string; responsable_9?: string;
+  especialidad_10?: string; diagnostico_10?: string; tratamiento_10?: string; responsable_10?: string;
   // tipo = 'beneficio'
   beneficio_tipo_1?: string; beneficio_descripcion_1?: string; beneficio_entregado_por_1?: string; beneficio_fecha_1?: Date;
   beneficio_tipo_2?: string; beneficio_descripcion_2?: string; beneficio_entregado_por_2?: string; beneficio_fecha_2?: Date;

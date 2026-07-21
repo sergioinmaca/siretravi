@@ -761,11 +761,13 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
                                 const esp = (a as any)[`especialidad_${i}`];
                                 const diag = (a as any)[`diagnostico_${i}`];
                                 const trat = (a as any)[`tratamiento_${i}`];
+                                const resp = (a as any)[`responsable_${i}`];
                                 if (!esp) return null;
                                 return (
                                   <div key={i} className="pl-6 border-l-2 border-caracas-red/30 ml-1 py-1">
                                     <p><span className="font-medium">Especialidad:</span> {esp}</p>
                                     {diag && <p><span className="font-medium">Diagnóstico:</span> {diag}</p>}
+                                    {resp && <p><span className="font-medium">Responsable:</span> {resp}</p>}
                                     {trat && <p><span className="font-medium">Tratamiento:</span> {trat}</p>}
                                   </div>
                                 );
