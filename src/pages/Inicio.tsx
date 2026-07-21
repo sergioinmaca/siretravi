@@ -69,11 +69,11 @@ export default function Inicio() {
   }, [refugiadosDelCampamento]);
 
   // ── Nuevos indicadores demográficos ─────────────────────────────────────
-  const ninos = refugiadosConEdad.filter(r => r.edad <= 12);
+  const ninos = refugiadosConEdad.filter(r => r.edad <= 11);
   const ninosH = ninos.filter(r => r.genero === true).length;
   const ninosM = ninos.filter(r => r.genero === false).length;
 
-  const adolescentes = refugiadosConEdad.filter(r => r.edad > 12 && r.edad <= 17);
+  const adolescentes = refugiadosConEdad.filter(r => r.edad >= 12 && r.edad <= 17);
   const adolescentesH = adolescentes.filter(r => r.genero === true).length;
   const adolescentesM = adolescentes.filter(r => r.genero === false).length;
 
@@ -85,7 +85,7 @@ export default function Inicio() {
   const lactantesH = lactantes.filter(r => r.genero === true).length;
   const lactantesM = lactantes.filter(r => r.genero === false).length;
 
-  const noLactantes = refugiadosConEdad.filter(r => r.edad >= 4 && r.edad <= 12);
+  const noLactantes = refugiadosConEdad.filter(r => r.edad >= 4 && r.edad <= 11);
   const noLactantesH = noLactantes.filter(r => r.genero === true).length;
   const noLactantesM = noLactantes.filter(r => r.genero === false).length;
 
@@ -398,7 +398,7 @@ export default function Inicio() {
       <div className="space-y-6">
         {/* Cards de Niñez */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Niños (0-12) */}
+          {/* Niños (0-11) */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-orange-400 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-3 bg-orange-100 rounded-xl text-orange-500">
@@ -410,7 +410,7 @@ export default function Inicio() {
               </div>
             </div>
             <p className="text-xs text-gray-400">
-              0 a 12 años · <span className="text-blue-600 font-medium">{ninosH} H</span> · <span className="text-pink-600 font-medium">{ninosM} M</span>
+              0 a 11 años · <span className="text-blue-600 font-medium">{ninosH} H</span> · <span className="text-pink-600 font-medium">{ninosM} M</span>
             </p>
           </div>
 
@@ -430,7 +430,7 @@ export default function Inicio() {
             </p>
           </div>
 
-          {/* No Lactantes (4-12) */}
+          {/* No Lactantes (4-11) */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-orange-300 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-3 bg-amber-100 rounded-xl text-amber-600">
@@ -442,14 +442,14 @@ export default function Inicio() {
               </div>
             </div>
             <p className="text-xs text-gray-400">
-              4 a 12 años · <span className="text-blue-600 font-medium">{noLactantesH} H</span> · <span className="text-pink-600 font-medium">{noLactantesM} M</span>
+              4 a 11 años · <span className="text-blue-600 font-medium">{noLactantesH} H</span> · <span className="text-pink-600 font-medium">{noLactantesM} M</span>
             </p>
           </div>
         </div>
 
         {/* Adolescentes, Adultos, Adulto Mayor */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Adolescentes (13-17) */}
+          {/* Adolescentes (12-17) */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-yellow-400 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-3 bg-yellow-100 rounded-xl text-yellow-600">
@@ -461,7 +461,7 @@ export default function Inicio() {
               </div>
             </div>
             <p className="text-xs text-gray-400">
-              13 a 17 años · <span className="text-blue-600 font-medium">{adolescentesH} H</span> · <span className="text-pink-600 font-medium">{adolescentesM} M</span>
+              12 a 17 años · <span className="text-blue-600 font-medium">{adolescentesH} H</span> · <span className="text-pink-600 font-medium">{adolescentesM} M</span>
             </p>
           </div>
 
