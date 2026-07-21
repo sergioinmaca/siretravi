@@ -45,18 +45,56 @@ function mapHistoriaClinica(row: Record<string, unknown>): HistoriaClinica {
 }
 
 function mapAtencionMedica(row: Record<string, unknown>): AtencionMedica {
+  const r = (k: string) => (row[k] as string) || undefined;
+  const n = (k: string) => (row[k] as number) || undefined;
+  const d = (k: string) => (row[k] ? new Date(row[k] as string) : undefined);
+
   return {
     id: row.id as string,
     historia_clinica_id: row.historia_clinica_id as string,
+    tipo: (row.tipo as 'medica' | 'beneficio' | 'donacion') || 'medica',
     fecha_atencion: new Date(row.fecha_atencion as string),
-    presion_arterial: (row.presion_arterial as string) || undefined,
-    temperatura: (row.temperatura as number) || undefined,
-    frecuencia_cardiaca: (row.frecuencia_cardiaca as number) || undefined,
-    peso: (row.peso as number) || undefined,
-    talla: (row.talla as number) || undefined,
-    saturacion_oxigeno: (row.saturacion_oxigeno as number) || undefined,
-    observaciones: (row.observaciones as string) || undefined,
+    presion_arterial: r('presion_arterial'),
+    temperatura: n('temperatura'),
+    frecuencia_cardiaca: n('frecuencia_cardiaca'),
+    peso: n('peso'),
+    talla: n('talla'),
+    saturacion_oxigeno: n('saturacion_oxigeno'),
+    observaciones: r('observaciones'),
     created_at: new Date(row.created_at as string),
+    // especialidades (tipo = 'medica')
+    especialidad_1: r('especialidad_1'), diagnostico_1: r('diagnostico_1'), tratamiento_1: r('tratamiento_1'),
+    especialidad_2: r('especialidad_2'), diagnostico_2: r('diagnostico_2'), tratamiento_2: r('tratamiento_2'),
+    especialidad_3: r('especialidad_3'), diagnostico_3: r('diagnostico_3'), tratamiento_3: r('tratamiento_3'),
+    especialidad_4: r('especialidad_4'), diagnostico_4: r('diagnostico_4'), tratamiento_4: r('tratamiento_4'),
+    especialidad_5: r('especialidad_5'), diagnostico_5: r('diagnostico_5'), tratamiento_5: r('tratamiento_5'),
+    especialidad_6: r('especialidad_6'), diagnostico_6: r('diagnostico_6'), tratamiento_6: r('tratamiento_6'),
+    especialidad_7: r('especialidad_7'), diagnostico_7: r('diagnostico_7'), tratamiento_7: r('tratamiento_7'),
+    especialidad_8: r('especialidad_8'), diagnostico_8: r('diagnostico_8'), tratamiento_8: r('tratamiento_8'),
+    especialidad_9: r('especialidad_9'), diagnostico_9: r('diagnostico_9'), tratamiento_9: r('tratamiento_9'),
+    especialidad_10: r('especialidad_10'), diagnostico_10: r('diagnostico_10'), tratamiento_10: r('tratamiento_10'),
+    // beneficios
+    beneficio_tipo_1: r('beneficio_tipo_1'), beneficio_descripcion_1: r('beneficio_descripcion_1'), beneficio_entregado_por_1: r('beneficio_entregado_por_1'), beneficio_fecha_1: d('beneficio_fecha_1'),
+    beneficio_tipo_2: r('beneficio_tipo_2'), beneficio_descripcion_2: r('beneficio_descripcion_2'), beneficio_entregado_por_2: r('beneficio_entregado_por_2'), beneficio_fecha_2: d('beneficio_fecha_2'),
+    beneficio_tipo_3: r('beneficio_tipo_3'), beneficio_descripcion_3: r('beneficio_descripcion_3'), beneficio_entregado_por_3: r('beneficio_entregado_por_3'), beneficio_fecha_3: d('beneficio_fecha_3'),
+    beneficio_tipo_4: r('beneficio_tipo_4'), beneficio_descripcion_4: r('beneficio_descripcion_4'), beneficio_entregado_por_4: r('beneficio_entregado_por_4'), beneficio_fecha_4: d('beneficio_fecha_4'),
+    beneficio_tipo_5: r('beneficio_tipo_5'), beneficio_descripcion_5: r('beneficio_descripcion_5'), beneficio_entregado_por_5: r('beneficio_entregado_por_5'), beneficio_fecha_5: d('beneficio_fecha_5'),
+    beneficio_tipo_6: r('beneficio_tipo_6'), beneficio_descripcion_6: r('beneficio_descripcion_6'), beneficio_entregado_por_6: r('beneficio_entregado_por_6'), beneficio_fecha_6: d('beneficio_fecha_6'),
+    beneficio_tipo_7: r('beneficio_tipo_7'), beneficio_descripcion_7: r('beneficio_descripcion_7'), beneficio_entregado_por_7: r('beneficio_entregado_por_7'), beneficio_fecha_7: d('beneficio_fecha_7'),
+    beneficio_tipo_8: r('beneficio_tipo_8'), beneficio_descripcion_8: r('beneficio_descripcion_8'), beneficio_entregado_por_8: r('beneficio_entregado_por_8'), beneficio_fecha_8: d('beneficio_fecha_8'),
+    beneficio_tipo_9: r('beneficio_tipo_9'), beneficio_descripcion_9: r('beneficio_descripcion_9'), beneficio_entregado_por_9: r('beneficio_entregado_por_9'), beneficio_fecha_9: d('beneficio_fecha_9'),
+    beneficio_tipo_10: r('beneficio_tipo_10'), beneficio_descripcion_10: r('beneficio_descripcion_10'), beneficio_entregado_por_10: r('beneficio_entregado_por_10'), beneficio_fecha_10: d('beneficio_fecha_10'),
+    // donaciones
+    donacion_tipo_1: r('donacion_tipo_1'), donacion_descripcion_1: r('donacion_descripcion_1'), donacion_entregado_por_1: r('donacion_entregado_por_1'), donacion_fecha_1: d('donacion_fecha_1'),
+    donacion_tipo_2: r('donacion_tipo_2'), donacion_descripcion_2: r('donacion_descripcion_2'), donacion_entregado_por_2: r('donacion_entregado_por_2'), donacion_fecha_2: d('donacion_fecha_2'),
+    donacion_tipo_3: r('donacion_tipo_3'), donacion_descripcion_3: r('donacion_descripcion_3'), donacion_entregado_por_3: r('donacion_entregado_por_3'), donacion_fecha_3: d('donacion_fecha_3'),
+    donacion_tipo_4: r('donacion_tipo_4'), donacion_descripcion_4: r('donacion_descripcion_4'), donacion_entregado_por_4: r('donacion_entregado_por_4'), donacion_fecha_4: d('donacion_fecha_4'),
+    donacion_tipo_5: r('donacion_tipo_5'), donacion_descripcion_5: r('donacion_descripcion_5'), donacion_entregado_por_5: r('donacion_entregado_por_5'), donacion_fecha_5: d('donacion_fecha_5'),
+    donacion_tipo_6: r('donacion_tipo_6'), donacion_descripcion_6: r('donacion_descripcion_6'), donacion_entregado_por_6: r('donacion_entregado_por_6'), donacion_fecha_6: d('donacion_fecha_6'),
+    donacion_tipo_7: r('donacion_tipo_7'), donacion_descripcion_7: r('donacion_descripcion_7'), donacion_entregado_por_7: r('donacion_entregado_por_7'), donacion_fecha_7: d('donacion_fecha_7'),
+    donacion_tipo_8: r('donacion_tipo_8'), donacion_descripcion_8: r('donacion_descripcion_8'), donacion_entregado_por_8: r('donacion_entregado_por_8'), donacion_fecha_8: d('donacion_fecha_8'),
+    donacion_tipo_9: r('donacion_tipo_9'), donacion_descripcion_9: r('donacion_descripcion_9'), donacion_entregado_por_9: r('donacion_entregado_por_9'), donacion_fecha_9: d('donacion_fecha_9'),
+    donacion_tipo_10: r('donacion_tipo_10'), donacion_descripcion_10: r('donacion_descripcion_10'), donacion_entregado_por_10: r('donacion_entregado_por_10'), donacion_fecha_10: d('donacion_fecha_10'),
   };
 }
 
@@ -164,26 +202,54 @@ export async function actualizarHistoriaClinica(id: string, actualizada: Histori
   return mapHistoriaClinica(data as Record<string, unknown>);
 }
 
-export async function agregarAtencionMedica(nueva: AtencionMedica): Promise<AtencionMedica> {
+const CAMPOS_NUM = Array.from({ length: 10 }, (_, i) => i + 1);
+
+function buildInsertPayload(nueva: AtencionMedica): Record<string, unknown> {
+  const payload: Record<string, unknown> = {
+    historia_clinica_id: nueva.historia_clinica_id,
+    tipo: nueva.tipo,
+    fecha_atencion: nueva.fecha_atencion instanceof Date
+      ? toDateInput(nueva.fecha_atencion)
+      : nueva.fecha_atencion,
+    presion_arterial: nueva.presion_arterial || null,
+    temperatura: nueva.temperatura || null,
+    frecuencia_cardiaca: nueva.frecuencia_cardiaca || null,
+    peso: nueva.peso || null,
+    talla: nueva.talla || null,
+    saturacion_oxigeno: nueva.saturacion_oxigeno || null,
+    observaciones: nueva.observaciones || null,
+  };
+
+  for (const i of CAMPOS_NUM) {
+    const s = i.toString();
+    payload[`especialidad_${s}`] = (nueva as any)[`especialidad_${s}`] || null;
+    payload[`diagnostico_${s}`] = (nueva as any)[`diagnostico_${s}`] || null;
+    payload[`tratamiento_${s}`] = (nueva as any)[`tratamiento_${s}`] || null;
+    payload[`beneficio_tipo_${s}`] = (nueva as any)[`beneficio_tipo_${s}`] || null;
+    payload[`beneficio_descripcion_${s}`] = (nueva as any)[`beneficio_descripcion_${s}`] || null;
+    payload[`beneficio_entregado_por_${s}`] = (nueva as any)[`beneficio_entregado_por_${s}`] || null;
+    payload[`beneficio_fecha_${s}`] = (nueva as any)[`beneficio_fecha_${s}`]
+      ? toDateInput((nueva as any)[`beneficio_fecha_${s}`])
+      : null;
+    payload[`donacion_tipo_${s}`] = (nueva as any)[`donacion_tipo_${s}`] || null;
+    payload[`donacion_descripcion_${s}`] = (nueva as any)[`donacion_descripcion_${s}`] || null;
+    payload[`donacion_entregado_por_${s}`] = (nueva as any)[`donacion_entregado_por_${s}`] || null;
+    payload[`donacion_fecha_${s}`] = (nueva as any)[`donacion_fecha_${s}`]
+      ? toDateInput((nueva as any)[`donacion_fecha_${s}`])
+      : null;
+  }
+
+  return payload;
+}
+
+export async function agregarRegistroAtencion(nueva: AtencionMedica): Promise<AtencionMedica> {
   const { data, error } = await supabase
     .from('atenciones_medicas')
-    .insert({
-      historia_clinica_id: nueva.historia_clinica_id,
-      fecha_atencion: nueva.fecha_atencion instanceof Date
-        ? toDateInput(nueva.fecha_atencion)
-        : nueva.fecha_atencion,
-      presion_arterial: nueva.presion_arterial || null,
-      temperatura: nueva.temperatura || null,
-      frecuencia_cardiaca: nueva.frecuencia_cardiaca || null,
-      peso: nueva.peso || null,
-      talla: nueva.talla || null,
-      saturacion_oxigeno: nueva.saturacion_oxigeno || null,
-      observaciones: nueva.observaciones || null,
-    })
+    .insert(buildInsertPayload(nueva))
     .select()
     .single();
 
-  if (error || !data) throw new Error(error?.message || 'Error al registrar atención médica');
+  if (error || !data) throw new Error(error?.message || 'Error al registrar atención');
   return mapAtencionMedica(data as Record<string, unknown>);
 }
 
@@ -267,4 +333,29 @@ export async function obtenerTodasLasHistoriasClinicas(): Promise<HistoriaClinic
   }
 
   return ((data || []) as Record<string, unknown>[]).map(mapHistoriaClinica);
+}
+
+export async function obtenerHistoriaClinicaPorRefugiado(refugiadoId: string): Promise<HistoriaClinica | null> {
+  const { data, error } = await supabase
+    .from('historias_clinicas')
+    .select('*')
+    .eq('refugiado_id', refugiadoId);
+
+  if (error || !data || data.length === 0) return null;
+  return mapHistoriaClinica(data[0] as Record<string, unknown>);
+}
+
+export async function obtenerAtencionesPorHistoriaClinica(historiaClinicaId: string): Promise<AtencionMedica[]> {
+  const { data, error } = await supabase
+    .from('atenciones_medicas')
+    .select('*')
+    .eq('historia_clinica_id', historiaClinicaId)
+    .order('fecha_atencion', { ascending: false });
+
+  if (error) {
+    console.error('Error al obtener atenciones:', error);
+    return [];
+  }
+
+  return ((data || []) as Record<string, unknown>[]).map(mapAtencionMedica);
 }

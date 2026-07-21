@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useCampamento } from '../../context/CampamentoContext';
-import { Stethoscope, Pill } from 'lucide-react';
+import { Stethoscope, Pill, ClipboardList } from 'lucide-react';
+import AtencionMedicaModal from '../../components/salud/AtencionMedicaModal';
 
 const submodulos = [
   {
@@ -29,6 +31,7 @@ export default function SaludIndex() {
   const { campamentoSeleccionado } = useCampamento();
   const { tienePermisoPorCampamento } = useAuth();
   const campId = campamentoSeleccionado?.id || '';
+  const [atencionModalOpen, setAtencionModalOpen] = useState(false);
 
   if (!tienePermisoPorCampamento('Salud', campId, 'Ver')) {
     return (
@@ -50,6 +53,26 @@ export default function SaludIndex() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <button
+          onClick={() => setAtencionModalOpen(true)}
+          className="bg-white rounded-2xl shadow-sm border border-gray-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 p-8 text-left group overflow-hidden relative"
+        >
+          <div className="absolute top-0 left-0 w-2 h-full bg-teal-600 rounded-l-full" />
+          <div className="flex items-start gap-6">
+            <div className="p-4 bg-teal-100 rounded-2xl shrink-0">
+              <ClipboardList size={36} className="text-teal-600" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-gray-800 group-hover:text-caracas-red transition-colors mb-2">
+                Registrar atención, Beneficio o donación
+              </h3>
+              <p className="text-gray-500 leading-relaxed">
+                Registre atenciones médicas, beneficios o donaciones recibidas por los integrantes del campamento.
+              </p>
+            </div>
+          </div>
+        </button>
+
         {submodulos.map((sub) => {
           const Icon = sub.icon;
           return (
@@ -76,6 +99,11 @@ export default function SaludIndex() {
           );
         })}
       </div>
+
+      <AtencionMedicaModal
+        isOpen={atencionModalOpen}
+        onClose={() => setAtencionModalOpen(false)}
+      />
     </div>
   );
 }
