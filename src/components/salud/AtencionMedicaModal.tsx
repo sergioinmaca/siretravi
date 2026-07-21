@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Save, Activity, Gift, HeartHandshake, Search, User } from 'lucide-react';
-import { toDateInput } from '../../lib/formatDate';
+import { toDateInput, parseDateSafe } from '../../lib/formatDate';
 import { formatCedula } from '../../lib/formatCedula';
 import { formatAge } from '../../lib/formatAge';
 import DateInput from '../ui/DateInput';
@@ -31,7 +31,7 @@ function buildFilasVacias(cantidad: number) {
   if (cantidad > 10) cantidad = 10;
   return Array.from({ length: cantidad }, () => ({
     especialidad: '', diagnostico: '', tratamiento: '', responsable: '',
-    tipo: '', descripcion: '', entregadoPor: '', fecha: '',
+    tipo: '', descripcion: '', entregadoPor: '',
   }));
 }
 
@@ -69,7 +69,8 @@ export default function AtencionMedicaModal({ isOpen, onClose, historiaClinicaId
     if (isOpen) {
       if (atencionToEdit) {
         setTipo(atencionToEdit.tipo);
-        setFechaAtencion(toDateInput(new Date(atencionToEdit.fecha_atencion)));
+        const fechaStr = toDateInput(atencionToEdit.fecha_atencion);
+        setFechaAtencion(fechaStr || toDateInput(new Date()));
         setPresionArterial(atencionToEdit.presion_arterial || '');
         setTemperatura(atencionToEdit.temperatura?.toString() || '');
         setFrecuenciaCardiaca(atencionToEdit.frecuencia_cardiaca?.toString() || '');
@@ -89,7 +90,7 @@ export default function AtencionMedicaModal({ isOpen, onClose, historiaClinicaId
               diagnostico: (atencionToEdit as any)[`diagnostico_${i}`] || '',
               tratamiento: (atencionToEdit as any)[`tratamiento_${i}`] || '',
               responsable: (atencionToEdit as any)[`responsable_${i}`] || '',
-              tipo: '', descripcion: '', entregadoPor: '', fecha: '',
+              tipo: '', descripcion: '', entregadoPor: '',
             });
           } else {
             const prefix = atencionToEdit.tipo === 'beneficio' ? 'beneficio' : 'donacion';
@@ -100,8 +101,6 @@ export default function AtencionMedicaModal({ isOpen, onClose, historiaClinicaId
               tipo: tipo || '',
               descripcion: (atencionToEdit as any)[`${prefix}_descripcion_${i}`] || '',
               entregadoPor: (atencionToEdit as any)[`${prefix}_entregado_por_${i}`] || '',
-              fecha: (atencionToEdit as any)[`${prefix}_fecha_${i}`]
-                ? toDateInput(new Date((atencionToEdit as any)[`${prefix}_fecha_${i}`])) : '',
             });
           }
         }
@@ -190,7 +189,7 @@ export default function AtencionMedicaModal({ isOpen, onClose, historiaClinicaId
     setFilas(prev => {
       const nuevas = [...prev];
       while (nuevas.length < n) {
-        nuevas.push({ especialidad: '', diagnostico: '', tratamiento: '', responsable: '', tipo: '', descripcion: '', entregadoPor: '', fecha: '' });
+        nuevas.push({ especialidad: '', diagnostico: '', tratamiento: '', responsable: '', tipo: '', descripcion: '', entregadoPor: '' });
       }
       return nuevas.slice(0, n);
     });
@@ -215,12 +214,18 @@ export default function AtencionMedicaModal({ isOpen, onClose, historiaClinicaId
     setIsSubmitting(true);
     setErrorMsg('');
 
+    if (!fechaAtencion) {
+      setErrorMsg('Debe ingresar una fecha.');
+      setIsSubmitting(false);
+      return;
+    }
+
     try {
       const payload: any = {
         id: '',
         historia_clinica_id: hcId,
         tipo,
-        fecha_atencion: new Date(fechaAtencion),
+        fecha_atencion: parseDateSafe(fechaAtencion),
         presion_arterial: tipo === 'medica' ? (presionArterial || undefined) : undefined,
         temperatura: tipo === 'medica' && temperatura ? parseFloat(temperatura) : undefined,
         frecuencia_cardiaca: tipo === 'medica' && frecuenciaCardiaca ? parseInt(frecuenciaCardiaca) : undefined,
@@ -253,12 +258,10 @@ export default function AtencionMedicaModal({ isOpen, onClose, historiaClinicaId
             (payload as any)[`beneficio_tipo_${idx}`] = fila.tipo || undefined;
             (payload as any)[`beneficio_descripcion_${idx}`] = fila.descripcion || undefined;
             (payload as any)[`beneficio_entregado_por_${idx}`] = fila.entregadoPor || undefined;
-            (payload as any)[`beneficio_fecha_${idx}`] = fila.fecha ? new Date(fila.fecha) : undefined;
           } else if (tipo === 'donacion') {
             (payload as any)[`donacion_tipo_${idx}`] = fila.tipo || undefined;
             (payload as any)[`donacion_descripcion_${idx}`] = fila.descripcion || undefined;
             (payload as any)[`donacion_entregado_por_${idx}`] = fila.entregadoPor || undefined;
-            (payload as any)[`donacion_fecha_${idx}`] = fila.fecha ? new Date(fila.fecha) : undefined;
           }
         }
       }
@@ -412,7 +415,7 @@ export default function AtencionMedicaModal({ isOpen, onClose, historiaClinicaId
               <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                 <div className="p-6">
                   <DateInput
-                    label="Fecha de Atención"
+                    label={tipo === 'medica' ? 'Fecha de Atención' : tipo === 'beneficio' ? 'Fecha del Beneficio' : 'Fecha de la Donación'}
                     value={fechaAtencion}
                     onChange={setFechaAtencion}
                     className="w-full md:w-64"
@@ -626,13 +629,6 @@ export default function AtencionMedicaModal({ isOpen, onClose, historiaClinicaId
                                     onChange={e => actualizarFila(i, 'descripcion', e.target.value)}
                                     className="w-full px-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase"
                                     placeholder={tipo === 'beneficio' ? 'DESCRIPCIÓN DEL BENEFICIO' : 'DESCRIPCIÓN DEL ARTÍCULO'}
-                                  />
-                                </div>
-                                <div>
-                                  <DateInput
-                                    label="Fecha de entrega"
-                                    value={filas[i]?.fecha || ''}
-                                    onChange={(v) => actualizarFila(i, 'fecha', v)}
                                   />
                                 </div>
                               </div>

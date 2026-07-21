@@ -47,14 +47,12 @@ export default function DetalleAtencionModal({ isOpen, onClose, atencion }: Deta
       const tipo = (atencion as any)[`${prefix}_tipo_${i}`];
       const desc = (atencion as any)[`${prefix}_descripcion_${i}`];
       const entregado = (atencion as any)[`${prefix}_entregado_por_${i}`];
-      const fecha = (atencion as any)[`${prefix}_fecha_${i}`];
       if (!tipo) break;
       rows.push(
         <div key={i} className={`${i > 1 ? 'border-t border-gray-100 pt-3 mt-3' : ''} space-y-1`}>
           <p className="text-sm"><span className="font-medium">Tipo:</span> {tipo}</p>
           {desc && <p className="text-sm"><span className="font-medium">Descripción:</span> {desc}</p>}
           {entregado && <p className="text-sm"><span className="font-medium">Entregado por:</span> {entregado}</p>}
-          {fecha && <p className="text-sm"><span className="font-medium">Fecha:</span> {fecha instanceof Date ? toDisplayDate(fecha) : ''}</p>}
         </div>
       );
     }

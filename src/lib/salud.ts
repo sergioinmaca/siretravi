@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { toDateInput } from './formatDate';
+import { toDateInput, parseDateSafe } from './formatDate';
 import type { HistoriaClinica, AtencionMedica, Tratamiento } from '../types';
 
 // ── Helpers de mapeo ──────────────────────────────────────────────────────────
@@ -47,13 +47,13 @@ function mapHistoriaClinica(row: Record<string, unknown>): HistoriaClinica {
 function mapAtencionMedica(row: Record<string, unknown>): AtencionMedica {
   const r = (k: string) => (row[k] as string) || undefined;
   const n = (k: string) => (row[k] as number) || undefined;
-  const d = (k: string) => (row[k] ? new Date(row[k] as string) : undefined);
+  const d = (k: string) => (row[k] ? parseDateSafe(row[k] as string) : undefined);
 
   return {
     id: row.id as string,
     historia_clinica_id: row.historia_clinica_id as string,
     tipo: (row.tipo as 'medica' | 'beneficio' | 'donacion') || 'medica',
-    fecha_atencion: new Date(row.fecha_atencion as string),
+    fecha_atencion: parseDateSafe(row.fecha_atencion as string),
     presion_arterial: r('presion_arterial'),
     temperatura: n('temperatura'),
     frecuencia_cardiaca: n('frecuencia_cardiaca'),
@@ -209,8 +209,8 @@ function buildInsertPayload(nueva: AtencionMedica): Record<string, unknown> {
     historia_clinica_id: nueva.historia_clinica_id,
     tipo: nueva.tipo,
     fecha_atencion: nueva.fecha_atencion instanceof Date
-      ? toDateInput(nueva.fecha_atencion)
-      : nueva.fecha_atencion,
+      ? (toDateInput(nueva.fecha_atencion) || null)
+      : nueva.fecha_atencion || null,
     presion_arterial: nueva.presion_arterial || null,
     temperatura: nueva.temperatura || null,
     frecuencia_cardiaca: nueva.frecuencia_cardiaca || null,
@@ -222,22 +222,19 @@ function buildInsertPayload(nueva: AtencionMedica): Record<string, unknown> {
 
   for (const i of CAMPOS_NUM) {
     const s = i.toString();
-    payload[`especialidad_${s}`] = (nueva as any)[`especialidad_${s}`] || null;
-    payload[`diagnostico_${s}`] = (nueva as any)[`diagnostico_${s}`] || null;
-    payload[`tratamiento_${s}`] = (nueva as any)[`tratamiento_${s}`] || null;
-    payload[`responsable_${s}`] = (nueva as any)[`responsable_${s}`] || null;
-    payload[`beneficio_tipo_${s}`] = (nueva as any)[`beneficio_tipo_${s}`] || null;
-    payload[`beneficio_descripcion_${s}`] = (nueva as any)[`beneficio_descripcion_${s}`] || null;
-    payload[`beneficio_entregado_por_${s}`] = (nueva as any)[`beneficio_entregado_por_${s}`] || null;
-    payload[`beneficio_fecha_${s}`] = (nueva as any)[`beneficio_fecha_${s}`]
-      ? toDateInput((nueva as any)[`beneficio_fecha_${s}`])
-      : null;
-    payload[`donacion_tipo_${s}`] = (nueva as any)[`donacion_tipo_${s}`] || null;
-    payload[`donacion_descripcion_${s}`] = (nueva as any)[`donacion_descripcion_${s}`] || null;
-    payload[`donacion_entregado_por_${s}`] = (nueva as any)[`donacion_entregado_por_${s}`] || null;
-    payload[`donacion_fecha_${s}`] = (nueva as any)[`donacion_fecha_${s}`]
-      ? toDateInput((nueva as any)[`donacion_fecha_${s}`])
-      : null;
+    const setIfDefined = (key: string, val: unknown) => {
+      if (val !== undefined) payload[key] = val || null;
+    };
+    setIfDefined(`especialidad_${s}`, (nueva as any)[`especialidad_${s}`]);
+    setIfDefined(`diagnostico_${s}`, (nueva as any)[`diagnostico_${s}`]);
+    setIfDefined(`tratamiento_${s}`, (nueva as any)[`tratamiento_${s}`]);
+    setIfDefined(`responsable_${s}`, (nueva as any)[`responsable_${s}`]);
+    setIfDefined(`beneficio_tipo_${s}`, (nueva as any)[`beneficio_tipo_${s}`]);
+    setIfDefined(`beneficio_descripcion_${s}`, (nueva as any)[`beneficio_descripcion_${s}`]);
+    setIfDefined(`beneficio_entregado_por_${s}`, (nueva as any)[`beneficio_entregado_por_${s}`]);
+    setIfDefined(`donacion_tipo_${s}`, (nueva as any)[`donacion_tipo_${s}`]);
+    setIfDefined(`donacion_descripcion_${s}`, (nueva as any)[`donacion_descripcion_${s}`]);
+    setIfDefined(`donacion_entregado_por_${s}`, (nueva as any)[`donacion_entregado_por_${s}`]);
   }
 
   return payload;

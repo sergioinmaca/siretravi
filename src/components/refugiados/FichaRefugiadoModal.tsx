@@ -575,16 +575,11 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
               const tipo = (a as any)[`${prefix}_tipo_${i}`];
               const desc = (a as any)[`${prefix}_descripcion_${i}`];
               const entregado = (a as any)[`${prefix}_entregado_por_${i}`];
-              const fecha = (a as any)[`${prefix}_fecha_${i}`];
               if (!tipo) break;
 
               const lines: string[] = [`Tipo: ${tipo}`];
               if (desc) lines.push(`Descripción: ${desc}`);
               if (entregado) lines.push(`Entregado por: ${entregado}`);
-              if (fecha) {
-                const d = fecha instanceof Date ? fecha : new Date(fecha);
-                lines.push(`Fecha: ${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`);
-              }
 
               lines.forEach(line => {
                 ensureSpace(5);
@@ -895,7 +890,6 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
                                   const tipo = (a as any)[`${prefix}_tipo_${i}`];
                                   const desc = (a as any)[`${prefix}_descripcion_${i}`];
                                   const entregado = (a as any)[`${prefix}_entregado_por_${i}`];
-                                  const fecha = (a as any)[`${prefix}_fecha_${i}`];
                                   if (!tipo) continue;
                                   rows.push(
                                     <div key={i} className={i === 1 ? '' : 'col-span-3 border-t border-gray-100 pt-2 mt-2'}>
@@ -904,14 +898,12 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
                                           <div><span className="font-medium">Tipo:</span> {tipo}</div>
                                           {desc && <div className="md:col-span-1"><span className="font-medium">Descripción:</span> {desc}</div>}
                                           {entregado && <div><span className="font-medium">Entregado por:</span> {entregado}</div>}
-                                          {fecha && <div><span className="font-medium">Fecha:</span> {fecha instanceof Date ? toDisplayDate(fecha) : ''}</div>}
                                         </div>
                                       ) : (
                                         <>
                                           <p className="font-medium">Ítem #{i}: {tipo}</p>
                                           {desc && <p>{desc}</p>}
                                           {entregado && <p className="text-gray-500">Entregado por: {entregado}</p>}
-                                          {fecha && <p className="text-gray-500">Fecha: {fecha instanceof Date ? toDisplayDate(fecha) : ''}</p>}
                                         </>
                                       )}
                                     </div>
