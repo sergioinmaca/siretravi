@@ -481,6 +481,7 @@ export default function LevantarActaModal({ isOpen, onClose, onSaved, tiposActa,
                       contenido={tipoActaCompleto.plantilla.contenido}
                       sistema={sistemaVars}
                       valores={valoresFormulario}
+                      tituloActa={tipoActaCompleto.nombre}
                     />
                   </div>
                 )}

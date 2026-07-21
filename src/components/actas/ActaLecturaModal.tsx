@@ -198,6 +198,7 @@ export default function ActaLecturaModal({ isOpen, onClose, acta, refugiado }: A
                   contenido={tipoActa.plantilla.contenido}
                   sistema={sistemaVars}
                   valores={acta.contenido}
+                  tituloActa={tipoActa.nombre}
                 />
               ) : (
                 <div className="py-8 text-center text-gray-400">
