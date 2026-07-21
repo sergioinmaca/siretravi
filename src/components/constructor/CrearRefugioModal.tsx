@@ -370,10 +370,6 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
                         initialData={campamentoToEdit ? carpa.croquis_data : undefined}
                         onChange={(data) => {
                           updateCarpa(index, 'croquis_data', data);
-                          const tipos = contarTiposDesdeCroquis(data);
-                          updateCarpa(index, 'literas', tipos.literas);
-                          updateCarpa(index, 'camas_individuales', tipos.individuales);
-                          updateCarpa(index, 'camas_duplex', tipos.duplex);
                         }}
                         elementNumberOffset={(() => {
                           let offset = 0;
