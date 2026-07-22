@@ -379,7 +379,7 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
         ctx.lineWidth = 2;
         ctx.stroke();
 
-        // Texto interno del rectangulo
+        // Texto interno del rectangulo (con word-wrap)
         if (obj.texto) {
           const padding = 4;
           const availableW = w - padding * 2;
@@ -390,29 +390,91 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
 
-          let fontSize = Math.min(availableW / obj.texto.length, availableH / 1.5);
-          fontSize = Math.max(8, Math.min(fontSize, 32));
-          ctx.font = `bold ${fontSize}px Inter, sans-serif`;
+          const words = obj.texto.split(' ');
+          const MIN_FONT = 6;
+          const MAX_FONT = 32;
+          const lineHeightRatio = 1.3;
 
-          const metrics = ctx.measureText(obj.texto);
-          while (fontSize > 6 && (isVertical ? metrics.width > availableH : metrics.width > availableW)) {
-            fontSize -= 1;
+          let bestLines: string[] = [];
+          let bestFontSize = MIN_FONT;
+
+          for (let fontSize = MAX_FONT; fontSize >= MIN_FONT; fontSize -= 1) {
             ctx.font = `bold ${fontSize}px Inter, sans-serif`;
+            const lineHeight = fontSize * lineHeightRatio;
+            const maxLineW = isVertical ? availableH : availableW;
+
+            const lines: string[] = [];
+            let currentLine = words[0] || '';
+
+            for (let i = 1; i < words.length; i++) {
+              const testLine = currentLine + ' ' + words[i];
+              if (ctx.measureText(testLine).width <= maxLineW) {
+                currentLine = testLine;
+              } else {
+                lines.push(currentLine);
+                currentLine = words[i];
+              }
+            }
+            if (currentLine) lines.push(currentLine);
+
+            const totalH = lines.length * lineHeight;
+            const maxTotalH = isVertical ? availableW : availableH;
+
+            const allFit = lines.every(l => ctx.measureText(l).width <= maxLineW);
+
+            if (totalH <= maxTotalH && allFit) {
+              bestLines = lines;
+              bestFontSize = fontSize;
+              break;
+            }
           }
+
+          if (bestLines.length === 0) {
+            bestFontSize = MIN_FONT;
+            ctx.font = `bold ${MIN_FONT}px Inter, sans-serif`;
+            const lineHeight = MIN_FONT * lineHeightRatio;
+            const maxLineW = isVertical ? availableH : availableW;
+            const lines: string[] = [];
+            let currentLine = words[0] || '';
+
+            for (let i = 1; i < words.length; i++) {
+              const testLine = currentLine + ' ' + words[i];
+              if (ctx.measureText(testLine).width <= maxLineW) {
+                currentLine = testLine;
+              } else {
+                if (lines.length * lineHeight + lineHeight <= (isVertical ? availableW : availableH)) {
+                  lines.push(currentLine);
+                  currentLine = words[i];
+                } else {
+                  currentLine = currentLine + '...';
+                  break;
+                }
+              }
+            }
+            if (currentLine) lines.push(currentLine);
+            bestLines = lines;
+          }
+
+          const lineHeight = bestFontSize * lineHeightRatio;
+          const totalH = bestLines.length * lineHeight;
 
           if (isVertical) {
             ctx.save();
             ctx.rotate(-Math.PI / 2);
-            const displayText = obj.texto.length > Math.floor(availableH / (fontSize * 0.6))
-              ? obj.texto.slice(0, Math.floor(availableH / (fontSize * 0.6))) + '...'
-              : obj.texto;
-            ctx.fillText(displayText, 0, 0);
+            ctx.font = `bold ${bestFontSize}px Inter, sans-serif`;
+            const startY = -totalH / 2 + lineHeight / 2;
+            for (let i = 0; i < bestLines.length; i++) {
+              const y = startY + i * lineHeight;
+              ctx.fillText(bestLines[i], 0, y);
+            }
             ctx.restore();
           } else {
-            const displayText = obj.texto.length > Math.floor(availableW / (fontSize * 0.55))
-              ? obj.texto.slice(0, Math.floor(availableW / (fontSize * 0.55))) + '...'
-              : obj.texto;
-            ctx.fillText(displayText, 0, 0);
+            ctx.font = `bold ${bestFontSize}px Inter, sans-serif`;
+            const startY = -totalH / 2 + lineHeight / 2;
+            for (let i = 0; i < bestLines.length; i++) {
+              const y = startY + i * lineHeight;
+              ctx.fillText(bestLines[i], 0, y);
+            }
           }
         }
 
