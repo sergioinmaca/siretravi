@@ -14,6 +14,7 @@ import { toDisplayDate } from '../../lib/formatDate';
 import { obtenerHistoriaClinicaPorRefugiado, obtenerAtencionesPorHistoriaClinica } from '../../lib/salud';
 import type { Refugiado, AtencionMedica } from '../../types';
 import { useAuth } from '../../context/AuthContext';
+import CameraCapture from '../ui/CameraCapture';
 
 
 interface FichaRefugiadoModalProps {
@@ -38,6 +39,8 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
   const [mascotaPreviewUrl, setMascotaPreviewUrl] = useState<string | null>(null);
   const [mascotaFotoFile, setMascotaFotoFile] = useState<File | null>(null);
   const mascotaFileInputRef = useRef<HTMLInputElement>(null);
+  const [showCamera, setShowCamera] = useState(false);
+  const [showMascotaCamera, setShowMascotaCamera] = useState(false);
 
   const {
     isUploading,
@@ -652,6 +655,20 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
     if (mascotaFileInputRef.current) mascotaFileInputRef.current.value = '';
   };
 
+  const handleCameraCapture = async (file: File) => {
+    setUploadError(null);
+    const dataUrl = await leerArchivoComoDataURL(file);
+    setPreviewUrl(dataUrl);
+    setFotoFile(file);
+  };
+
+  const handleMascotaCameraCapture = async (file: File) => {
+    setUploadError(null);
+    const dataUrl = await leerArchivoComoDataURL(file);
+    setMascotaPreviewUrl(dataUrl);
+    setMascotaFotoFile(file);
+  };
+
   const handleGuardar = async () => {
     if ((!fotoFile && !mascotaFotoFile) || !refugiado) return;
     setIsSaving(true);
@@ -943,23 +960,34 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
                       />
                     </div>
                   ) : esMaster ? (
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={isUploading}
-                      className="w-28 h-32 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-caracas-red hover:text-caracas-red hover:bg-red-50/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isUploading ? (
-                        <>
-                          <Loader2 size={24} className="animate-spin" />
-                          <span className="text-[10px] font-medium text-center leading-tight">Subiendo...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Camera size={24} />
-                          <span className="text-[10px] font-medium text-center leading-tight">Subir<br />foto</span>
-                        </>
-                      )}
-                    </button>
+                    <div className="flex flex-col gap-2">
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading}
+                        className="w-28 h-32 border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-2 text-gray-400 hover:border-caracas-red hover:text-caracas-red hover:bg-red-50/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isUploading ? (
+                          <>
+                            <Loader2 size={24} className="animate-spin" />
+                            <span className="text-[10px] font-medium text-center leading-tight">Subiendo...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Camera size={24} />
+                            <span className="text-[10px] font-medium text-center leading-tight">Subir<br />foto</span>
+                          </>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowCamera(true)}
+                        disabled={isUploading}
+                        className="w-28 px-2 py-1.5 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-caracas-red hover:text-caracas-red transition-colors flex items-center justify-center gap-1 disabled:opacity-50"
+                      >
+                        <Camera size={14} />
+                        <span className="text-[10px] font-medium">Cámara</span>
+                      </button>
+                    </div>
                   ) : (
                     <div className="w-28 h-32 border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center">
                       <span className="text-[10px] text-gray-300 text-center leading-tight">Sin foto</span>
@@ -1135,23 +1163,34 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
                         </div>
                       ) : (
                         esMaster ? (
-                          <button
-                            onClick={() => mascotaFileInputRef.current?.click()}
-                            disabled={isUploading}
-                            className="w-24 h-[100px] border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-caracas-red hover:text-caracas-red hover:bg-red-50/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {isUploading ? (
-                              <>
-                                <Loader2 size={20} className="animate-spin" />
-                                <span className="text-[8px] font-medium text-center leading-tight">Subiendo...</span>
-                              </>
-                            ) : (
-                              <>
-                                <Camera size={20} />
-                                <span className="text-[9px] font-medium text-center leading-tight">Foto<br />Mascota</span>
-                              </>
-                            )}
-                          </button>
+                          <div className="flex flex-col gap-2">
+                            <button
+                              onClick={() => mascotaFileInputRef.current?.click()}
+                              disabled={isUploading}
+                              className="w-24 h-[100px] border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-caracas-red hover:text-caracas-red hover:bg-red-50/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              {isUploading ? (
+                                <>
+                                  <Loader2 size={20} className="animate-spin" />
+                                  <span className="text-[8px] font-medium text-center leading-tight">Subiendo...</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Camera size={20} />
+                                  <span className="text-[9px] font-medium text-center leading-tight">Foto<br />Mascota</span>
+                                </>
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setShowMascotaCamera(true)}
+                              disabled={isUploading}
+                              className="w-24 px-2 py-1.5 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-caracas-red hover:text-caracas-red transition-colors flex items-center justify-center gap-1 disabled:opacity-50"
+                            >
+                              <Camera size={14} />
+                              <span className="text-[9px] font-medium">Cámara</span>
+                            </button>
+                          </div>
                         ) : (
                           <div className="w-24 h-[100px] border-2 border-dashed border-gray-200 rounded-xl flex items-center justify-center">
                             <span className="text-[9px] text-gray-300 text-center leading-tight">Sin foto</span>
@@ -1307,9 +1346,20 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
               </button>
             </div>
           </div>
-        </div>
       </div>
     </div>
+
+    <CameraCapture
+      isOpen={showCamera}
+      onClose={() => setShowCamera(false)}
+      onCapture={handleCameraCapture}
+    />
+
+    <CameraCapture
+      isOpen={showMascotaCamera}
+      onClose={() => setShowMascotaCamera(false)}
+      onCapture={handleMascotaCameraCapture}
+    />
   );
 }
 
