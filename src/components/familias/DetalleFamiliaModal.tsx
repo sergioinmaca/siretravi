@@ -337,10 +337,17 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
         drawFieldFull('Observaciones:', jefe.observaciones || '—');
       }
 
-      // ── 4. MASCOTA DE LA FAMILIA ──
+      // ── 4. OBSERVACIONES GENERALES DEL JEFE DE FAMILIA ──
 
       if (jefe) {
-        drawSectionHeader('4', 'Mascota de la Familia');
+        drawSectionHeader('4', 'Observaciones Generales del Jefe de Familia');
+        drawFieldFull('Observaciones Generales:', jefe.observaciones_generales || '—');
+      }
+
+      // ── 5. MASCOTA DE LA FAMILIA ──
+
+      if (jefe) {
+        drawSectionHeader('5', 'Mascota de la Familia');
 
         drawCheckboxRow([
           [jefe.mascotas, '\u00bfTiene mascotas a cargo?: S\u00ed'],
@@ -380,7 +387,7 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
 
       // ── 5. FOTOS DE LA FAMILIA ──
 
-      drawSectionHeader('5', 'Fotos de la Familia');
+      drawSectionHeader('6', 'Fotos de la Familia');
 
       const photoItems: { photo: string | null; name: string }[] = [];
 
@@ -578,6 +585,21 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
                   <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Observaciones</h4>
                   <p className="text-sm font-medium text-gray-800">{jefe.observaciones || '—'}</p>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Observaciones Generales del Jefe de Familia */}
+          {jefe && (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <FileText size={18} className="text-blue-600" />
+                </div>
+                <h3 className="font-semibold text-gray-800">Observaciones Generales del Jefe de Familia</h3>
+              </div>
+              <div className="p-6">
+                <p className="text-sm font-medium text-gray-800 whitespace-pre-wrap">{jefe.observaciones_generales || '—'}</p>
               </div>
             </div>
           )}
