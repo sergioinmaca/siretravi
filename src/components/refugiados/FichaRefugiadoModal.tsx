@@ -823,7 +823,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
         </div>
 
         {/* Body */}
-        <div className="p-8 overflow-y-auto flex-1 bg-gray-50/30 space-y-6 min-h-[600px]">
+        <div className="p-8 overflow-y-auto flex-1 bg-gray-50/30 space-y-6">
 
           {pagina === 2 ? (
             /* ── Página 2: Atenciones, Beneficios y Donaciones ── */
