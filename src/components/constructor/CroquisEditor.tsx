@@ -1267,7 +1267,7 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
     { id: 'duplex', icon: <BedDouble size={16} />, label: `Duplex (${objects.filter(o => o.kind === 'bed' && o.bedType === 'duplex').length}/${maxDuplex})`, color: '#F59E0B', bedTool: true },
   ];
 
-  const tools = modo === 'general' ? allTools.filter(t => !t.bedTool) : allTools.filter(t => !t.bedTool && !t.generalOnly);
+  const tools = modo === 'general' ? allTools.filter(t => !t.bedTool) : allTools.filter(t => !t.generalOnly);
 
   return (
     <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
