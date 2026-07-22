@@ -3,6 +3,7 @@ import { Users, BedDouble, Tent, Home, Baby, Heart, Sparkles, ShieldOff, FileDow
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
 import CroquisViewer, { countElements, contarTiposDesdeCroquis } from '../components/constructor/CroquisViewer';
+import PlanoGeneralViewer from '../components/constructor/PlanoGeneralViewer';
 import jsPDF from 'jspdf';
 
 export default function Inicio() {
@@ -146,6 +147,9 @@ export default function Inicio() {
 
   const [exportandoPDF, setExportandoPDF] = useState(false);
   const croquisCanvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
+  const [exportandoPlanosPDF, setExportandoPlanosPDF] = useState(false);
+  const planosCanvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
+  const [planosExpandidos, setPlanosExpandidos] = useState<Record<number, boolean>>({});
 
   // ── Exportar PDF de Distribución (estructura Reportes) ────────────────────
   const handleExportCroquisPDF = useCallback(async () => {
@@ -326,6 +330,135 @@ export default function Inicio() {
       setExportandoPDF(false);
     }
   }, [campamentoSeleccionado, totalesCroquis, occupiedBeds, tipoContabilizacion, modulos]);
+
+  // ── Datos de planos ─────────────────────────────────────────────────────
+  const planos = campamentoSeleccionado?.croquis_general || [];
+
+  // ── Exportar PDF de Planos Generales (vector + raster 2x) ─────────────────
+  const handleExportPlanosPDF = useCallback(async () => {
+    if (planos.length === 0) return;
+    setExportandoPlanosPDF(true);
+    try {
+      const loadImage = (src: string): Promise<HTMLImageElement> =>
+        new Promise((resolve, reject) => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = reject;
+          img.src = src;
+        });
+      const [wmImg, brdImg, logoRepublica, logoVenezuela, logoAlcaldia] = await Promise.all([
+        loadImage('/marcaagua.png'),
+        loadImage('/bordedeco.png'),
+        loadImage('/logorepublica.jpg'),
+        loadImage('/logovererojo.png'),
+        loadImage('/logoalcadia.png'),
+      ]);
+
+      const pdf = new jsPDF('l', 'mm', 'a4');
+      const pageW = 297;
+      const pageH = 210;
+      const marginL = 12;
+      const marginR = 12;
+      const marginT = 8;
+      const marginB = 10.5;
+      const usableW = pageW - marginL - marginR;
+      const imgMaxW = usableW;
+      const now = new Date();
+      const fecha = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
+      const nombreCamp = campamentoSeleccionado?.nombre || 'Campamento';
+
+      for (let i = 0; i < planos.length; i++) {
+        if (i > 0) pdf.addPage();
+
+        if (wmImg) {
+          const wmAspect = wmImg.naturalWidth / wmImg.naturalHeight;
+          const wmW = pageW * 0.48;
+          const wmH = wmW / wmAspect;
+          pdf.addImage(wmImg, 'PNG', pageW - wmW, pageH - wmH, wmW, wmH);
+        }
+        if (brdImg) {
+          pdf.addImage(brdImg, 'PNG', 0, 0, pageW, pageH);
+        }
+
+        const headerY = marginT + 6;
+        pdf.setFontSize(14);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(30, 41, 59);
+        pdf.text('PLANOS GENERALES', marginL, headerY);
+
+        pdf.setFontSize(9);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(107, 114, 128);
+        pdf.text(`Emitido: ${fecha}`, pageW - marginR, headerY, { align: 'right' });
+
+        const campY = headerY + 8;
+        pdf.setFontSize(16);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(194, 24, 7);
+        pdf.text(nombreCamp, marginL, campY);
+
+        pdf.setDrawColor(229, 231, 235);
+        pdf.setLineWidth(0.5);
+        const lineY = campY + 6;
+        pdf.line(marginL, lineY, pageW - marginR, lineY);
+
+        const planoSectionY = lineY + 8;
+        pdf.setFontSize(10);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(55, 65, 81);
+        pdf.text(`Plano: ${planos[i].nombre}`, marginL, planoSectionY);
+
+        const labelBottom = planoSectionY + 5;
+
+        // Capa raster: capturar canvas a 2x e incrustarlo como fondo
+        const cvs = planosCanvasRefs.current[i];
+        if (cvs) {
+          const scaleFactor = 4;
+          const tmpCanvas = document.createElement('canvas');
+          tmpCanvas.width = cvs.width * scaleFactor;
+          tmpCanvas.height = cvs.height * scaleFactor;
+          const tmpCtx = tmpCanvas.getContext('2d');
+          if (tmpCtx) {
+            tmpCtx.scale(scaleFactor, scaleFactor);
+            tmpCtx.drawImage(cvs, 0, 0);
+            const imgData = tmpCanvas.toDataURL('image/png');
+            const imgH = (cvs.height / cvs.width) * imgMaxW;
+            const croquisY = labelBottom + 4;
+            const footerAreaStart = pageH - marginB - 22;
+            const availableH = footerAreaStart - croquisY;
+            const finalH = Math.min(imgH, availableH);
+            const finalW = finalH < imgH ? (finalH / cvs.height) * cvs.width : imgMaxW;
+            const imgX = marginL + (imgMaxW - finalW) / 2;
+            pdf.addImage(imgData, 'PNG', imgX, croquisY, finalW, finalH);
+          }
+        }
+
+        // Footer
+        const logoH = 18;
+        const logoBottom = pageH - marginB;
+        const logoY = logoBottom - logoH;
+        const footerPaddingX = 10.6;
+        if (logoRepublica) {
+          const lw = (logoRepublica.naturalWidth / logoRepublica.naturalHeight) * logoH;
+          pdf.addImage(logoRepublica, 'PNG', footerPaddingX, logoY, lw, logoH);
+        }
+        if (logoVenezuela) {
+          const lw = (logoVenezuela.naturalWidth / logoVenezuela.naturalHeight) * logoH;
+          pdf.addImage(logoVenezuela, 'PNG', pageW / 2 - lw / 2, logoY, lw, logoH);
+        }
+        if (logoAlcaldia) {
+          const lw = (logoAlcaldia.naturalWidth / logoAlcaldia.naturalHeight) * logoH;
+          pdf.addImage(logoAlcaldia, 'PNG', pageW - footerPaddingX - lw, logoY, lw, logoH);
+        }
+      }
+
+      pdf.save(`planos-${nombreCamp.replace(/\s+/g, '-')}-${fecha}.pdf`);
+    } catch (err) {
+      console.error('Error generando PDF de planos:', err);
+    } finally {
+      setExportandoPlanosPDF(false);
+    }
+  }, [campamentoSeleccionado, planos]);
 
   return (
     <div className="space-y-6">
@@ -552,6 +685,58 @@ export default function Inicio() {
           </div>
         )}
       </div>
+
+      {/* Planos Generales */}
+      {planos.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <h2 className="text-lg font-semibold text-gray-800 mb-2">
+            Planos Generales ({campamentoSeleccionado?.nombre || 'Ninguno'})
+          </h2>
+          <button
+            type="button"
+            onClick={handleExportPlanosPDF}
+            disabled={exportandoPlanosPDF}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm mb-4 ${exportandoPlanosPDF
+              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+              : 'bg-caracas-red hover:bg-red-800 text-white'
+              }`}
+          >
+            {exportandoPlanosPDF ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <FileDown size={16} />
+            )}
+            {exportandoPlanosPDF ? 'Generando...' : 'Exportar PDF Planos'}
+          </button>
+
+          <div className="space-y-6">
+            {planos.map((plano, index) => {
+              const expandido = planosExpandidos[index] ?? true;
+              return (
+                <div key={index}>
+                  <button
+                    type="button"
+                    onClick={() => setPlanosExpandidos(prev => ({ ...prev, [index]: !expandido }))}
+                    className="w-full flex items-center justify-between px-4 py-2 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors mb-2"
+                  >
+                    <span className="font-medium text-gray-700 text-sm">{plano.nombre}</span>
+                    <span className="text-xs text-gray-400">{expandido ? '▲' : '▼'}</span>
+                  </button>
+                  {expandido && (
+                    <PlanoGeneralViewer
+                      ref={(el) => { planosCanvasRefs.current[index] = el; }}
+                      croquisData={plano.croquis_data || '{}'}
+                      planoNombre={plano.nombre}
+                      width={1500}
+                      height={700}
+                    />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Distribucion del Campamento — Croquis por Modulo */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
