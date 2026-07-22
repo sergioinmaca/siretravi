@@ -402,7 +402,7 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
                       </p>
                       <CroquisEditor
                         modo="general"
-                        width={1400}
+                        width={1500}
                         height={700}
                         initialData={campamentoToEdit ? (plano.croquis_data || undefined) : undefined}
                         onChange={(data) => updatePlano(index, 'croquis_data', data)}
