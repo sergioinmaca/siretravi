@@ -568,7 +568,7 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
       syncingColorRef.current = false;
       return;
     }
-    const selectedRects = objects.filter(o => selectedIds.includes(o.id) && o.kind === 'rectangle');
+    const selectedRects = objects.filter((o): o is Extract<CanvasObject, { kind: 'rectangle' }> => selectedIds.includes(o.id) && o.kind === 'rectangle');
     if (selectedRects.length > 0) {
       setObjects(prev => prev.map(o =>
         selectedIds.includes(o.id) && o.kind === 'rectangle'
@@ -581,7 +581,7 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
 
   // Sincronizar color picker al seleccionar un rectangulo
   useEffect(() => {
-    const selectedRects = objects.filter(o => selectedIds.includes(o.id) && o.kind === 'rectangle');
+    const selectedRects = objects.filter((o): o is Extract<CanvasObject, { kind: 'rectangle' }> => selectedIds.includes(o.id) && o.kind === 'rectangle');
     if (selectedRects.length > 0 && selectedRects[0].color !== color) {
       syncingColorRef.current = true;
       setColor(selectedRects[0].color);
