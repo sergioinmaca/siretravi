@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import type { ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { toDateInput, parseDateSafe } from '../lib/formatDate';
-import type { Campamento, Refugiado, Familia, Modulo } from '../types';
+import type { Campamento, Refugiado, Familia, Modulo, CroquisGeneral } from '../types';
 
 interface CampamentoContextType {
   campamentos: Campamento[];
@@ -49,9 +49,23 @@ function mapCampamento(row: Record<string, unknown>, carpasRows: Record<string, 
     capacidad_maxima: row.capacidad_maxima as number,
     estado: row.estado as 'activo' | 'inactivo',
     tipo_contabilizacion: (row.tipo_contabilizacion as 'cama' | 'elemento') || 'elemento',
-    croquis_general: (row.croquis_general as string) || null,
+    croquis_general: parseCroquisGeneral(row.croquis_general as string | null),
     modulos: myModulos,
   };
+}
+
+function parseCroquisGeneral(raw: string | null): CroquisGeneral[] | null {
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) return parsed as CroquisGeneral[];
+    if (parsed && typeof parsed === 'object' && 'drawingBase64' in parsed) {
+      return [{ nombre: 'Plano 1', croquis_data: raw }];
+    }
+    return null;
+  } catch {
+    return null;
+  }
 }
 
 // ─── Provider ────────────────────────────────────────────────────────────────
@@ -252,7 +266,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         capacidad_maxima: nuevo.capacidad_maxima,
         estado: nuevo.estado,
         tipo_contabilizacion: nuevo.tipo_contabilizacion,
-        croquis_general: nuevo.croquis_general || null,
+        croquis_general: nuevo.croquis_general && nuevo.croquis_general.length > 0 ? JSON.stringify(nuevo.croquis_general) : null,
       })
       .select()
       .single();
@@ -299,7 +313,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         capacidad_maxima: campData.capacidad_maxima,
         estado: campData.estado,
         tipo_contabilizacion: (campData.tipo_contabilizacion as 'cama' | 'elemento') || 'elemento',
-        croquis_general: (campData.croquis_general as string) || null,
+        croquis_general: nuevo.croquis_general || null,
         modulos: modulosGuardados,
       };
 
@@ -329,7 +343,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         capacidad_maxima: actualizado.capacidad_maxima,
         estado: actualizado.estado,
         tipo_contabilizacion: actualizado.tipo_contabilizacion,
-        croquis_general: actualizado.croquis_general || null,
+        croquis_general: actualizado.croquis_general && actualizado.croquis_general.length > 0 ? JSON.stringify(actualizado.croquis_general) : null,
       })
       .eq('id', id);
 

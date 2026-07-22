@@ -7,6 +7,11 @@ export interface Modulo {
   croquis_data?: string; // JSON serializado del canvas
 }
 
+export interface CroquisGeneral {
+  nombre: string;
+  croquis_data: string;
+}
+
 export interface Campamento {
   id: string;
   nombre: string;
@@ -14,7 +19,7 @@ export interface Campamento {
   capacidad_maxima: number;
   estado: 'activo' | 'inactivo';
   tipo_contabilizacion: 'cama' | 'elemento';
-  croquis_general?: string | null;
+  croquis_general?: CroquisGeneral[] | null;
   modulos: Modulo[];
 }
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, ChevronDown, ChevronUp, Tent, MapPin, Trash2 } from 'lucide-react';
 import { useCampamento } from '../../context/CampamentoContext';
-import type { Modulo, Campamento } from '../../types';
+import type { Modulo, Campamento, CroquisGeneral } from '../../types';
 import CroquisEditor from './CroquisEditor';
 import { countElements, contarTiposDesdeCroquis } from './CroquisViewer';
 
@@ -10,6 +10,12 @@ interface ModuloDraft {
   literas: number;
   camas_individuales: number;
   camas_duplex: number;
+  croquis_data: string;
+  expanded: boolean;
+}
+
+interface PlanoDraft {
+  nombre: string;
   croquis_data: string;
   expanded: boolean;
 }
@@ -27,8 +33,8 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
   const [tipoContabilizacion, setTipoContabilizacion] = useState<'cama' | 'elemento'>('elemento');
   const [cantidadModulos, setCantidadModulos] = useState(0);
   const [modulos, setModulos] = useState<ModuloDraft[]>([]);
-  const [croquisGeneralData, setCroquisGeneralData] = useState<string | null>(null);
-  const [croquisGeneralExpandido, setCroquisGeneralExpandido] = useState(false);
+  const [cantidadPlanos, setCantidadPlanos] = useState(0);
+  const [planos, setPlanos] = useState<PlanoDraft[]>([]);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -44,7 +50,17 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
         croquis_data: c.croquis_data || '',
         expanded: index === 0
       })));
-      setCroquisGeneralData(campamentoToEdit.croquis_general || null);
+      if (campamentoToEdit.croquis_general && campamentoToEdit.croquis_general.length > 0) {
+        setCantidadPlanos(campamentoToEdit.croquis_general.length);
+        setPlanos(campamentoToEdit.croquis_general.map((p, index) => ({
+          ...p,
+          croquis_data: p.croquis_data || '',
+          expanded: index === 0
+        })));
+      } else {
+        setCantidadPlanos(0);
+        setPlanos([]);
+      }
     } else if (isOpen && !campamentoToEdit) {
       // Limpiar al abrir para crear nuevo
       setNombre('');
@@ -52,8 +68,8 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
       setTipoContabilizacion('elemento');
       setCantidadModulos(0);
       setModulos([]);
-      setCroquisGeneralData(null);
-      setCroquisGeneralExpandido(false);
+      setCantidadPlanos(0);
+      setPlanos([]);
     }
   }, [isOpen, campamentoToEdit]);
 
@@ -91,6 +107,34 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
     setModulos(prev => prev.map((c, i) => i === index ? { ...c, expanded: !c.expanded } : c));
   };
 
+  const handleCantidadPlanosChange = (val: number) => {
+    const n = Math.max(0, Math.min(val, 20));
+    setCantidadPlanos(n);
+    setPlanos(prev => {
+      if (n > prev.length) {
+        const nuevas: PlanoDraft[] = [];
+        for (let i = prev.length; i < n; i++) {
+          nuevas.push({
+            nombre: `Plano ${i + 1}`,
+            croquis_data: '',
+            expanded: i === prev.length
+          });
+        }
+        return [...prev, ...nuevas];
+      } else {
+        return prev.slice(0, n);
+      }
+    });
+  };
+
+  const updatePlano = (index: number, field: keyof PlanoDraft, value: string | boolean) => {
+    setPlanos(prev => prev.map((p, i) => i === index ? { ...p, [field]: value } : p));
+  };
+
+  const togglePlano = (index: number) => {
+    setPlanos(prev => prev.map((p, i) => i === index ? { ...p, expanded: !p.expanded } : p));
+  };
+
   const calcularCapacidadTotal = () => {
     return modulos.reduce((total, c) => {
       return total + countElements(c.croquis_data, tipoContabilizacion);
@@ -111,6 +155,11 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
         croquis_data: c.croquis_data
       }));
 
+      const planosFinales: CroquisGeneral[] = planos.map(p => ({
+        nombre: p.nombre,
+        croquis_data: p.croquis_data
+      }));
+
       if (campamentoToEdit) {
         if (!window.confirm(`¿Estás seguro que deseas sobreescribir los datos del campamento "${nombre.toUpperCase()}"?`)) {
           setIsSubmitting(false);
@@ -122,7 +171,7 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
           ubicacion: ubicacion.toUpperCase(),
           capacidad_maxima: calcularCapacidadTotal(),
           tipo_contabilizacion: tipoContabilizacion,
-          croquis_general: croquisGeneralData,
+          croquis_general: planosFinales.length > 0 ? planosFinales : null,
           modulos: modulosFinales
         });
       } else {
@@ -133,7 +182,7 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
           capacidad_maxima: calcularCapacidadTotal(),
           estado: 'activo',
           tipo_contabilizacion: tipoContabilizacion,
-          croquis_general: croquisGeneralData,
+          croquis_general: planosFinales.length > 0 ? planosFinales : null,
           modulos: modulosFinales
         });
       }
@@ -281,39 +330,88 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
               </div>
             </div>
 
-            {/* Seccion: Croquis General */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all mt-6">
-              <button
-                type="button"
-                onClick={() => setCroquisGeneralExpandido(!croquisGeneralExpandido)}
-                className="w-full bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center justify-between hover:bg-gray-100 transition-colors"
-              >
+            {/* Seccion: Planos Generales */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mt-6">
+              <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4">
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-caracas-red/10 rounded-lg">
                     <MapPin size={18} className="text-caracas-red" />
                   </div>
-                  <div className="text-left">
-                    <h3 className="font-semibold text-gray-800">CROQUIS GENERAL</h3>
-                    <p className="text-xs text-gray-500">Vista general del campamento con modulos</p>
+                  <div>
+                    <h3 className="font-semibold text-gray-800">PLANOS GENERALES</h3>
+                    <p className="text-xs text-gray-500">Croquis generales del campamento (ej: pisos, areas)</p>
                   </div>
                 </div>
-                {croquisGeneralExpandido ? <ChevronUp size={20} className="text-gray-400" /> : <ChevronDown size={20} className="text-gray-400" />}
-              </button>
-              {croquisGeneralExpandido && (
-                <div className="p-6">
-                  <p className="text-xs text-gray-500 mb-3">
-                    Dibuja el croquis general del campamento. Coloca rectangulos para representar modulos, areas o pasillos. Haz doble-click en un rectangulo para agregarle texto.
-                  </p>
-                  <CroquisEditor
-                    modo="general"
-                    width={1100}
-                    height={700}
-                    initialData={campamentoToEdit ? (croquisGeneralData || undefined) : undefined}
-                    onChange={(data) => setCroquisGeneralData(data)}
+              </div>
+              <div className="p-6">
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad de Planos <span className="text-caracas-red">*</span></label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={20}
+                    value={cantidadPlanos || ''}
+                    onChange={e => handleCantidadPlanosChange(Number(e.target.value))}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all"
+                    placeholder="Ej. 2"
                   />
                 </div>
-              )}
+
+                {cantidadPlanos === 0 && (
+                  <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl p-8 flex flex-col items-center justify-center text-gray-400">
+                    <MapPin size={36} className="mb-3 opacity-40" />
+                    <p className="font-medium text-gray-500">Ingresa la cantidad de planos para comenzar a dibujar</p>
+                  </div>
+                )}
+              </div>
             </div>
+
+            {/* Acordeones de Planos */}
+            {planos.map((plano, index) => (
+              <div key={index} className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all">
+                <button
+                  type="button"
+                  onClick={() => togglePlano(index)}
+                  className="w-full bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center justify-between hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 bg-caracas-red/10 rounded-lg">
+                      <MapPin size={18} className="text-caracas-red" />
+                    </div>
+                    <div className="text-left">
+                      <h3 className="font-semibold text-gray-800">{plano.nombre || `Plano ${index + 1}`}</h3>
+                      <p className="text-xs text-gray-500">Croquis general del campamento</p>
+                    </div>
+                  </div>
+                  {plano.expanded ? <ChevronUp size={20} className="text-gray-400" /> : <ChevronDown size={20} className="text-gray-400" />}
+                </button>
+                {plano.expanded && (
+                  <div className="p-6 space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Nombre del Plano</label>
+                      <input
+                        type="text"
+                        value={plano.nombre}
+                        onChange={e => updatePlano(index, 'nombre', e.target.value.toUpperCase())}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none text-sm uppercase"
+                      />
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 mb-3">
+                        Coloca rectangulos para representar modulos, areas o pasillos. Haz doble-click en un rectangulo para agregarle texto.
+                      </p>
+                      <CroquisEditor
+                        modo="general"
+                        width={1100}
+                        height={700}
+                        initialData={campamentoToEdit ? (plano.croquis_data || undefined) : undefined}
+                        onChange={(data) => updatePlano(index, 'croquis_data', data)}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
 
             {/* Seccion 2: Subformularios por Modulo (acordeones) */}
             {modulos.map((modulo, index) => (
