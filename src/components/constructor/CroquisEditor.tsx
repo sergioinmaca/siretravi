@@ -755,9 +755,13 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
       }
     } else if (tool === 'rectangle') {
       const offscreen = offscreenRef.current;
+      ctx.save();
       if (offscreen) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.setTransform(zoom, 0, 0, zoom, offsetX, offsetY);
         ctx.drawImage(offscreen, 0, 0);
+      } else {
+        ctx.setTransform(zoom, 0, 0, zoom, offsetX, offsetY);
       }
       drawGrid(ctx, canvas.width, canvas.height);
       objects.forEach(obj => {
@@ -807,6 +811,7 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
       ctx.strokeStyle = color;
       ctx.lineWidth = lineWidth;
       ctx.strokeRect(startPos.x, startPos.y, pos.x - startPos.x, pos.y - startPos.y);
+      ctx.restore();
     }
   };
 
