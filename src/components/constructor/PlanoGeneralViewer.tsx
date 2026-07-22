@@ -194,6 +194,45 @@ const PlanoGeneralViewer = forwardRef<HTMLCanvasElement, PlanoGeneralViewerProps
     isPanningRef.current = false;
   };
 
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (zoom <= 1.0) return;
+    const touch = e.touches[0];
+    if (!touch) return;
+    e.preventDefault();
+    isPanningRef.current = true;
+    const canvas = internalCanvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    panStartRef.current = {
+      x: touch.clientX * scaleX,
+      y: touch.clientY * scaleY,
+      offsetX,
+      offsetY
+    };
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isPanningRef.current) return;
+    const touch = e.touches[0];
+    if (!touch) return;
+    e.preventDefault();
+    const canvas = internalCanvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const dx = touch.clientX * scaleX - panStartRef.current.x;
+    const dy = touch.clientY * scaleY - panStartRef.current.y;
+    setOffsetX(panStartRef.current.offsetX + dx);
+    setOffsetY(panStartRef.current.offsetY + dy);
+  };
+
+  const handleTouchEnd = () => {
+    isPanningRef.current = false;
+  };
+
   const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
     if (!e.shiftKey) return;
     e.preventDefault();
@@ -263,9 +302,12 @@ const PlanoGeneralViewer = forwardRef<HTMLCanvasElement, PlanoGeneralViewerProps
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
           onWheel={handleWheel}
           className={`w-full block ${zoom > 1.0 ? 'cursor-grab' : 'cursor-default'}`}
-          style={{ imageRendering: 'auto' }}
+          style={{ imageRendering: 'auto', touchAction: zoom > 1.0 ? 'none' : 'auto' }}
         />
         <div className="flex items-center gap-2 justify-center py-2 border-t border-gray-100 bg-gray-50">
           <button
