@@ -161,18 +161,6 @@ const PlanoGeneralViewer = forwardRef<HTMLCanvasElement, PlanoGeneralViewerProps
     }
   }
 
-  const getPos = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = internalCanvasRef.current;
-    if (!canvas) return { x: 0, y: 0 };
-    const rect = canvas.getBoundingClientRect();
-    const screenX = (e.clientX - rect.left) * (canvas.width / rect.width);
-    const screenY = (e.clientY - rect.top) * (canvas.height / rect.height);
-    return {
-      x: (screenX - offsetX) / zoom,
-      y: (screenY - offsetY) / zoom
-    };
-  };
-
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (zoom <= 1.0) return;
     isPanningRef.current = true;
