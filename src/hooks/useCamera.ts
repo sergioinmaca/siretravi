@@ -7,6 +7,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   NotFoundError: 'No se detectó ninguna cámara en este dispositivo.',
   NotReadableError: 'La cámara está en uso por otra aplicación.',
   OverconstrainedError: 'No se encontró una cámara que cumpla con los requisitos.',
+  AbortError: 'La cámara no respondió. Verifique que no esté en uso por otra aplicación (Zoom, Teams, etc.) y vuelva a intentar.',
 };
 
 export function useCamera() {
@@ -29,39 +30,52 @@ export function useCamera() {
   }, []);
 
   const enumerateDevices = useCallback(async () => {
-    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+    if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return [];
     try {
       const all = await navigator.mediaDevices.enumerateDevices();
       const videoDevices = all.filter((d) => d.kind === 'videoinput');
       setDevices(videoDevices);
+      return videoDevices;
     } catch {
       setDevices([]);
+      return [];
     }
   }, []);
 
-  const startCamera = useCallback(async (deviceId?: string | null) => {
+  const startCamera = useCallback(async (deviceId: string) => {
+    console.log('[startCamera] llamado', { deviceId: deviceId?.slice(0, 8), navigatorOk: !!(navigator.mediaDevices?.getUserMedia) });
+
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      console.error('[startCamera] getUserMedia no disponible');
       setError('La cámara solo funciona en conexiones seguras (HTTPS).');
       setStatus('error');
       return;
     }
 
     const myCall = ++callRef.current;
+    console.log('[startCamera] myCall:', myCall);
     setError(null);
     setStatus('starting');
 
-    const constraints: MediaStreamConstraints = {
-      video: {
-        width: { ideal: 1280 },
-        height: { ideal: 720 },
-        ...(deviceId && deviceId.length > 0 ? { deviceId: { exact: deviceId } } : { facingMode: { ideal: 'user' } }),
-      },
+    const constraints = {
+      video: { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } },
     };
+    console.log('[startCamera] constraints:', JSON.stringify(constraints));
 
+    console.time('[startCamera] getUserMedia');
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia(constraints);
+      console.timeEnd('[startCamera] getUserMedia');
+      console.log('[startCamera] stream OK, tracks:',
+        mediaStream.getVideoTracks().map(t => ({
+          label: t.label,
+          readyState: t.readyState,
+          enabled: t.enabled,
+        }))
+      );
 
       if (callRef.current !== myCall) {
+        console.log('[startCamera] descartado por callRef');
         mediaStream.getTracks().forEach((t) => t.stop());
         return;
       }
@@ -70,6 +84,13 @@ export function useCamera() {
       setStream(mediaStream);
       setStatus('active');
     } catch (err: any) {
+      console.timeEnd('[startCamera] getUserMedia');
+      console.error('[startCamera] FAIL:', {
+        name: err?.name,
+        message: err?.message,
+        constraintName: err?.constraintName,
+        constraint: err?.constraint,
+      });
       if (callRef.current !== myCall) return;
       stopCamera();
       const name = err?.name || '';

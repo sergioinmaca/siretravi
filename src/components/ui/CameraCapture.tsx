@@ -89,12 +89,28 @@ export default function CameraCapture({ isOpen, onClose, onCapture }: CameraCapt
 
   useEffect(() => {
     if (isOpen) {
-      startCamera();
+      const init = async () => {
+        console.log('[CameraCapture] abriendo modal, enumerando dispositivos...');
+        const list = await enumerateDevices();
+        console.log('[CameraCapture] dispositivos encontrados:', list.length,
+          list.map(d => ({
+            label: d.label || '(sin label)',
+            id: d.deviceId.slice(0, 8),
+            groupId: d.groupId?.slice(0, 8),
+          })));
+        if (list.length > 0) {
+          console.log('[CameraCapture] iniciando con primer dispositivo:', list[0].label || list[0].deviceId.slice(0, 8));
+          startCamera(list[0].deviceId);
+        } else {
+          console.error('[CameraCapture] 0 dispositivos encontrados');
+        }
+      };
+      init();
     } else {
       setCapturedFile(null);
       setCapturedPreview(null);
     }
-  }, [isOpen, startCamera]);
+  }, [isOpen, startCamera, enumerateDevices]);
 
   useEffect(() => {
     return () => {
@@ -163,10 +179,18 @@ export default function CameraCapture({ isOpen, onClose, onCapture }: CameraCapt
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg flex flex-col overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white">
-          <div>
+        <div className="px-6 py-4 border-b border-gray-100 shrink-0 bg-white">
+          <div className="flex items-center justify-between mb-3">
             <h2 className="text-xl font-bold text-gray-800">Tomar Foto</h2>
-            <p className="text-sm text-gray-500 mt-0.5">
+            <button
+              onClick={onClose}
+              className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition-colors"
+            >
+              <X size={20} />
+            </button>
+          </div>
+          <div>
+            <p className="text-sm text-gray-500 mb-2">
               {status === 'starting'
                 ? 'Activando cámara...'
                 : capturedFile
@@ -175,13 +199,23 @@ export default function CameraCapture({ isOpen, onClose, onCapture }: CameraCapt
                     ? 'Encuádrese dentro del recuadro y capture'
                     : ''}
             </p>
+            {devices.length > 0 && (
+              <div className="flex items-center gap-2">
+                <Camera size={14} className="text-gray-400 shrink-0" />
+                <select
+                  value={selectedDeviceId || devices[0]?.deviceId || ''}
+                  onChange={(e) => selectDevice(e.target.value)}
+                  className="text-xs text-gray-600 bg-white border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red transition-all max-w-[260px] truncate"
+                >
+                  {devices.map((d) => (
+                    <option key={d.deviceId} value={d.deviceId}>
+                      {d.label || `Cámara ${d.deviceId.slice(0, 8)}`}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
-          <button
-            onClick={onClose}
-            className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition-colors"
-          >
-            <X size={20} />
-          </button>
         </div>
 
         <div className="p-6 flex flex-col items-center gap-4 bg-gray-50/30">
@@ -196,9 +230,18 @@ export default function CameraCapture({ isOpen, onClose, onCapture }: CameraCapt
 
           {status === 'error' && (
             <div className="w-full aspect-[4/3] rounded-2xl bg-gray-200 flex items-center justify-center">
-              <div className="flex flex-col items-center gap-3 text-gray-500 px-6 text-center">
+              <div className="flex flex-col items-center gap-4 text-gray-500 px-6 text-center">
                 <AlertTriangle size={40} className="text-amber-500" />
                 <span className="text-sm">{error}</span>
+                <button
+                  onClick={() => {
+                    const deviceId = selectedDeviceId || devices[0]?.deviceId;
+                    if (deviceId) startCamera(deviceId);
+                  }}
+                  className="px-4 py-2 rounded-xl bg-caracas-red hover:bg-red-800 text-white text-sm font-medium transition-colors shadow-md"
+                >
+                  Reintentar
+                </button>
               </div>
             </div>
           )}
@@ -243,31 +286,12 @@ export default function CameraCapture({ isOpen, onClose, onCapture }: CameraCapt
           <canvas ref={canvasRef} className="hidden" />
 
           {canCapture && (
-            <div className="flex flex-col items-center gap-3">
-              <button
-                onClick={handleCapture}
-                className="w-20 h-20 rounded-full bg-caracas-red hover:bg-red-800 transition-colors shadow-lg flex items-center justify-center"
-              >
-                <Camera size={28} className="text-white" />
-              </button>
-
-              {devices.length > 1 && (
-                <div className="flex items-center gap-2">
-                  <Camera size={14} className="text-gray-400 shrink-0" />
-                  <select
-                    value={selectedDeviceId || devices[0]?.deviceId || ''}
-                    onChange={(e) => selectDevice(e.target.value)}
-                    className="text-xs text-gray-600 bg-white border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red transition-all max-w-[200px] truncate"
-                  >
-                    {devices.map((d) => (
-                      <option key={d.deviceId} value={d.deviceId}>
-                        {d.label || `Cámara ${d.deviceId.slice(0, 8)}`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </div>
+            <button
+              onClick={handleCapture}
+              className="w-20 h-20 rounded-full bg-caracas-red hover:bg-red-800 transition-colors shadow-lg flex items-center justify-center"
+            >
+              <Camera size={28} className="text-white" />
+            </button>
           )}
 
           {capturedFile && (
