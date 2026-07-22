@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { Pencil, Square, Eraser, Undo2, BedDouble, BedSingle, MousePointer2, RotateCw, Trash2, XCircle, Copy, Clipboard, Link, Unlink, Type, Grid3x3, Hand } from 'lucide-react';
+import { Pencil, Square, Eraser, Undo2, BedDouble, BedSingle, MousePointer2, RotateCw, Trash2, XCircle, Copy, Clipboard, Link, Unlink, Type, Grid3x3, Hand, Minus } from 'lucide-react';
 
-type Tool = 'select' | 'pencil' | 'rectangle' | 'eraser' | 'litera' | 'individual' | 'duplex' | 'text' | 'hand';
+type Tool = 'select' | 'pencil' | 'rectangle' | 'eraser' | 'litera' | 'individual' | 'duplex' | 'text' | 'hand' | 'line';
 
 type CanvasObject = {
   kind: 'bed';
@@ -31,6 +31,16 @@ type CanvasObject = {
   groupId?: string;
   text: string;
   fontSize: number;
+  color: string;
+} | {
+  kind: 'line';
+  id: string;
+  x: number;
+  y: number;
+  rotation: number;
+  groupId?: string;
+  dx: number;
+  dy: number;
   color: string;
 };
 
@@ -204,6 +214,9 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
       const h = obj.bedType === 'litera' ? 52 : 36;
       return { w, h };
     }
+    if (obj.kind === 'line') {
+      return { w: Math.abs(obj.dx) * 2 + 8, h: Math.abs(obj.dy) * 2 + 8 };
+    }
     if (obj.kind === 'text') {
       const approxW = obj.text.length * obj.fontSize * 0.55;
       return { w: approxW, h: obj.fontSize * 1.4 };
@@ -212,6 +225,19 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
   };
 
   const isPointInObject = (x: number, y: number, obj: CanvasObject) => {
+    if (obj.kind === 'line') {
+      const x1 = obj.x - obj.dx;
+      const y1 = obj.y - obj.dy;
+      const x2 = obj.x + obj.dx;
+      const y2 = obj.y + obj.dy;
+      const dxL = x2 - x1;
+      const dyL = y2 - y1;
+      if (dxL === 0 && dyL === 0) return Math.hypot(x - x1, y - y1) <= 6;
+      const t = Math.max(0, Math.min(1, ((x - x1) * dxL + (y - y1) * dyL) / (dxL * dxL + dyL * dyL)));
+      const closestX = x1 + t * dxL;
+      const closestY = y1 + t * dyL;
+      return Math.hypot(x - closestX, y - closestY) <= 6;
+    }
     const { w, h } = getObjectDimensions(obj);
     const maxDim = Math.max(w, h) / 2;
     return (x >= obj.x - maxDim && x <= obj.x + maxDim && y >= obj.y - maxDim && y <= obj.y + maxDim);
@@ -222,6 +248,14 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
     const maxX = Math.max(box.startX, box.endX);
     const minY = Math.min(box.startY, box.endY);
     const maxY = Math.max(box.startY, box.endY);
+    if (obj.kind === 'line') {
+      const x1 = obj.x - obj.dx;
+      const y1 = obj.y - obj.dy;
+      const x2 = obj.x + obj.dx;
+      const y2 = obj.y + obj.dy;
+      return (x1 >= minX && x1 <= maxX && y1 >= minY && y1 <= maxY) ||
+             (x2 >= minX && x2 <= maxX && y2 >= minY && y2 <= maxY);
+    }
     return obj.x >= minX && obj.x <= maxX && obj.y >= minY && obj.y <= maxY;
   };
 
@@ -368,6 +402,28 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
           ctx.strokeRect(-tw / 2 - 6, -th / 2 - 4, tw + 12, th + 8);
           ctx.setLineDash([]);
         }
+      } else if (obj.kind === 'line') {
+        ctx.beginPath();
+        ctx.moveTo(-obj.dx, -obj.dy);
+        ctx.lineTo(obj.dx, obj.dy);
+        ctx.strokeStyle = obj.color;
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.stroke();
+
+        if (isSelected && !obj.groupId) {
+          const pad = 4;
+          ctx.strokeStyle = '#FACC15';
+          ctx.lineWidth = 2.5;
+          ctx.setLineDash([4, 4]);
+          ctx.strokeRect(
+            Math.min(-obj.dx, obj.dx) - pad,
+            Math.min(-obj.dy, obj.dy) - pad,
+            Math.abs(obj.dx * 2) + pad * 2,
+            Math.abs(obj.dy * 2) + pad * 2
+          );
+          ctx.setLineDash([]);
+        }
       } else {
         // Rectangle rendering
         ctx.fillStyle = 'rgba(0,0,0,0.05)';
@@ -445,7 +501,7 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
                 if (lines.length * lineHeight + lineHeight <= (isVertical ? availableW : availableH)) {
                   lines.push(currentLine);
                   currentLine = words[i];
-                } else {
+      } else {
                   currentLine = currentLine + '...';
                   break;
                 }
@@ -711,7 +767,7 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
       return;
     }
 
-    if (tool === 'rectangle') {
+    if (tool === 'rectangle' || tool === 'line') {
       setIsDrawing(true);
       setStartPos(pos);
       return;
@@ -815,7 +871,7 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
         offCtx.lineTo(pos.x, pos.y);
         offCtx.stroke();
       }
-    } else if (tool === 'rectangle') {
+    } else if (tool === 'rectangle' || tool === 'line') {
       const offscreen = offscreenRef.current;
       ctx.save();
       if (offscreen) {
@@ -859,6 +915,14 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText(obj.text, 0, 0);
+        } else if (obj.kind === 'line') {
+          ctx.beginPath();
+          ctx.moveTo(-obj.dx, -obj.dy);
+          ctx.lineTo(obj.dx, obj.dy);
+          ctx.strokeStyle = obj.color;
+          ctx.lineWidth = 2;
+          ctx.lineCap = 'round';
+          ctx.stroke();
         } else {
           ctx.fillStyle = 'rgba(0,0,0,0.05)';
           ctx.beginPath();
@@ -871,8 +935,24 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
         ctx.restore();
       });
       ctx.strokeStyle = color;
-      ctx.lineWidth = lineWidth;
-      ctx.strokeRect(startPos.x, startPos.y, pos.x - startPos.x, pos.y - startPos.y);
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      if (tool === 'line') {
+        let ex = pos.x;
+        let ey = pos.y;
+        if (e.shiftKey) {
+          const sdx = ex - startPos.x;
+          const sdy = ey - startPos.y;
+          if (Math.abs(sdx) > Math.abs(sdy)) ey = startPos.y;
+          else ex = startPos.x;
+        }
+        ctx.beginPath();
+        ctx.moveTo(startPos.x, startPos.y);
+        ctx.lineTo(ex, ey);
+        ctx.stroke();
+      } else {
+        ctx.strokeRect(startPos.x, startPos.y, pos.x - startPos.x, pos.y - startPos.y);
+      }
       ctx.restore();
     }
   };
@@ -928,6 +1008,31 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
             color: color,
             rotation: 0,
             id: `rect-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+          };
+          setObjects(prev => [...prev, newObj]);
+          setSelectedIds([newObj.id]);
+        }
+      }
+      if (tool === 'line') {
+        let ex = pos.x;
+        let ey = pos.y;
+        if (e.shiftKey) {
+          const sdx = ex - startPos.x;
+          const sdy = ey - startPos.y;
+          if (Math.abs(sdx) > Math.abs(sdy)) ey = startPos.y;
+          else ex = startPos.x;
+        }
+        const lineLen = Math.hypot(ex - startPos.x, ey - startPos.y);
+        if (lineLen > 2) {
+          const newObj: CanvasObject = {
+            kind: 'line',
+            x: (startPos.x + ex) / 2,
+            y: (startPos.y + ey) / 2,
+            dx: (ex - startPos.x) / 2,
+            dy: (ey - startPos.y) / 2,
+            color: color,
+            rotation: 0,
+            id: `line-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
           };
           setObjects(prev => [...prev, newObj]);
           setSelectedIds([newObj.id]);
@@ -1155,6 +1260,7 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
     { id: 'pencil', icon: <Pencil size={16} />, label: 'Lapiz' },
     { id: 'text', icon: <Type size={16} />, label: 'Texto', color: '#6B7280' },
     { id: 'rectangle', icon: <Square size={16} />, label: 'Rectangulo' },
+    { id: 'line', icon: <Minus size={16} />, label: 'Linea' },
     { id: 'eraser', icon: <Eraser size={16} />, label: 'Borrador' },
     { id: 'litera', icon: <BedDouble size={16} />, label: `Litera (${objects.filter(o => o.kind === 'bed' && o.bedType === 'litera').length}/${maxLiteras})`, color: '#3B82F6', bedTool: true },
     { id: 'individual', icon: <BedSingle size={16} />, label: `Individual (${objects.filter(o => o.kind === 'bed' && o.bedType === 'individual').length}/${maxIndividuales})`, color: '#10B981', bedTool: true },
