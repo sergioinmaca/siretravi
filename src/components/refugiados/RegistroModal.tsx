@@ -6,6 +6,7 @@ import type { Refugiado } from '../../types';
 import { formatAge } from '../../lib/formatAge';
 import { toDateInput, parseDateSafe } from '../../lib/formatDate';
 import DateInput from '../ui/DateInput';
+import CameraCapture from '../ui/CameraCapture';
 
 interface RegistroModalProps {
   isOpen: boolean;
@@ -23,6 +24,8 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
   const [mascotaFotoFile, setMascotaFotoFile] = useState<File | null>(null);
   const [mascotaFotoPreview, setMascotaFotoPreview] = useState<string | null>(null);
+  const [showCamera, setShowCamera] = useState(false);
+  const [showMascotaCamera, setShowMascotaCamera] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mascotaFileInputRef = useRef<HTMLInputElement>(null);
   const {
@@ -227,6 +230,20 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     if (mascotaFileInputRef.current) mascotaFileInputRef.current.value = '';
   };
 
+  const handleCameraCapture = async (file: File) => {
+    setFotoUploadError(null);
+    setFotoFile(file);
+    const dataUrl = await leerArchivoComoDataURL(file);
+    setFotoPreview(dataUrl);
+  };
+
+  const handleMascotaCameraCapture = async (file: File) => {
+    setFotoUploadError(null);
+    setMascotaFotoFile(file);
+    const dataUrl = await leerArchivoComoDataURL(file);
+    setMascotaFotoPreview(dataUrl);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!campamentoSeleccionado || isSubmitting) return;
@@ -408,7 +425,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
 
   if (!isOpen) return null;
 
-  return (
+  return (<>
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
       
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-fade-in-up relative">
@@ -478,24 +495,35 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                         </button>
                       </div>
                     ) : (
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isUploading}
-                        className="w-24 h-[100px] border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-caracas-red hover:text-caracas-red hover:bg-red-50/30 transition-colors disabled:opacity-50"
-                      >
-                        {isUploading ? (
-                          <>
-                            <Loader2 size={20} className="animate-spin" />
-                            <span className="text-[9px] font-medium">Subiendo...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Camera size={20} />
-                            <span className="text-[9px] font-medium">Foto</span>
-                          </>
-                        )}
-                      </button>
+                      <div className="flex flex-col gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          disabled={isUploading}
+                          className="w-24 h-[100px] border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-caracas-red hover:text-caracas-red hover:bg-red-50/30 transition-colors disabled:opacity-50"
+                        >
+                          {isUploading ? (
+                            <>
+                              <Loader2 size={20} className="animate-spin" />
+                              <span className="text-[9px] font-medium">Subiendo...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Camera size={20} />
+                              <span className="text-[9px] font-medium">Foto</span>
+                            </>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowCamera(true)}
+                          disabled={isUploading}
+                          className="w-24 px-2 py-1.5 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-caracas-red hover:text-caracas-red transition-colors flex items-center justify-center gap-1 disabled:opacity-50"
+                        >
+                          <Camera size={14} />
+                          <span className="text-[9px] font-medium">Cámara</span>
+                        </button>
+                      </div>
                     )}
                     <input
                       ref={fileInputRef}
@@ -852,24 +880,35 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                                 />
                               </div>
                             ) : (
-                              <button
-                                type="button"
-                                onClick={() => mascotaFileInputRef.current?.click()}
-                                disabled={isUploading}
-                                className="w-24 h-[100px] border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-caracas-red hover:text-caracas-red hover:bg-red-50/30 transition-colors disabled:opacity-50"
-                              >
-                                {isUploading ? (
-                                  <>
-                                    <Loader2 size={20} className="animate-spin" />
-                                    <span className="text-[8px] font-medium text-center leading-tight">Subiendo...</span>
-                                  </>
-                                ) : (
-                                  <>
-                                    <Camera size={20} />
-                                    <span className="text-[9px] font-medium text-center leading-tight">Foto<br />Mascota</span>
-                                  </>
-                                )}
-                              </button>
+                              <div className="flex flex-col gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => mascotaFileInputRef.current?.click()}
+                                  disabled={isUploading}
+                                  className="w-24 h-[100px] border-2 border-dashed border-gray-300 rounded-xl flex flex-col items-center justify-center gap-1 text-gray-400 hover:border-caracas-red hover:text-caracas-red hover:bg-red-50/30 transition-colors disabled:opacity-50"
+                                >
+                                  {isUploading ? (
+                                    <>
+                                      <Loader2 size={20} className="animate-spin" />
+                                      <span className="text-[8px] font-medium text-center leading-tight">Subiendo...</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Camera size={20} />
+                                      <span className="text-[9px] font-medium text-center leading-tight">Foto<br />Mascota</span>
+                                    </>
+                                  )}
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setShowMascotaCamera(true)}
+                                  disabled={isUploading}
+                                  className="w-24 px-2 py-1.5 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-caracas-red hover:text-caracas-red transition-colors flex items-center justify-center gap-1 disabled:opacity-50"
+                                >
+                                  <Camera size={14} />
+                                  <span className="text-[9px] font-medium">Cámara</span>
+                                </button>
+                              </div>
                             )}
                             {mascotaFotoPreview && (
                               <button
@@ -1021,5 +1060,17 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
 
       </div>
     </div>
-  );
+
+    <CameraCapture
+      isOpen={showCamera}
+      onClose={() => setShowCamera(false)}
+      onCapture={handleCameraCapture}
+    />
+
+    <CameraCapture
+      isOpen={showMascotaCamera}
+      onClose={() => setShowMascotaCamera(false)}
+      onCapture={handleMascotaCameraCapture}
+    />
+  </>);
 }
