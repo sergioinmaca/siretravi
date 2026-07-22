@@ -18,7 +18,7 @@ export default function Constructor() {
   const [editingCamp, setEditingCamp] = useState<Campamento | null>(null);
 
   const calcularTotalCamas = (campamento: typeof campamentos[0]) => {
-    return campamento.carpas.reduce((total, c) => {
+    return campamento.modulos.reduce((total, c) => {
       return total + (c.literas * 2) + c.camas_individuales + (c.camas_duplex * 2);
     }, 0);
   };
@@ -30,7 +30,7 @@ export default function Constructor() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">Constructor de Campamentos</h2>
-          <p className="text-gray-500">Gestiona la infraestructura de los campamentos y sus carpas</p>
+          <p className="text-gray-500">Gestiona la infraestructura de los campamentos y sus módulos</p>
         </div>
         {tienePermiso('Constructor', 'Crear') && (
           <button
@@ -85,8 +85,8 @@ export default function Constructor() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="bg-gray-50 p-3 rounded-xl text-center group-hover:bg-caracas-blue/5 transition-colors">
                   <Tent size={24} className="mx-auto mb-1 text-caracas-blue" />
-                  <p className="text-2xl font-bold text-gray-800">{camp.carpas.length}</p>
-                  <p className="text-xs text-gray-500 font-medium">Carpa{camp.carpas.length !== 1 ? 's' : ''}</p>
+                  <p className="text-2xl font-bold text-gray-800">{camp.modulos.length}</p>
+                  <p className="text-xs text-gray-500 font-medium">Módulo{camp.modulos.length !== 1 ? 's' : ''}</p>
                 </div>
                 <div className="bg-gray-50 p-3 rounded-xl text-center group-hover:bg-caracas-red/5 transition-colors">
                   <BedDouble size={24} className="mx-auto mb-1 text-caracas-red" />
@@ -95,18 +95,18 @@ export default function Constructor() {
                 </div>
               </div>
 
-              {/* Resumen de carpas */}
+              {/* Resumen de modulos */}
               <div className="mt-4 space-y-2">
-                {camp.carpas.slice(0, 3).map((carpa) => (
-                  <div key={carpa.id} className="flex items-center justify-between text-sm bg-gray-50 px-3 py-2 rounded-lg">
-                    <span className="font-medium text-gray-700 truncate">{carpa.nombre}</span>
+                {camp.modulos.slice(0, 3).map((modulo) => (
+                  <div key={modulo.id} className="flex items-center justify-between text-sm bg-gray-50 px-3 py-2 rounded-lg">
+                    <span className="font-medium text-gray-700 truncate">{modulo.nombre}</span>
                     <span className="text-xs text-gray-500 shrink-0 ml-2">
-                      {carpa.literas}L · {carpa.camas_individuales}I · {carpa.camas_duplex}D
+                      {modulo.literas}L · {modulo.camas_individuales}I · {modulo.camas_duplex}D
                     </span>
                   </div>
                 ))}
-                {camp.carpas.length > 3 && (
-                  <p className="text-xs text-gray-400 text-center">+{camp.carpas.length - 3} carpa(s) más</p>
+                {camp.modulos.length > 3 && (
+                  <p className="text-xs text-gray-400 text-center">+{camp.modulos.length - 3} módulo(s) más</p>
                 )}
               </div>
             </div>

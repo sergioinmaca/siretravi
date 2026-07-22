@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react';
-import { Pencil, Square, Eraser, Undo2, BedDouble, BedSingle, MousePointer2, RotateCw, Trash2, XCircle, Copy, Clipboard, Link, Unlink, Type, Grid3x3 } from 'lucide-react';
+import { Pencil, Square, Eraser, Undo2, BedDouble, BedSingle, MousePointer2, RotateCw, Trash2, XCircle, Copy, Clipboard, Link, Unlink, Type, Grid3x3, Hand } from 'lucide-react';
 
-type Tool = 'select' | 'pencil' | 'rectangle' | 'eraser' | 'litera' | 'individual' | 'duplex' | 'text';
+type Tool = 'select' | 'pencil' | 'rectangle' | 'eraser' | 'litera' | 'individual' | 'duplex' | 'text' | 'hand';
 
 type CanvasObject = {
   kind: 'bed';
@@ -21,6 +21,7 @@ type CanvasObject = {
   width: number;
   height: number;
   color: string;
+  texto?: string;
 } | {
   kind: 'text';
   id: string;
@@ -51,9 +52,10 @@ interface CroquisEditorProps {
   initialData?: string;
   onChange?: (data: string) => void;
   elementNumberOffset?: number;
+  modo?: 'general' | 'modulo';
 }
 
-export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 0, maxIndividuales = 0, maxDuplex = 0, tipoContabilizacion = 'elemento', initialData, onChange, elementNumberOffset = 0 }: CroquisEditorProps) {
+export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 0, maxIndividuales = 0, maxDuplex = 0, tipoContabilizacion = 'elemento', initialData, onChange, elementNumberOffset = 0, modo = 'modulo' }: CroquisEditorProps) {
   // Bandera: el canvas está listo para ser renderizado
   const isInitialized = useRef(false);
   // Capturamos initialData en un ref al momento del montaje.
@@ -72,7 +74,23 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
   const offscreenRef = useRef<HTMLCanvasElement | null>(null);
   const [tool, setTool] = useState<Tool>('pencil');
   const [color, setColor] = useState('#374151');
+  const lastUsedColorRef = useRef('#374151');
+  const syncingColorRef = useRef(false);
   const lineWidth = 3;
+
+  // Panning state
+  const isPanningRef = useRef(false);
+  const panStartRef = useRef({ x: 0, y: 0, offsetX: 0, offsetY: 0 });
+  const prevToolRef = useRef<Tool>('pencil');
+  const isSpaceDownRef = useRef(false);
+
+  // Zoom state (solo en modo general)
+  const [zoom, setZoom] = useState(1.0);
+  const [offsetX, setOffsetX] = useState(0);
+  const [offsetY, setOffsetY] = useState(0);
+  const ZOOM_MIN = 0.3;
+  const ZOOM_MAX = 2.0;
+  const ZOOM_STEP = 0.1;
 
   // Drawing state
   const [isDrawing, setIsDrawing] = useState(false);
@@ -244,6 +262,8 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
 
     // Restaurar la capa de dibujo desde el offscreen canvas (SIN camas)
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.setTransform(zoom, 0, 0, zoom, offsetX, offsetY);
     ctx.drawImage(offscreen, 0, 0);
     drawGrid(ctx, canvas.width, canvas.height);
 
@@ -349,6 +369,7 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
           ctx.setLineDash([]);
         }
       } else {
+        // Rectangle rendering
         ctx.fillStyle = 'rgba(0,0,0,0.05)';
         ctx.beginPath();
         ctx.roundRect(-w / 2, -h / 2, w, h, 4);
@@ -357,6 +378,43 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
         ctx.strokeStyle = obj.color;
         ctx.lineWidth = 2;
         ctx.stroke();
+
+        // Texto interno del rectangulo
+        if (obj.texto) {
+          const padding = 4;
+          const availableW = w - padding * 2;
+          const availableH = h - padding * 2;
+          const isVertical = h > w;
+
+          ctx.fillStyle = obj.color;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+
+          let fontSize = Math.min(availableW / obj.texto.length, availableH / 1.5);
+          fontSize = Math.max(8, Math.min(fontSize, 32));
+          ctx.font = `bold ${fontSize}px Inter, sans-serif`;
+
+          const metrics = ctx.measureText(obj.texto);
+          while (fontSize > 6 && (isVertical ? metrics.width > availableH : metrics.width > availableW)) {
+            fontSize -= 1;
+            ctx.font = `bold ${fontSize}px Inter, sans-serif`;
+          }
+
+          if (isVertical) {
+            ctx.save();
+            ctx.rotate(-Math.PI / 2);
+            const displayText = obj.texto.length > Math.floor(availableH / (fontSize * 0.6))
+              ? obj.texto.slice(0, Math.floor(availableH / (fontSize * 0.6))) + '...'
+              : obj.texto;
+            ctx.fillText(displayText, 0, 0);
+            ctx.restore();
+          } else {
+            const displayText = obj.texto.length > Math.floor(availableW / (fontSize * 0.55))
+              ? obj.texto.slice(0, Math.floor(availableW / (fontSize * 0.55))) + '...'
+              : obj.texto;
+            ctx.fillText(displayText, 0, 0);
+          }
+        }
 
         if (isSelected && !obj.groupId) {
           ctx.strokeStyle = '#FACC15';
@@ -426,7 +484,9 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
       ctx.restore();
     }
 
-  }, [objects, history, selectedIds, selectionBox, drawGrid]);
+    ctx.restore();
+
+  }, [objects, history, selectedIds, selectionBox, drawGrid, zoom, offsetX, offsetY]);
 
   useEffect(() => {
     // No renderizar hasta que la inicialización (sync o async) haya terminado
@@ -434,11 +494,41 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
     renderCanvas();
   }, [renderCanvas]);
 
-  // Re-renderizar cuando cambie el modo de contabilización
+  // Re-renderizar cuando cambie el modo de contabilizacion
   useEffect(() => {
     if (!isInitialized.current) return;
     renderCanvas();
   }, [tipoContabilizacion]);
+
+  // Sincronizar color del picker con rectangulos seleccionados
+  useEffect(() => {
+    if (syncingColorRef.current) {
+      syncingColorRef.current = false;
+      return;
+    }
+    const selectedRects = objects.filter(o => selectedIds.includes(o.id) && o.kind === 'rectangle');
+    if (selectedRects.length > 0) {
+      setObjects(prev => prev.map(o =>
+        selectedIds.includes(o.id) && o.kind === 'rectangle'
+          ? { ...o, color }
+          : o
+      ));
+    }
+    lastUsedColorRef.current = color;
+  }, [color]);
+
+  // Sincronizar color picker al seleccionar un rectangulo
+  useEffect(() => {
+    const selectedRects = objects.filter(o => selectedIds.includes(o.id) && o.kind === 'rectangle');
+    if (selectedRects.length > 0 && selectedRects[0].color !== color) {
+      syncingColorRef.current = true;
+      setColor(selectedRects[0].color);
+    }
+    if (selectedRects.length === 0 && selectedIds.length === 0) {
+      syncingColorRef.current = true;
+      setColor(lastUsedColorRef.current);
+    }
+  }, [selectedIds]);
 
   // Serializar datos (solo cuando objects o history cambian realmente)
   useEffect(() => {
@@ -455,14 +545,42 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
+    const screenX = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const screenY = (e.clientY - rect.top) * (canvas.height / rect.height);
     return {
-      x: (e.clientX - rect.left) * (canvas.width / rect.width),
-      y: (e.clientY - rect.top) * (canvas.height / rect.height)
+      x: (screenX - offsetX) / zoom,
+      y: (screenY - offsetY) / zoom
     };
+  };
+
+  const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    if (modo !== 'general' || !e.shiftKey) return;
+    e.preventDefault();
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const screenX = (e.clientX - rect.left) * (canvas.width / rect.width);
+    const screenY = (e.clientY - rect.top) * (canvas.height / rect.height);
+    const worldX = (screenX - offsetX) / zoom;
+    const worldY = (screenY - offsetY) / zoom;
+    const direction = e.deltaY > 0 ? -1 : 1;
+    const newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, Math.round((zoom + direction * ZOOM_STEP) * 10) / 10));
+    if (newZoom === zoom) return;
+    const newOffsetX = screenX - worldX * newZoom;
+    const newOffsetY = screenY - worldY * newZoom;
+    setZoom(newZoom);
+    setOffsetX(newOffsetX);
+    setOffsetY(newOffsetY);
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const pos = getPos(e);
+
+    if (tool === 'hand') {
+      isPanningRef.current = true;
+      panStartRef.current = { x: e.clientX, y: e.clientY, offsetX, offsetY };
+      return;
+    }
 
     if (tool === 'select') {
       const clickedObj = [...objects].reverse().find(o => isPointInObject(pos.x, pos.y, o));
@@ -558,6 +676,19 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const pos = getPos(e);
+
+    if (isPanningRef.current) {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const dx = (e.clientX - panStartRef.current.x) * scaleX;
+      const dy = (e.clientY - panStartRef.current.y) * scaleY;
+      setOffsetX(panStartRef.current.offsetX + dx);
+      setOffsetY(panStartRef.current.offsetY + dy);
+      return;
+    }
 
     if (tool === 'select') {
       if (isDraggingObjects) {
@@ -680,6 +811,14 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
   };
 
   const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (isPanningRef.current) {
+      isPanningRef.current = false;
+      if (isSpaceDownRef.current) {
+        isSpaceDownRef.current = false;
+        setTool(prevToolRef.current);
+      }
+      return;
+    }
     const pos = getPos(e);
 
     if (tool === 'select') {
@@ -739,6 +878,16 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
         setObjects(prev => prev.map(o =>
           o.id === clickedObj.id && o.kind === 'text'
             ? { ...o, text: nuevoTexto.trim() || o.text }
+            : o
+        ));
+      }
+    }
+    if (clickedObj && clickedObj.kind === 'rectangle') {
+      const nuevoTexto = window.prompt('Texto del rectangulo:', clickedObj.texto || '');
+      if (nuevoTexto !== null) {
+        setObjects(prev => prev.map(o =>
+          o.id === clickedObj.id && o.kind === 'rectangle'
+            ? { ...o, texto: nuevoTexto.trim() || undefined }
             : o
         ));
       }
@@ -873,6 +1022,33 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
     setObjects(prev => prev.slice(0, -1));
   };
 
+  // Space + mouse para panning
+  useEffect(() => {
+    const handleSpaceDown = (e: KeyboardEvent) => {
+      if (modo !== 'general') return;
+      if (e.code === 'Space' && !(e.target instanceof HTMLInputElement) && !(e.target instanceof HTMLTextAreaElement)) {
+        e.preventDefault();
+        if (!isSpaceDownRef.current) {
+          prevToolRef.current = tool;
+          setTool('hand');
+          isSpaceDownRef.current = true;
+        }
+      }
+    };
+    const handleSpaceUp = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && isSpaceDownRef.current) {
+        isSpaceDownRef.current = false;
+        setTool(prevToolRef.current);
+      }
+    };
+    window.addEventListener('keydown', handleSpaceDown);
+    window.addEventListener('keyup', handleSpaceUp);
+    return () => {
+      window.removeEventListener('keydown', handleSpaceDown);
+      window.removeEventListener('keyup', handleSpaceUp);
+    };
+  }, [modo, tool]);
+
   // Atajos de teclado
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -906,16 +1082,19 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedIds, copySelected, pasteClipboard]);
 
-  const tools: { id: Tool; icon: React.ReactNode; label: string; color?: string }[] = [
+  const allTools: { id: Tool; icon: React.ReactNode; label: string; color?: string; bedTool?: boolean; generalOnly?: boolean }[] = [
     { id: 'select', icon: <MousePointer2 size={16} />, label: 'Seleccionar' },
-    { id: 'pencil', icon: <Pencil size={16} />, label: 'Lápiz' },
+    { id: 'hand', icon: <Hand size={16} />, label: 'Mano', generalOnly: true },
+    { id: 'pencil', icon: <Pencil size={16} />, label: 'Lapiz' },
     { id: 'text', icon: <Type size={16} />, label: 'Texto', color: '#6B7280' },
-    { id: 'rectangle', icon: <Square size={16} />, label: 'Rectángulo' },
+    { id: 'rectangle', icon: <Square size={16} />, label: 'Rectangulo' },
     { id: 'eraser', icon: <Eraser size={16} />, label: 'Borrador' },
-    { id: 'litera', icon: <BedDouble size={16} />, label: `Litera (${objects.filter(o => o.kind === 'bed' && o.bedType === 'litera').length}/${maxLiteras})`, color: '#3B82F6' },
-    { id: 'individual', icon: <BedSingle size={16} />, label: `Individual (${objects.filter(o => o.kind === 'bed' && o.bedType === 'individual').length}/${maxIndividuales})`, color: '#10B981' },
-    { id: 'duplex', icon: <BedDouble size={16} />, label: `Duplex (${objects.filter(o => o.kind === 'bed' && o.bedType === 'duplex').length}/${maxDuplex})`, color: '#F59E0B' },
+    { id: 'litera', icon: <BedDouble size={16} />, label: `Litera (${objects.filter(o => o.kind === 'bed' && o.bedType === 'litera').length}/${maxLiteras})`, color: '#3B82F6', bedTool: true },
+    { id: 'individual', icon: <BedSingle size={16} />, label: `Individual (${objects.filter(o => o.kind === 'bed' && o.bedType === 'individual').length}/${maxIndividuales})`, color: '#10B981', bedTool: true },
+    { id: 'duplex', icon: <BedDouble size={16} />, label: `Duplex (${objects.filter(o => o.kind === 'bed' && o.bedType === 'duplex').length}/${maxDuplex})`, color: '#F59E0B', bedTool: true },
   ];
+
+  const tools = modo === 'general' ? allTools.filter(t => !t.bedTool) : allTools.filter(t => !t.bedTool && !t.generalOnly);
 
   return (
     <div className="border border-gray-200 rounded-xl overflow-hidden bg-white shadow-sm">
@@ -1064,12 +1243,55 @@ export default function CroquisEditor({ width = 700, height = 600, maxLiteras = 
         onMouseUp={handleMouseUp}
         onMouseLeave={handleMouseUp}
         onDoubleClick={handleDoubleClick}
+        onWheel={handleWheel}
         className={`w-full block bg-gray-50/50 ${tool === 'select' ? 'cursor-default' :
+          tool === 'hand' ? 'cursor-grab' :
           tool === 'litera' || tool === 'individual' || tool === 'duplex' || tool === 'text' ? 'cursor-crosshair' :
             tool === 'eraser' ? 'cursor-cell' : 'cursor-crosshair'
           }`}
         style={{ imageRendering: 'auto' }}
       />
+
+      {/* Zoom controls (solo en modo general) */}
+      {modo === 'general' && (
+        <div className="flex items-center gap-2 justify-center py-2 border-t border-gray-100 bg-gray-50">
+          <button
+            type="button"
+            onClick={() => {
+              const canvas = canvasRef.current;
+              if (!canvas) return;
+              const centerScreenX = canvas.width / 2;
+              const centerScreenY = canvas.height / 2;
+              const worldX = (centerScreenX - offsetX) / zoom;
+              const worldY = (centerScreenY - offsetY) / zoom;
+              const newZoom = Math.max(ZOOM_MIN, Math.round((zoom - ZOOM_STEP) * 10) / 10);
+              setZoom(newZoom);
+              setOffsetX(centerScreenX - worldX * newZoom);
+              setOffsetY(centerScreenY - worldY * newZoom);
+            }}
+            disabled={zoom <= ZOOM_MIN}
+            className="px-2 py-1 border rounded text-sm disabled:opacity-30 hover:bg-gray-200 transition-colors"
+          >−</button>
+          <span className="text-xs w-12 text-center text-gray-500">{Math.round(zoom * 100)}%</span>
+          <button
+            type="button"
+            onClick={() => {
+              const canvas = canvasRef.current;
+              if (!canvas) return;
+              const centerScreenX = canvas.width / 2;
+              const centerScreenY = canvas.height / 2;
+              const worldX = (centerScreenX - offsetX) / zoom;
+              const worldY = (centerScreenY - offsetY) / zoom;
+              const newZoom = Math.min(ZOOM_MAX, Math.round((zoom + ZOOM_STEP) * 10) / 10);
+              setZoom(newZoom);
+              setOffsetX(centerScreenX - worldX * newZoom);
+              setOffsetY(centerScreenY - worldY * newZoom);
+            }}
+            disabled={zoom >= ZOOM_MAX}
+            className="px-2 py-1 border rounded text-sm disabled:opacity-30 hover:bg-gray-200 transition-colors"
+          >+</button>
+        </div>
+      )}
     </div>
   );
 }

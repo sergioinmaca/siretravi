@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Save, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCampamento } from '../../context/CampamentoContext';
-import type { Usuario, Modulo, Accion } from '../../types';
+import type { Usuario, ModuloSistema, Accion } from '../../types';
 
 interface PermisoConfig {
   acciones: string[];
@@ -24,7 +24,7 @@ export default function UsuarioModal({ isOpen, onClose, usuarioToEdit, onSaved }
   const [apellidos, setApellidos] = useState('');
   const [clave, setClave] = useState('');
   const [showClave, setShowClave] = useState(false);
-  const [modulos, setModulos] = useState<Modulo[]>([]);
+  const [modulos, setModulos] = useState<ModuloSistema[]>([]);
   const [acciones, setAcciones] = useState<Accion[]>([]);
   const [selectedModulos, setSelectedModulos] = useState<Record<string, PermisoConfig>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -38,7 +38,7 @@ export default function UsuarioModal({ isOpen, onClose, usuarioToEdit, onSaved }
         supabase.from('modulos').select('*').order('created_at'),
         supabase.from('acciones').select('*, modulos!inner(nombre)').order('nombre'),
       ]);
-      setModulos((modData || []) as Modulo[]);
+      setModulos((modData || []) as ModuloSistema[]);
       setAcciones((accData || []) as Accion[]);
 
       if (usuarioToEdit) {

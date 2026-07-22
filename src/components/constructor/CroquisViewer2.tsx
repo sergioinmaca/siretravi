@@ -49,7 +49,7 @@ interface HoveredBed {
 
 interface CroquisViewer2Props {
   croquisData: string;
-  carpaNombre: string;
+  moduloNombre: string;
   campamentoId: string;
   width?: number;
   height?: number;
@@ -58,7 +58,7 @@ interface CroquisViewer2Props {
   literasCount?: number;
   individualesCount?: number;
   duplexCount?: number;
-  disponiblesCarpa?: number;
+  disponiblesModulo?: number;
 }
 
 let _lastCampId: string | null = null;
@@ -285,7 +285,7 @@ export function contarTiposDesdeCroquis(croquisData: string): { literas: number;
   }
 }
 
-const CroquisViewer2 = forwardRef<HTMLCanvasElement, CroquisViewer2Props>(function CroquisViewer2({ croquisData, carpaNombre, campamentoId, width = 700, height = 600, elementNumberOffset = 0, tipoContabilizacion = 'elemento', literasCount, individualesCount, duplexCount, disponiblesCarpa }, ref) {
+const CroquisViewer2 = forwardRef<HTMLCanvasElement, CroquisViewer2Props>(function CroquisViewer2({ croquisData, moduloNombre, campamentoId, width = 700, height = 600, elementNumberOffset = 0, tipoContabilizacion = 'elemento', literasCount, individualesCount, duplexCount, disponiblesModulo }, ref) {
   const internalCanvasRef = useRef<HTMLCanvasElement>(null);
   const bedsRenderRef = useRef<BedRenderInfo[]>([]);
   const [hoveredBed, setHoveredBed] = useState<HoveredBed | null>(null);
@@ -464,7 +464,7 @@ const CroquisViewer2 = forwardRef<HTMLCanvasElement, CroquisViewer2Props>(functi
     <div className="space-y-3">
       <div className="flex items-center gap-3">
         <div className="h-8 w-1 bg-caracas-red rounded-full" />
-        <h4 className="font-semibold text-gray-800">{carpaNombre}</h4>
+        <h4 className="font-semibold text-gray-800">{moduloNombre}</h4>
       </div>
       {literasCount !== undefined && individualesCount !== undefined && duplexCount !== undefined && (
         <div className="flex items-center gap-4 text-sm text-gray-500 pl-5">
@@ -483,10 +483,10 @@ const CroquisViewer2 = forwardRef<HTMLCanvasElement, CroquisViewer2Props>(functi
             <span className="w-3 h-3 rounded bg-[#F59E0B]" />
             <span className="font-medium">{duplexCount}</span> Duplex
           </span>
-          {disponiblesCarpa !== undefined && (
+          {disponiblesModulo !== undefined && (
             <span className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded bg-[#6B7280]" />
-              <span className="font-medium">{disponiblesCarpa}</span> Disponibles
+              <span className="font-medium">{disponiblesModulo}</span> Disponibles
             </span>
           )}
         </div>

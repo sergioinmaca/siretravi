@@ -188,48 +188,48 @@ export default function Actas() {
             3+ actas
           </span>
         </div>
-        {(campamentoSeleccionado?.carpas?.length || 0) > 0 ? (
+        {(campamentoSeleccionado?.modulos?.length || 0) > 0 ? (
           <div className="space-y-8">
-            {(campamentoSeleccionado?.carpas || []).map((carpa, index) => {
+            {(campamentoSeleccionado?.modulos || []).map((modulo, index) => {
               let offset = 0;
               for (let i = 0; i < index; i++) {
                 offset += countElements(
-                  (campamentoSeleccionado?.carpas?.[i]?.croquis_data) || '',
+                  (campamentoSeleccionado?.modulos?.[i]?.croquis_data) || '',
                   campamentoSeleccionado?.tipo_contabilizacion || 'elemento'
                 );
               }
-              const tiposCarpa = contarTiposDesdeCroquis(carpa.croquis_data || '');
-              const totalCamasCarpa = (campamentoSeleccionado?.tipo_contabilizacion || 'elemento') === 'cama'
-                ? tiposCarpa.literas * 2 + tiposCarpa.individuales + tiposCarpa.duplex
-                : tiposCarpa.literas + tiposCarpa.individuales + tiposCarpa.duplex;
-              const elementosCarpa = countElements(
-                carpa.croquis_data || '',
+              const tiposModulo = contarTiposDesdeCroquis(modulo.croquis_data || '');
+              const totalCamasModulo = (campamentoSeleccionado?.tipo_contabilizacion || 'elemento') === 'cama'
+                ? tiposModulo.literas * 2 + tiposModulo.individuales + tiposModulo.duplex
+                : tiposModulo.literas + tiposModulo.individuales + tiposModulo.duplex;
+              const elementosModulo = countElements(
+                modulo.croquis_data || '',
                 campamentoSeleccionado?.tipo_contabilizacion || 'elemento'
               );
-              const minCamaCarpa = offset + 1;
-              const maxCamaCarpa = offset + elementosCarpa;
-              let ocupadasCarpa = 0;
+              const minCamaModulo = offset + 1;
+              const maxCamaModulo = offset + elementosModulo;
+              let ocupadasModulo = 0;
               refugiadosDelCampamento.forEach(r => {
                 const n = parseInt(r.nro_cama || '0', 10);
-                if (n >= minCamaCarpa && n <= maxCamaCarpa) ocupadasCarpa++;
+                if (n >= minCamaModulo && n <= maxCamaModulo) ocupadasModulo++;
               });
-              const disponiblesCarpa = Math.max(0, totalCamasCarpa - ocupadasCarpa);
+              const disponiblesModulo = Math.max(0, totalCamasModulo - ocupadasModulo);
 
               return (
                 <CroquisViewer2
                   ref={(el) => { refCanvasRefs.current[index] = el; }}
-                  key={carpa.id}
-                  croquisData={carpa.croquis_data || '{}'}
-                  carpaNombre={carpa.nombre}
+                  key={modulo.id}
+                  croquisData={modulo.croquis_data || '{}'}
+                  moduloNombre={modulo.nombre}
                   campamentoId={campId}
                   elementNumberOffset={offset}
                   width={1100}
                   height={700}
                   tipoContabilizacion={campamentoSeleccionado?.tipo_contabilizacion || 'elemento'}
-                  literasCount={tiposCarpa.literas}
-                  individualesCount={tiposCarpa.individuales}
-                  duplexCount={tiposCarpa.duplex}
-                  disponiblesCarpa={disponiblesCarpa}
+                  literasCount={tiposModulo.literas}
+                  individualesCount={tiposModulo.individuales}
+                  duplexCount={tiposModulo.duplex}
+                  disponiblesModulo={disponiblesModulo}
                 />
               );
             })}
@@ -237,7 +237,7 @@ export default function Actas() {
         ) : (
           <div className="border-2 border-dashed border-gray-200 rounded-2xl h-72 flex flex-col items-center justify-center text-gray-400 bg-gray-50">
             <Tent size={48} className="mb-4 opacity-50" />
-            <p className="font-medium text-gray-500">No hay carpas configuradas para este campamento.</p>
+            <p className="font-medium text-gray-500">No hay modulos configurados para este campamento.</p>
           </div>
         )}
       </div>

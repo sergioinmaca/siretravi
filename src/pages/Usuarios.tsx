@@ -1,14 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { UserPlus, MoreHorizontal, Pencil, Trash2, Search, ShieldCheck } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import type { Usuario, Permiso, Modulo } from '../types';
+import type { Usuario, Permiso, ModuloSistema } from '../types';
 import UsuarioModal from '../components/usuarios/UsuarioModal';
 import { useAuth } from '../context/AuthContext';
 
 export default function Usuarios() {
   const { usuarioActual } = useAuth();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
-  const [modulos, setModulos] = useState<Modulo[]>([]);
+  const [modulos, setModulos] = useState<ModuloSistema[]>([]);
   const [permisos, setPermisos] = useState<Permiso[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editandoUsuario, setEditandoUsuario] = useState<Usuario | null>(null);
@@ -22,7 +22,7 @@ export default function Usuarios() {
       supabase.from('permisos').select('*'),
     ]);
     setUsuarios((users || []) as Usuario[]);
-    setModulos((mods || []) as Modulo[]);
+    setModulos((mods || []) as ModuloSistema[]);
     setPermisos((perms || []) as Permiso[]);
   }, []);
 

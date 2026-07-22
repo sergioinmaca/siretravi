@@ -47,7 +47,7 @@ interface HoveredBed {
 
 interface CroquisViewerProps {
   croquisData: string;
-  carpaNombre: string;
+  moduloNombre: string;
   width?: number;
   height?: number;
   elementNumberOffset?: number;
@@ -57,11 +57,11 @@ interface CroquisViewerProps {
   literasCount?: number;
   individualesCount?: number;
   duplexCount?: number;
-  disponiblesCarpa?: number;
+  disponiblesModulo?: number;
   bedColorMap?: Record<string, string>;
 }
 
-const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function CroquisViewer({ croquisData, carpaNombre, width = 700, height = 600, elementNumberOffset = 0, tipoContabilizacion = 'elemento', occupiedBeds = [], bedOccupants = {}, literasCount, individualesCount, duplexCount, disponiblesCarpa, bedColorMap }, ref) {
+const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function CroquisViewer({ croquisData, moduloNombre, width = 700, height = 600, elementNumberOffset = 0, tipoContabilizacion = 'elemento', occupiedBeds = [], bedOccupants = {}, literasCount, individualesCount, duplexCount, disponiblesModulo, bedColorMap }, ref) {
   const internalCanvasRef = useRef<HTMLCanvasElement>(null);
   const bedsRenderRef = useRef<BedRenderInfo[]>([]);
   const [hoveredBed, setHoveredBed] = useState<HoveredBed | null>(null);
@@ -189,7 +189,7 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
     <div className="space-y-3">
       <div className="flex items-center gap-3">
         <div className="h-8 w-1 bg-caracas-red rounded-full" />
-        <h4 className="font-semibold text-gray-800">{carpaNombre}</h4>
+        <h4 className="font-semibold text-gray-800">{moduloNombre}</h4>
       </div>
       {literasCount !== undefined && individualesCount !== undefined && duplexCount !== undefined && (
         <div className="flex items-center gap-4 text-sm text-gray-500 pl-5">
@@ -208,10 +208,10 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
             <span className="w-3 h-3 rounded bg-[#F59E0B]" />
             <span className="font-medium">{duplexCount}</span> Duplex
           </span>
-          {disponiblesCarpa !== undefined && (
+          {disponiblesModulo !== undefined && (
             <span className="flex items-center gap-1.5">
               <span className="w-3 h-3 rounded bg-[#6B7280]" />
-              <span className="font-medium">{disponiblesCarpa}</span> Disponibles
+              <span className="font-medium">{disponiblesModulo}</span> Disponibles
             </span>
           )}
         </div>
@@ -447,7 +447,7 @@ function drawBedsWithNumbers(
   });
 }
 
-/** Utility: count how many elements a croquis contains (for offset chaining between carpas) */
+/** Utility: count how many elements a croquis contains (for offset chaining between modulos) */
 export function countElements(croquisData: string, modo: 'cama' | 'elemento' = 'elemento'): number {
   try {
     const parsed = JSON.parse(croquisData);

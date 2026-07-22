@@ -1,4 +1,4 @@
-export interface Carpa {
+export interface Modulo {
   id: string;
   nombre: string;
   literas: number;
@@ -14,7 +14,8 @@ export interface Campamento {
   capacidad_maxima: number;
   estado: 'activo' | 'inactivo';
   tipo_contabilizacion: 'cama' | 'elemento';
-  carpas: Carpa[];
+  croquis_general?: string | null;
+  modulos: Modulo[];
 }
 
 export interface Familia {
@@ -33,7 +34,7 @@ export interface Usuario {
   activo: boolean;
 }
 
-export interface Modulo {
+export interface ModuloSistema {
   id: string;
   nombre: string;
 }

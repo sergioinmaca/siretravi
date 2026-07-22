@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { X, Save, ChevronDown, ChevronUp, Tent, MapPin, Trash2 } from 'lucide-react';
 import { useCampamento } from '../../context/CampamentoContext';
-import type { Carpa, Campamento } from '../../types';
+import type { Modulo, Campamento } from '../../types';
 import CroquisEditor from './CroquisEditor';
 import { countElements, contarTiposDesdeCroquis } from './CroquisViewer';
 
-interface CarpaDraft {
+interface ModuloDraft {
   nombre: string;
   literas: number;
   camas_individuales: number;
@@ -25,8 +25,10 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
   const [nombre, setNombre] = useState('');
   const [ubicacion, setUbicacion] = useState('');
   const [tipoContabilizacion, setTipoContabilizacion] = useState<'cama' | 'elemento'>('elemento');
-  const [cantidadCarpas, setCantidadCarpas] = useState(0);
-  const [carpas, setCarpas] = useState<CarpaDraft[]>([]);
+  const [cantidadModulos, setCantidadModulos] = useState(0);
+  const [modulos, setModulos] = useState<ModuloDraft[]>([]);
+  const [croquisGeneralData, setCroquisGeneralData] = useState<string | null>(null);
+  const [croquisGeneralExpandido, setCroquisGeneralExpandido] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -36,33 +38,36 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
       setNombre(campamentoToEdit.nombre);
       setUbicacion(campamentoToEdit.ubicacion);
       setTipoContabilizacion(campamentoToEdit.tipo_contabilizacion || 'elemento');
-      setCantidadCarpas(campamentoToEdit.carpas.length);
-      setCarpas(campamentoToEdit.carpas.map((c, index) => ({
+      setCantidadModulos(campamentoToEdit.modulos.length);
+      setModulos(campamentoToEdit.modulos.map((c, index) => ({
         ...c,
         croquis_data: c.croquis_data || '',
         expanded: index === 0
       })));
+      setCroquisGeneralData(campamentoToEdit.croquis_general || null);
     } else if (isOpen && !campamentoToEdit) {
       // Limpiar al abrir para crear nuevo
       setNombre('');
       setUbicacion('');
       setTipoContabilizacion('elemento');
-      setCantidadCarpas(0);
-      setCarpas([]);
+      setCantidadModulos(0);
+      setModulos([]);
+      setCroquisGeneralData(null);
+      setCroquisGeneralExpandido(false);
     }
   }, [isOpen, campamentoToEdit]);
 
-  // Cuando cambia la cantidad de carpas, generar/destruir subformularios
-  const handleCantidadCarpasChange = (val: number) => {
-    const n = Math.max(0, Math.min(val, 20)); // máximo 20 carpas
-    setCantidadCarpas(n);
-    setCarpas(prev => {
+  // Cuando cambia la cantidad de modulos, generar/destruir subformularios
+  const handleCantidadModulosChange = (val: number) => {
+    const n = Math.max(0, Math.min(val, 20)); // maximo 20 modulos
+    setCantidadModulos(n);
+    setModulos(prev => {
       if (n > prev.length) {
-        // Agregar nuevas
-        const nuevas: CarpaDraft[] = [];
+        // Agregar nuevos
+        const nuevas: ModuloDraft[] = [];
         for (let i = prev.length; i < n; i++) {
           nuevas.push({
-            nombre: `CARPA ${String.fromCharCode(65 + i)}`, // A, B, C...
+            nombre: `MÓDULO ${String.fromCharCode(65 + i)}`, // A, B, C...
             literas: 0,
             camas_individuales: 0,
             camas_duplex: 0,
@@ -78,16 +83,16 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
     });
   };
 
-  const updateCarpa = (index: number, field: keyof CarpaDraft, value: string | number | boolean) => {
-    setCarpas(prev => prev.map((c, i) => i === index ? { ...c, [field]: value } : c));
+  const updateModulo = (index: number, field: keyof ModuloDraft, value: string | number | boolean) => {
+    setModulos(prev => prev.map((c, i) => i === index ? { ...c, [field]: value } : c));
   };
 
-  const toggleCarpa = (index: number) => {
-    setCarpas(prev => prev.map((c, i) => i === index ? { ...c, expanded: !c.expanded } : c));
+  const toggleModulo = (index: number) => {
+    setModulos(prev => prev.map((c, i) => i === index ? { ...c, expanded: !c.expanded } : c));
   };
 
   const calcularCapacidadTotal = () => {
-    return carpas.reduce((total, c) => {
+    return modulos.reduce((total, c) => {
       return total + countElements(c.croquis_data, tipoContabilizacion);
     }, 0);
   };
@@ -97,8 +102,8 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
     setIsSubmitting(true);
 
     try {
-      const carpasFinales: Carpa[] = carpas.map((c, i) => ({
-        id: campamentoToEdit?.carpas[i]?.id || `carpa-${Date.now()}-${i}`,
+      const modulosFinales: Modulo[] = modulos.map((c, i) => ({
+        id: campamentoToEdit?.modulos[i]?.id || `modulo-${Date.now()}-${i}`,
         nombre: c.nombre,
         literas: c.literas,
         camas_individuales: c.camas_individuales,
@@ -117,7 +122,8 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
           ubicacion: ubicacion.toUpperCase(),
           capacidad_maxima: calcularCapacidadTotal(),
           tipo_contabilizacion: tipoContabilizacion,
-          carpas: carpasFinales
+          croquis_general: croquisGeneralData,
+          modulos: modulosFinales
         });
       } else {
         await agregarCampamento({
@@ -127,7 +133,8 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
           capacidad_maxima: calcularCapacidadTotal(),
           estado: 'activo',
           tipo_contabilizacion: tipoContabilizacion,
-          carpas: carpasFinales
+          croquis_general: croquisGeneralData,
+          modulos: modulosFinales
         });
       }
 
@@ -174,7 +181,7 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
               {campamentoToEdit ? 'Editar Campamento' : 'Crear Nuevo Campamento'}
             </h2>
             <p className="text-sm text-gray-500 mt-1">
-              {campamentoToEdit ? 'Modifica las características del campamento y sus carpas' : 'Define las características del campamento y sus carpas'}
+              {campamentoToEdit ? 'Modifica las características del campamento y sus módulos' : 'Define las características del campamento y sus módulos'}
             </p>
           </div>
           <button onClick={onClose} className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition-colors">
@@ -228,14 +235,14 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad de Carpas <span className="text-caracas-red">*</span></label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad de Módulos <span className="text-caracas-red">*</span></label>
                   <input
                     required
                     type="number"
                     min={0}
                     max={20}
-                    value={cantidadCarpas || ''}
-                    onChange={e => handleCantidadCarpasChange(Number(e.target.value))}
+                    value={cantidadModulos || ''}
+                    onChange={e => handleCantidadModulosChange(Number(e.target.value))}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all"
                     placeholder="Ej. 3"
                   />
@@ -274,13 +281,47 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
               </div>
             </div>
 
-            {/* Sección 2: Subformularios por Carpa (acordeones) */}
-            {carpas.map((carpa, index) => (
+            {/* Seccion: Croquis General */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all mt-6">
+              <button
+                type="button"
+                onClick={() => setCroquisGeneralExpandido(!croquisGeneralExpandido)}
+                className="w-full bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center justify-between hover:bg-gray-100 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-caracas-red/10 rounded-lg">
+                    <MapPin size={18} className="text-caracas-red" />
+                  </div>
+                  <div className="text-left">
+                    <h3 className="font-semibold text-gray-800">CROQUIS GENERAL</h3>
+                    <p className="text-xs text-gray-500">Vista general del campamento con modulos</p>
+                  </div>
+                </div>
+                {croquisGeneralExpandido ? <ChevronUp size={20} className="text-gray-400" /> : <ChevronDown size={20} className="text-gray-400" />}
+              </button>
+              {croquisGeneralExpandido && (
+                <div className="p-6">
+                  <p className="text-xs text-gray-500 mb-3">
+                    Dibuja el croquis general del campamento. Coloca rectangulos para representar modulos, areas o pasillos. Haz doble-click en un rectangulo para agregarle texto.
+                  </p>
+                  <CroquisEditor
+                    modo="general"
+                    width={1100}
+                    height={700}
+                    initialData={campamentoToEdit ? (croquisGeneralData || undefined) : undefined}
+                    onChange={(data) => setCroquisGeneralData(data)}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Seccion 2: Subformularios por Modulo (acordeones) */}
+            {modulos.map((modulo, index) => (
               <div key={index} className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden transition-all">
-                {/* Cabecera del acordeón */}
+                {/* Cabecera del acordeon */}
                 <button
                   type="button"
-                  onClick={() => toggleCarpa(index)}
+                  onClick={() => toggleModulo(index)}
                   className="w-full bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center justify-between hover:bg-gray-100 transition-colors"
                 >
                   <div className="flex items-center gap-3">
@@ -288,34 +329,34 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
                       <Tent size={18} className="text-caracas-blue" />
                     </div>
                       <div className="text-left">
-                        <h3 className="font-semibold text-gray-800">{carpa.nombre || `Carpa ${index + 1}`}</h3>
+                        <h3 className="font-semibold text-gray-800">{modulo.nombre || `Modulo ${index + 1}`}</h3>
                         {(() => {
-                          const tipos = contarTiposDesdeCroquis(carpa.croquis_data || '');
+                          const tipos = contarTiposDesdeCroquis(modulo.croquis_data || '');
                           return (
                             <p className="text-xs text-gray-500">
                               {tipos.literas} literas · {tipos.individuales} individuales · {tipos.duplex} duplex
                               {' · '}
                               <span className="font-semibold text-caracas-red">
-                                {countElements(carpa.croquis_data || '', tipoContabilizacion)} camas total
+                                {countElements(modulo.croquis_data || '', tipoContabilizacion)} camas total
                               </span>
                             </p>
                           );
                         })()}
                       </div>
                   </div>
-                  {carpa.expanded ? <ChevronUp size={20} className="text-gray-400" /> : <ChevronDown size={20} className="text-gray-400" />}
+                  {modulo.expanded ? <ChevronUp size={20} className="text-gray-400" /> : <ChevronDown size={20} className="text-gray-400" />}
                 </button>
 
-                {/* Contenido del acordeón */}
-                {carpa.expanded && (
+                {/* Contenido del acordeon */}
+                {modulo.expanded && (
                   <div className="p-6 space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de Carpa</label>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Nombre de Modulo</label>
                         <input
                           type="text"
-                          value={carpa.nombre}
-                          onChange={e => updateCarpa(index, 'nombre', e.target.value.toUpperCase())}
+                          value={modulo.nombre}
+                          onChange={e => updateModulo(index, 'nombre', e.target.value.toUpperCase())}
                           className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none text-sm uppercase"
                         />
                       </div>
@@ -324,8 +365,8 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
                         <input
                           type="number"
                           min={0}
-                          value={carpa.literas || ''}
-                          onChange={e => updateCarpa(index, 'literas', Number(e.target.value))}
+                          value={modulo.literas || ''}
+                          onChange={e => updateModulo(index, 'literas', Number(e.target.value))}
                           className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none text-sm"
                           placeholder="0"
                         />
@@ -335,8 +376,8 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
                         <input
                           type="number"
                           min={0}
-                          value={carpa.camas_individuales || ''}
-                          onChange={e => updateCarpa(index, 'camas_individuales', Number(e.target.value))}
+                          value={modulo.camas_individuales || ''}
+                          onChange={e => updateModulo(index, 'camas_individuales', Number(e.target.value))}
                           className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none text-sm"
                           placeholder="0"
                         />
@@ -346,8 +387,8 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
                         <input
                           type="number"
                           min={0}
-                          value={carpa.camas_duplex || ''}
-                          onChange={e => updateCarpa(index, 'camas_duplex', Number(e.target.value))}
+                          value={modulo.camas_duplex || ''}
+                          onChange={e => updateModulo(index, 'camas_duplex', Number(e.target.value))}
                           className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none text-sm"
                           placeholder="0"
                         />
@@ -356,25 +397,25 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
 
                     {/* Editor de Croquis */}
                     <div>
-                      <h4 className="text-sm font-semibold text-gray-700 mb-2">Croquis de la Carpa</h4>
+                      <h4 className="text-sm font-semibold text-gray-700 mb-2">Croquis del Modulo</h4>
                       <p className="text-xs text-gray-500 mb-3">
-                        Utiliza las herramientas para dibujar las paredes y luego coloca los íconos de camas sobre el plano.
+                        Utiliza las herramientas para dibujar las paredes y luego coloca los iconos de camas sobre el plano.
                       </p>
                       <CroquisEditor
                         width={1100}
                         height={700}
-                        maxLiteras={carpa.literas}
-                        maxIndividuales={carpa.camas_individuales}
-                        maxDuplex={carpa.camas_duplex}
+                        maxLiteras={modulo.literas}
+                        maxIndividuales={modulo.camas_individuales}
+                        maxDuplex={modulo.camas_duplex}
                         tipoContabilizacion={tipoContabilizacion}
-                        initialData={campamentoToEdit ? carpa.croquis_data : undefined}
+                        initialData={campamentoToEdit ? modulo.croquis_data : undefined}
                         onChange={(data) => {
-                          updateCarpa(index, 'croquis_data', data);
+                          updateModulo(index, 'croquis_data', data);
                         }}
                         elementNumberOffset={(() => {
                           let offset = 0;
                           for (let i = 0; i < index; i++) {
-                            offset += countElements(carpas[i].croquis_data || '', tipoContabilizacion);
+                            offset += countElements(modulos[i].croquis_data || '', tipoContabilizacion);
                           }
                           return offset;
                         })()}
@@ -385,10 +426,10 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
               </div>
             ))}
 
-            {cantidadCarpas === 0 && (
+            {cantidadModulos === 0 && (
               <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-2xl p-12 flex flex-col items-center justify-center text-gray-400">
                 <Tent size={48} className="mb-4 opacity-40" />
-                <p className="font-medium text-gray-500">Ingresa la cantidad de carpas para comenzar a configurarlas</p>
+                <p className="font-medium text-gray-500">Ingresa la cantidad de módulos para comenzar a configurarlos</p>
               </div>
             )}
 
@@ -398,9 +439,9 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
         {/* Footer del Modal */}
         <div className="px-8 py-5 border-t border-gray-100 bg-gray-50 flex items-center justify-between shrink-0">
           <p className="text-sm text-gray-500">
-            {cantidadCarpas > 0 && (
+            {cantidadModulos > 0 && (
               <span>
-                {cantidadCarpas} carpa{cantidadCarpas > 1 ? 's' : ''} configurada{cantidadCarpas > 1 ? 's' : ''} · <span className="font-semibold text-caracas-red">{calcularCapacidadTotal()} camas totales</span>
+                {cantidadModulos} módulo{cantidadModulos > 1 ? 's' : ''} configurado{cantidadModulos > 1 ? 's' : ''} · <span className="font-semibold text-caracas-red">{calcularCapacidadTotal()} camas totales</span>
               </span>
             )}
           </p>
@@ -421,7 +462,7 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
             <button
               form="crear-refugio-form"
               type="submit"
-              disabled={cantidadCarpas === 0 || isSubmitting}
+              disabled={cantidadModulos === 0 || isSubmitting}
               className="flex items-center gap-2 bg-caracas-red hover:bg-red-800 text-white px-8 py-2.5 rounded-xl font-medium transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Save size={18} />

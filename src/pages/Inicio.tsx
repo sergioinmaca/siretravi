@@ -117,20 +117,20 @@ export default function Inicio() {
   // Estado para tooltip
   const [hoveredBar, setHoveredBar] = useState<number | null>(null);
 
-  // Calcular offsets de numeración para encadenar números entre carpas
-  const carpas = campamentoSeleccionado?.carpas || [];
+  // Calcular offsets de numeracion para encadenar numeros entre modulos
+  const modulos = campamentoSeleccionado?.modulos || [];
   const tipoContabilizacion = campamentoSeleccionado?.tipo_contabilizacion || 'elemento';
-  const carpasConOffset = carpas.map((carpa, index) => {
+  const modulosConOffset = modulos.map((modulo, index) => {
     let offset = 0;
     for (let i = 0; i < index; i++) {
-      offset += countElements(carpas[i].croquis_data || '', tipoContabilizacion);
+      offset += countElements(modulos[i].croquis_data || '', tipoContabilizacion);
     }
-    return { carpa, offset };
+    return { modulo, offset };
   });
 
-  const totalesCroquis = carpas.reduce(
-    (acc, carpa) => {
-      const c = contarTiposDesdeCroquis(carpa.croquis_data || '');
+  const totalesCroquis = modulos.reduce(
+    (acc, modulo) => {
+      const c = contarTiposDesdeCroquis(modulo.croquis_data || '');
       acc.literas += c.literas;
       acc.individuales += c.individuales;
       acc.duplex += c.duplex;
@@ -186,7 +186,7 @@ export default function Inicio() {
       const totalOcupadas = occupiedBeds.length;
       const pctOcup = totalCamas > 0 ? Math.round((totalOcupadas / totalCamas) * 100) : 0;
 
-      for (let i = 0; i < carpas.length; i++) {
+      for (let i = 0; i < modulos.length; i++) {
         if (i > 0) pdf.addPage();
 
         // ── Fondo: marca de agua (48% page, bottom-right) ────────────────────
@@ -256,32 +256,32 @@ export default function Inicio() {
           }
         });
 
-        // ── Sección de carpa ──────────────────────────────────────────────────
-        const carpaSectionY = statsY + 10;
+        // ── Seccion de modulo ──────────────────────────────────────────────────
+        const moduloSectionY = statsY + 10;
 
         pdf.setFontSize(10);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(55, 65, 81);
-        pdf.text(`Carpa: ${carpas[i].nombre}`, marginL, carpaSectionY);
+        pdf.text(`Modulo: ${modulos[i].nombre}`, marginL, moduloSectionY);
 
-        // Indicadores por carpa
-        const tiposCarpa = contarTiposDesdeCroquis(carpas[i].croquis_data || '');
-        const tipoY = carpaSectionY + 5;
+        // Indicadores por modulo
+        const tiposModulo = contarTiposDesdeCroquis(modulos[i].croquis_data || '');
+        const tipoY = moduloSectionY + 5;
         pdf.setFontSize(7);
         pdf.setFont('helvetica', 'normal');
 
         pdf.setFillColor('#3B82F6');
         pdf.circle(marginL + 5, tipoY, 2, 'F');
         pdf.setTextColor(107, 114, 128);
-        pdf.text(`${tiposCarpa.literas} Literas`, marginL + 9, tipoY + 1.5);
+        pdf.text(`${tiposModulo.literas} Literas`, marginL + 9, tipoY + 1.5);
 
         pdf.setFillColor('#10B981');
         pdf.circle(marginL + 60, tipoY, 2, 'F');
-        pdf.text(`${tiposCarpa.individuales} Individuales`, marginL + 64, tipoY + 1.5);
+        pdf.text(`${tiposModulo.individuales} Individuales`, marginL + 64, tipoY + 1.5);
 
         pdf.setFillColor('#F59E0B');
         pdf.circle(marginL + 115, tipoY, 2, 'F');
-        pdf.text(`${tiposCarpa.duplex} Duplex`, marginL + 119, tipoY + 1.5);
+        pdf.text(`${tiposModulo.duplex} Duplex`, marginL + 119, tipoY + 1.5);
 
         const labelBottom = tipoY + 5;
 
@@ -325,7 +325,7 @@ export default function Inicio() {
     } finally {
       setExportandoPDF(false);
     }
-  }, [campamentoSeleccionado, totalesCroquis, occupiedBeds, tipoContabilizacion, carpas]);
+  }, [campamentoSeleccionado, totalesCroquis, occupiedBeds, tipoContabilizacion, modulos]);
 
   return (
     <div className="space-y-6">
@@ -379,16 +379,16 @@ export default function Inicio() {
           </div>
         </div>
 
-        {/* Carpas Activas */}
+        {/* Modulos Activos */}
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-caracas-blue flex items-center gap-4 hover:shadow-md transition-shadow">
           <div className="p-4 bg-caracas-blue/10 rounded-xl text-caracas-blue shrink-0">
             <Tent size={32} />
           </div>
           <div className="overflow-hidden">
-            <p className="text-sm font-medium text-gray-500 truncate">Carpas Activas</p>
-            <p className="text-3xl font-bold text-gray-900">{campamentoSeleccionado?.carpas?.length || 0}</p>
+            <p className="text-sm font-medium text-gray-500 truncate">Modulos Activos</p>
+            <p className="text-3xl font-bold text-gray-900">{campamentoSeleccionado?.modulos?.length || 0}</p>
             <p className="text-xs text-gray-400 mt-1 truncate">
-              Instaladas
+              Instalados
             </p>
           </div>
         </div>
@@ -553,10 +553,10 @@ export default function Inicio() {
         )}
       </div>
 
-      {/* Distribución del Campamento — Croquis por Carpa */}
+      {/* Distribucion del Campamento — Croquis por Modulo */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
         <h2 className="text-lg font-semibold text-gray-800 mb-2">
-          Distribución del Campamento ({campamentoSeleccionado?.nombre || 'Ninguno'})
+          Distribucion del Campamento ({campamentoSeleccionado?.nombre || 'Ninguno'})
         </h2>
         <button
           type="button"
@@ -599,38 +599,38 @@ export default function Inicio() {
           </div>
         )}
 
-        {carpasConOffset.length > 0 ? (
+        {modulosConOffset.length > 0 ? (
           <div className="space-y-8">
-            {carpasConOffset.map(({ carpa, offset }, index) => {
-              const tiposCarpa = contarTiposDesdeCroquis(carpa.croquis_data || '');
-              const totalCamasCarpa = tipoContabilizacion === 'cama'
-                ? tiposCarpa.literas * 2 + tiposCarpa.individuales + tiposCarpa.duplex
-                : tiposCarpa.literas + tiposCarpa.individuales + tiposCarpa.duplex;
-              const elementosCarpa = countElements(carpa.croquis_data || '', tipoContabilizacion);
-              const minCamaCarpa = offset + 1;
-              const maxCamaCarpa = offset + elementosCarpa;
-              let ocupadasCarpa = 0;
+            {modulosConOffset.map(({ modulo, offset }, index) => {
+              const tiposModulo = contarTiposDesdeCroquis(modulo.croquis_data || '');
+              const totalCamasModulo = tipoContabilizacion === 'cama'
+                ? tiposModulo.literas * 2 + tiposModulo.individuales + tiposModulo.duplex
+                : tiposModulo.literas + tiposModulo.individuales + tiposModulo.duplex;
+              const elementosModulo = countElements(modulo.croquis_data || '', tipoContabilizacion);
+              const minCamaModulo = offset + 1;
+              const maxCamaModulo = offset + elementosModulo;
+              let ocupadasModulo = 0;
               uniqueOccupiedBedsSet.forEach(b => {
                 const n = parseInt(b, 10);
-                if (n >= minCamaCarpa && n <= maxCamaCarpa) ocupadasCarpa++;
+                if (n >= minCamaModulo && n <= maxCamaModulo) ocupadasModulo++;
               });
-              const disponiblesCarpa = Math.max(0, totalCamasCarpa - ocupadasCarpa);
+              const disponiblesModulo = Math.max(0, totalCamasModulo - ocupadasModulo);
               return (
               <CroquisViewer
                 ref={(el) => { croquisCanvasRefs.current[index] = el; }}
-                key={carpa.id}
-                croquisData={carpa.croquis_data || '{}'}
-                carpaNombre={carpa.nombre}
+                key={modulo.id}
+                croquisData={modulo.croquis_data || '{}'}
+                moduloNombre={modulo.nombre}
                 elementNumberOffset={offset}
                 width={1100}
                 height={700}
                 tipoContabilizacion={tipoContabilizacion}
                 occupiedBeds={occupiedBeds}
                 bedOccupants={bedOccupants}
-                literasCount={tiposCarpa.literas}
-                individualesCount={tiposCarpa.individuales}
-                duplexCount={tiposCarpa.duplex}
-                disponiblesCarpa={disponiblesCarpa}
+                literasCount={tiposModulo.literas}
+                individualesCount={tiposModulo.individuales}
+                duplexCount={tiposModulo.duplex}
+                disponiblesModulo={disponiblesModulo}
               />
               );
             })}
@@ -638,8 +638,8 @@ export default function Inicio() {
         ) : (
           <div className="border-2 border-dashed border-gray-200 rounded-2xl h-72 flex flex-col items-center justify-center text-gray-400 bg-gray-50 hover:bg-gray-100 transition-colors">
             <Tent size={48} className="mb-4 opacity-50" />
-            <p className="font-medium text-gray-500">No hay carpas configuradas para este campamento.</p>
-            <p className="text-sm text-gray-400 mt-1">Ve al módulo Constructor para crear un campamento con carpas y croquis.</p>
+            <p className="font-medium text-gray-500">No hay modulos configurados para este campamento.</p>
+            <p className="text-sm text-gray-400 mt-1">Ve al modulo Constructor para crear un campamento con modulos y croquis.</p>
           </div>
         )}
       </div>

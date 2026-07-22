@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from 'rea
 import type { ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { toDateInput, parseDateSafe } from '../lib/formatDate';
-import type { Campamento, Refugiado, Familia, Carpa } from '../types';
+import type { Campamento, Refugiado, Familia, Modulo } from '../types';
 
 interface CampamentoContextType {
   campamentos: Campamento[];
@@ -30,7 +30,7 @@ const CampamentoContext = createContext<CampamentoContextType | undefined>(undef
 // ─── Helpers para mapear la respuesta de Supabase al tipo local ───────────────
 
 function mapCampamento(row: Record<string, unknown>, carpasRows: Record<string, unknown>[]): Campamento {
-  const myCarpas = carpasRows
+  const myModulos = carpasRows
     .filter(c => c.campamento_id === row.id)
     .sort((a, b) => (a.orden as number) - (b.orden as number))
     .map(c => ({
@@ -49,7 +49,8 @@ function mapCampamento(row: Record<string, unknown>, carpasRows: Record<string, 
     capacidad_maxima: row.capacidad_maxima as number,
     estado: row.estado as 'activo' | 'inactivo',
     tipo_contabilizacion: (row.tipo_contabilizacion as 'cama' | 'elemento') || 'elemento',
-    carpas: myCarpas,
+    croquis_general: (row.croquis_general as string) || null,
+    modulos: myModulos,
   };
 }
 
@@ -251,6 +252,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         capacidad_maxima: nuevo.capacidad_maxima,
         estado: nuevo.estado,
         tipo_contabilizacion: nuevo.tipo_contabilizacion,
+        croquis_general: nuevo.croquis_general || null,
       })
       .select()
       .single();
@@ -260,9 +262,9 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       throw new Error(campError?.message || 'Error al crear campamento');
     }
 
-    // 2. Insertar las carpas asociadas
-    if (nuevo.carpas.length > 0) {
-      const carpasToInsert = nuevo.carpas.map((c, i) => ({
+    // 2. Insertar los modulos asociados
+    if (nuevo.modulos.length > 0) {
+      const modulosToInsert = nuevo.modulos.map((c, i) => ({
         campamento_id: campData.id,
         nombre: c.nombre,
         literas: c.literas,
@@ -273,15 +275,15 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       }));
       const { data: carpasData, error: carpasError } = await supabase
         .from('carpas')
-        .insert(carpasToInsert)
+        .insert(modulosToInsert)
         .select();
 
       if (carpasError) {
-        console.error('Error al crear carpas:', carpasError);
-        throw new Error(carpasError.message || 'Error al crear carpas');
+        console.error('Error al crear modulos:', carpasError);
+        throw new Error(carpasError.message || 'Error al crear modulos');
       }
 
-      const carpasGuardadas: Carpa[] = (carpasData || []).map((c: Record<string, unknown>) => ({
+      const modulosGuardados: Modulo[] = (carpasData || []).map((c: Record<string, unknown>) => ({
         id: c.id as string,
         nombre: c.nombre as string,
         literas: c.literas as number,
@@ -297,7 +299,8 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         capacidad_maxima: campData.capacidad_maxima,
         estado: campData.estado,
         tipo_contabilizacion: (campData.tipo_contabilizacion as 'cama' | 'elemento') || 'elemento',
-        carpas: carpasGuardadas,
+        croquis_general: (campData.croquis_general as string) || null,
+        modulos: modulosGuardados,
       };
 
       setCampamentos(prev => {
@@ -306,7 +309,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         return nuevos;
       });
     } else {
-      const campamentoCompleto: Campamento = { ...campData, carpas: [] };
+      const campamentoCompleto: Campamento = { ...campData, croquis_general: null, modulos: [] } as Campamento;
       setCampamentos(prev => {
         const nuevos = [...prev, campamentoCompleto];
         if (nuevos.length === 1) setCampamentoSeleccionado(campamentoCompleto);
@@ -326,6 +329,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         capacidad_maxima: actualizado.capacidad_maxima,
         estado: actualizado.estado,
         tipo_contabilizacion: actualizado.tipo_contabilizacion,
+        croquis_general: actualizado.croquis_general || null,
       })
       .eq('id', id);
 
@@ -334,12 +338,12 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       throw new Error(campError.message || 'Error al actualizar campamento');
     }
 
-    // 2. Borrar carpas antiguas y reinsertar (upsert completo)
+    // 2. Borrar modulos antiguos y reinsertar (upsert completo)
     await supabase.from('carpas').delete().eq('campamento_id', id);
 
-    let carpasGuardadas: Carpa[] = [];
-    if (actualizado.carpas.length > 0) {
-      const carpasToInsert = actualizado.carpas.map((c, i) => ({
+    let modulosGuardados: Modulo[] = [];
+    if (actualizado.modulos.length > 0) {
+      const modulosToInsert = actualizado.modulos.map((c, i) => ({
         campamento_id: id,
         nombre: c.nombre,
         literas: c.literas,
@@ -350,15 +354,15 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       }));
       const { data: carpasData, error: carpasError } = await supabase
         .from('carpas')
-        .insert(carpasToInsert)
+        .insert(modulosToInsert)
         .select();
 
       if (carpasError) {
-        console.error('Error al actualizar carpas:', carpasError);
-        throw new Error(carpasError.message || 'Error al actualizar carpas');
+        console.error('Error al actualizar modulos:', carpasError);
+        throw new Error(carpasError.message || 'Error al actualizar modulos');
       }
 
-      carpasGuardadas = (carpasData || []).map((c: Record<string, unknown>) => ({
+      modulosGuardados = (carpasData || []).map((c: Record<string, unknown>) => ({
         id: c.id as string,
         nombre: c.nombre as string,
         literas: c.literas as number,
@@ -368,7 +372,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       }));
     }
 
-    const campActualizado = { ...actualizado, carpas: carpasGuardadas };
+    const campActualizado = { ...actualizado, modulos: modulosGuardados };
     setCampamentos(prev => prev.map(c => c.id === id ? campActualizado : c));
     if (campamentoSeleccionado?.id === id) setCampamentoSeleccionado(campActualizado);
   };
