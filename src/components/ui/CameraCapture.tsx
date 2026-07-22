@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 import { useCamera } from '../../hooks/useCamera';
 import { Camera, X, RefreshCw, Check, AlertTriangle, Loader2 } from 'lucide-react';
 
@@ -8,12 +8,84 @@ interface CameraCaptureProps {
   onCapture: (file: File) => void;
 }
 
+interface CropRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+function calcContainerCrop(container: HTMLDivElement): CropRect | null {
+  const cw = container.clientWidth;
+  const ch = container.clientHeight;
+  if (cw === 0 || ch === 0) return null;
+
+  const containerRatio = cw / ch;
+  const cropRatio = 5 / 6;
+
+  let w: number;
+  let h: number;
+
+  if (containerRatio > cropRatio) {
+    h = ch * 0.85;
+    w = h * cropRatio;
+  } else {
+    w = cw * 0.85;
+    h = w / cropRatio;
+  }
+
+  return {
+    x: (cw - w) / 2,
+    y: (ch - h) / 2,
+    w,
+    h,
+  };
+}
+
+function containerCropToVideoCrop(
+  containerCrop: CropRect,
+  container: HTMLDivElement,
+  video: HTMLVideoElement
+): CropRect | null {
+  const cw = container.clientWidth;
+  const ch = container.clientHeight;
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  if (cw === 0 || ch === 0 || vw === 0 || vh === 0) return null;
+
+  const scale = Math.max(cw / vw, ch / vh);
+  const videoDisplayW = vw * scale;
+  const videoDisplayH = vh * scale;
+  const offsetX = (cw - videoDisplayW) / 2;
+  const offsetY = (ch - videoDisplayH) / 2;
+
+  const x = (containerCrop.x - offsetX) / scale;
+  const y = (containerCrop.y - offsetY) / scale;
+  const w = containerCrop.w / scale;
+  const h = containerCrop.h / scale;
+
+  return {
+    x: Math.max(0, Math.round(x)),
+    y: Math.max(0, Math.round(y)),
+    w: Math.round(Math.min(w, vw - x)),
+    h: Math.round(Math.min(h, vh - y)),
+  };
+}
+
 export default function CameraCapture({ isOpen, onClose, onCapture }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const { stream, error, status, startCamera, stopCamera, capturePhoto } = useCamera();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { stream, error, status, devices, selectedDeviceId, startCamera, stopCamera, selectDevice, enumerateDevices, capturePhoto } = useCamera();
   const [capturedFile, setCapturedFile] = useState<File | null>(null);
   const [capturedPreview, setCapturedPreview] = useState<string | null>(null);
+  const [containerCrop, setContainerCrop] = useState<CropRect | null>(null);
+
+  const updateCrop = useCallback(() => {
+    if (containerRef.current) {
+      setContainerCrop(calcContainerCrop(containerRef.current));
+    }
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -34,11 +106,36 @@ export default function CameraCapture({ isOpen, onClose, onCapture }: CameraCapt
     if (stream && videoRef.current) {
       videoRef.current.srcObject = stream;
     }
-  }, [stream]);
+  }, [stream, capturedFile]);
+
+  useEffect(() => {
+    if (status === 'active') {
+      enumerateDevices();
+    }
+  }, [status, enumerateDevices]);
+
+  useEffect(() => {
+    if (status !== 'active') return;
+    const container = containerRef.current;
+    if (!container) return;
+
+    updateCrop();
+    const observer = new ResizeObserver(() => updateCrop());
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, [status, updateCrop]);
 
   const handleCapture = () => {
-    if (!videoRef.current || !canvasRef.current) return;
-    const file = capturePhoto(videoRef.current, canvasRef.current);
+    if (!videoRef.current || !canvasRef.current || !containerRef.current) return;
+    if (!containerCrop) return;
+
+    const videoCrop = containerCropToVideoCrop(
+      containerCrop,
+      containerRef.current,
+      videoRef.current
+    );
+
+    const file = capturePhoto(videoRef.current, canvasRef.current, videoCrop ?? undefined);
     if (!file) return;
 
     setCapturedFile(file);
@@ -75,7 +172,7 @@ export default function CameraCapture({ isOpen, onClose, onCapture }: CameraCapt
                 : capturedFile
                   ? 'Vista previa — confirme o retome'
                   : status === 'active'
-                    ? 'Encuádrese y presione el botón para capturar'
+                    ? 'Encuádrese dentro del recuadro y capture'
                     : ''}
             </p>
           </div>
@@ -107,7 +204,10 @@ export default function CameraCapture({ isOpen, onClose, onCapture }: CameraCapt
           )}
 
           {(status === 'active' || capturedPreview) && (
-            <div className="w-full rounded-2xl overflow-hidden bg-black relative">
+            <div
+              ref={containerRef}
+              className="w-full rounded-2xl overflow-hidden bg-black relative"
+            >
               {capturedPreview ? (
                 <img
                   src={capturedPreview}
@@ -123,18 +223,51 @@ export default function CameraCapture({ isOpen, onClose, onCapture }: CameraCapt
                   className="w-full aspect-[4/3] object-cover scale-x-[-1]"
                 />
               )}
+
+              {!capturedFile && containerCrop && (
+                <div className="absolute inset-0 pointer-events-none z-10 flex items-center justify-center">
+                  <div
+                    style={{
+                      width: containerCrop.w,
+                      height: containerCrop.h,
+                      boxShadow: '0 0 0 9999px rgba(0,0,0,0.45)',
+                      borderRadius: '8px',
+                      border: '1px solid rgba(255,255,255,0.3)',
+                    }}
+                  />
+                </div>
+              )}
             </div>
           )}
 
           <canvas ref={canvasRef} className="hidden" />
 
           {canCapture && (
-            <button
-              onClick={handleCapture}
-              className="w-16 h-16 rounded-full border-4 border-white bg-white/10 hover:bg-white/30 transition-all shadow-lg flex items-center justify-center"
-            >
-              <div className="w-12 h-12 rounded-full bg-white" />
-            </button>
+            <div className="flex flex-col items-center gap-3">
+              <button
+                onClick={handleCapture}
+                className="w-20 h-20 rounded-full bg-caracas-red hover:bg-red-800 transition-colors shadow-lg flex items-center justify-center"
+              >
+                <Camera size={28} className="text-white" />
+              </button>
+
+              {devices.length > 1 && (
+                <div className="flex items-center gap-2">
+                  <Camera size={14} className="text-gray-400 shrink-0" />
+                  <select
+                    value={selectedDeviceId || devices[0]?.deviceId || ''}
+                    onChange={(e) => selectDevice(e.target.value)}
+                    className="text-xs text-gray-600 bg-white border border-gray-200 rounded-lg px-2 py-1.5 outline-none focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red transition-all max-w-[200px] truncate"
+                  >
+                    {devices.map((d) => (
+                      <option key={d.deviceId} value={d.deviceId}>
+                        {d.label || `Cámara ${d.deviceId.slice(0, 8)}`}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
           )}
 
           {capturedFile && (
