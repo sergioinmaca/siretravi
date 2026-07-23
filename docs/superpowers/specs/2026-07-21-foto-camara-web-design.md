@@ -1,174 +1,201 @@
-# Diseño: Botón de foto con cámara web + archivos locales
+# Captura de Foto con Cámara Web
 
 **Fecha:** 2026-07-21
-**Estado:** Aprobado
+**Estado:** Diseño aprobado
 
-## Resumen
+---
 
-Modificar el botón de "Foto" (integrante y mascota) para que ofrezca dos vías de captura:
-- **Cámara web** (desktop): usando `getUserMedia` nativo con visor flotante
-- **Archivos locales**: flujo existente con `<input type="file">`
-- **Mobile**: diálogo nativo del SO con `<input type="file" capture="environment">`
+## 1. Resumen
 
-## Arquitectura
+Agregar la capacidad de tomar fotos directamente desde la cámara web del dispositivo como alternativa al upload de archivo, en los modales de registro y ficha de refugiados. Reutiliza el pipeline existente de `useFotoUpload` (validación, upload a Supabase Storage, preview).
 
-### Nuevos archivos
+---
 
-```
-src/
-├── hooks/
-│   └── useCameraCapture.ts        # Hook: getUserMedia, stream, captura y crop vía canvas
-└── components/
-    └── ui/
-        ├── PhotoUploadButton.tsx   # Botón unificado, decide flujo desktop vs mobile
-        └── CameraViewer.tsx        # Popover flotante con visor + overlay de encuadre
-```
+## 2. Nuevo hook: useCamera
 
-### Archivos a modificar
+Archivo: `src/hooks/useCamera.ts`
 
-| Archivo | Cambio |
-|---------|--------|
-| `src/components/refugiados/RegistroModal.tsx` | Reemplazar botón foto (L467-520) y botón mascota (L844-886) por `<PhotoUploadButton>` |
-| `src/components/refugiados/FichaRefugiadoModal.tsx` | Reemplazar botón foto (L935-983) y botón mascota (L1126-1173) por `<PhotoUploadButton>` |
-
-### Archivos sin cambios
-
-- `src/hooks/useFotoUpload.ts` — lógica de upload/validación a Supabase intacta
-- `src/context/CampamentoContext.tsx` — `actualizarFotoRefugiado()` intacto
-- Supabase Storage y DB — ningún cambio
-
-### Árbol de componentes
+### API
 
 ```
-PhotoUploadButton
-├── [mobile] → <input type="file" capture="environment">
-└── [desktop] → Popover con 2 opciones:
-    ├── "Usar webcam" → abre <CameraViewer>
-    └── "Elegir de archivos" → <input type="file" accept="image/*"> (existente)
-```
+useCamera() → {
+  // Estado
+  stream: MediaStream | null,
+  error: string | null,
+  status: 'idle' | 'starting' | 'active' | 'error',
 
-### Relación entre unidades
-
-| Unidad | Responsabilidad | Dependencias |
-|--------|----------------|--------------|
-| `useCameraCapture` | Gestiona stream de cámara, permisos, captura de frame, crop vía canvas. Expone `{ stream, capturar, fotoRecortada, error, estado, iniciar, reiniciar, detener }` | APIs del navegador (`navigator.mediaDevices`, `canvas`) |
-| `CameraViewer` | Renderiza popover con `<video>` del stream, overlay de encuadre, botón disparar, preview post-captura con "Aceptar" / "Volver a tomar" | `useCameraCapture` |
-| `PhotoUploadButton` | Detecta mobile/desktop, renderiza el botón, decide flujo, unifica el `File` resultante (cámara o archivos) | `CameraViewer`, `<input type="file">` |
-
-## UI del CameraViewer
-
-### Popover flotante de cámara
-
-```
-┌─────────────────────────────────┐
-│  popover flotante (centrado)    │
-│                                 │
-│  ┌───────────────────────────┐  │
-│  │ ░░░░░░░░░░░░░░░░░░░░░░░░░ │  │  ← overlay gris semitransparente
-│  │ ░░░░░░░░░░░░░░░░░░░░░░░░░ │  │    (bg-gray-900/60)
-│  │ ░░░░░┌─────────┐░░░░░░░░░ │  │
-│  │ ░░░░░│         │░░░░░░░░░ │  │  ← zona de encuadre (transparente)
-│  │ ░░░░░│  FEED   │░░░░░░░░░ │  │    muestra el video en vivo
-│  │ ░░░░░│ CÁMARA  │░░░░░░░░░ │  │
-│  │ ░░░░░│         │░░░░░░░░░ │  │
-│  │ ░░░░░└─────────┘░░░░░░░░░ │  │
-│  │ ░░░░░░░░░░░░░░░░░░░░░░░░░ │  │
-│  │ ░░░░░░░░░░░░░░░░░░░░░░░░░ │  │
-│  └───────────────────────────┘  │
-│                                 │
-│     [ 📷 Disparar ]             │
-└─────────────────────────────────┘
-```
-
-### Implementación del overlay
-
-- `<div>` posicionado absolutamente sobre el `<video>` con `pointer-events: none`
-- El encuadre se dibuja con `clip-path` recortando un rectángulo central proporcional al `aspectRatio`
-- Color del overlay: `bg-gray-900/60`
-
-### Proporción del encuadre
-
-Se recibe vía prop `aspectRatioW` y `aspectRatioH` desde cada contexto:
-- **RegistroModal**: 96×100 px (ratio ~1:1.04)
-- **FichaRefugiadoModal**: 112×128 px (ratio 7:8)
-
-### Flujo de captura
-
-1. Popover se abre → `useCameraCapture.iniciar()` → `getUserMedia({ video: true })`
-2. Stream activo → video en vivo con overlay de encuadre
-3. Click en "Disparar" → `capturar()` → frame al canvas + crop → preview con botones
-4. "Aceptar" → `onConfirm(fotoFile)` → cierra popover, entrega `File` a `PhotoUploadButton`
-5. "Volver a tomar" → `reiniciar()` → vuelve al visor en vivo
-6. Cierre (X o click fuera) → `detener()` libera stream, descarta foto no confirmada
-
-## Contratos (interfaces)
-
-### PhotoUploadButton
-
-```ts
-interface PhotoUploadButtonProps {
-  currentPhotoUrl?: string | null;
-  onFileSelected: (file: File) => void;
-  isUploading?: boolean;
-  disabled?: boolean;
-  label?: string;                     // default: "Foto"
-  aspectRatioW?: number;              // default: 1
-  aspectRatioH?: number;              // default: 1
+  // Acciones
+  startCamera: () => Promise<void>,
+  stopCamera: () => void,
+  capturePhoto: (video: HTMLVideoElement, canvas: HTMLCanvasElement) => File | null,
 }
 ```
 
-### useCameraCapture
+### Funcionamiento
+
+- `startCamera()` — llama a `navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } })`. Almacena el stream en estado y lo expone. Si falla, setea `error` con mensaje descriptivo (permiso denegado, no soportado, etc.).
+- `stopCamera()` — detiene todos los tracks del stream con `.getTracks().forEach(t => t.stop())` y resetea el estado.
+- `capturePhoto(video, canvas)` — dibuja el frame actual del `<video>` en un `<canvas>` a resolución 2x del tamaño de display del video, exporta a `Blob` JPEG con calidad 0.9, y lo envuelve en un `File` con nombre `camara_{timestamp}.jpg`. Retorna `null` si el stream no está activo.
+- Limpieza automática vía `useEffect` cleanup al desmontar (llama a `stopCamera`).
+
+### Manejo de errores
+
+| Error | Mensaje al usuario |
+|-------|-------------------|
+| `NotAllowedError` | "Permiso de cámara denegado. Conceda acceso desde la configuración del navegador." |
+| `NotFoundError` | "No se detectó ninguna cámara en este dispositivo." |
+| `NotReadableError` | "La cámara está en uso por otra aplicación." |
+| HTTPS no disponible | "La cámara solo funciona en conexiones seguras (HTTPS)." |
+
+---
+
+## 3. Nuevo componente: CameraCapture
+
+Archivo: `src/components/shared/CameraCapture.tsx`
+
+### Props
 
 ```ts
-type CameraState = 'inactivo' | 'solicitando' | 'activo' | 'capturado';
-
-interface UseCameraCaptureResult {
-  stream: MediaStream | null;
-  error: string | null;
-  fotoCapturada: Blob | null;
-  estado: CameraState;
-  iniciar: () => Promise<void>;
-  capturar: () => void;
-  reiniciar: () => void;
-  detener: () => void;
-}
-```
-
-### CameraViewer
-
-```ts
-interface CameraViewerProps {
+interface CameraCaptureProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (foto: File) => void;
-  aspectRatioW?: number;
-  aspectRatioH?: number;
+  onCapture: (file: File) => void;
 }
 ```
 
-## Manejo de errores
+### Layout
 
-| Escenario | Comportamiento |
-|-----------|---------------|
-| Permiso de cámara denegado (`NotAllowedError`) | Mensaje inline: "Acceso a la cámara denegado. Permití el acceso desde la configuración del navegador." Botón "Reintentar". |
-| No hay cámara (`NotFoundError`) | Mensaje: "No se detectó ninguna cámara." Popover permite cerrarse. |
-| Stream interrumpido (evento `ended` del track) | `useCameraCapture` detecta el evento y expone `error`. CameraViewer muestra mensaje y botón reintentar. |
-| Error al procesar canvas (`toBlob` falla) | Try/catch en `capturar()`. Mensaje: "Error al procesar la imagen. Intentá de nuevo." |
-| Archivo inválido (tipo o tamaño) | Sin cambios: `validarArchivo()` existente muestra toast de error. |
-| Fallo de upload a Supabase | Sin cambios: `useFotoUpload` maneja con try/catch + toast. |
-| Popover cerrado sin confirmar | Stream liberado, foto capturada descartada. Sin efecto. |
+Sub-modal que se superpone al modal padre (z-50 + 10 = z-[60]):
 
-## Testing
+```
+┌──────────────────────────────────────────┐
+│ overlay: bg-black/80                     │
+│                                          │
+│   ┌────────────────────────────────┐     │
+│   │ header: "Tomar Foto"    [X]    │     │
+│   ├────────────────────────────────┤     │
+│   │                                │     │
+│   │   ┌──────────────────────┐     │     │
+│   │   │                      │     │     │
+│   │   │   <video> stream     │     │     │
+│   │   │   (espejo horizontal) │     │     │
+│   │   │                      │     │     │
+│   │   └──────────────────────┘     │     │
+│   │                                │     │
+│   │         [●] capturar           │     │
+│   │                                │     │
+│   ├────────────────────────────────┤     │
+│   │ footer: "Cancelar"             │     │
+│   └────────────────────────────────┘     │
+└──────────────────────────────────────────┘
+```
 
-| Prueba | Método |
-|--------|--------|
-| `useCameraCapture` — ciclo de vida | Iniciar → stream activo → capturar → blob generado → reiniciar → detener libera tracks |
-| `useCameraCapture` — `NotAllowedError` | Mock `getUserMedia` que rechaza con `NotAllowedError` |
-| `useCameraCapture` — `NotFoundError` | Mock que rechaza con `NotFoundError` |
-| `CameraViewer` — overlay de encuadre | Verificar que `clip-path` refleja `aspectRatioW`/`aspectRatioH` |
-| `CameraViewer` — preview post-captura | Capturar → aparece preview con "Aceptar" / "Volver a tomar" |
-| `CameraViewer` — confirm entrega File | Mock `onConfirm`, verificar File con tamaño > 0 |
-| `CameraViewer` — volver a tomar | Click "Volver a tomar" → vuelve a stream activo, foto anterior descartada |
-| `PhotoUploadButton` — rama desktop | Mock `isMobile=false`, verificar que click abre popover con 2 opciones |
-| `PhotoUploadButton` — rama mobile | Mock `isMobile=true`, verificar que click dispara input nativo |
-| `PhotoUploadButton` — file picker | Click "Elegir archivos" → seleccionar → `onFileSelected` llamado |
+### Estados del componente
+
+**1. Iniciando cámara (`status === 'starting'`)**
+- Spinner centrado con texto "Activando cámara..."
+
+**2. Cámara activa (`status === 'active'`)**
+- `<video>` con `autoPlay playsInline muted` y `ref` para acceder al elemento
+- CSS: `object-cover`, `rounded-2xl`, `scale-x-[-1]` (efecto espejo para cámara frontal)
+- Botón circular de captura centrado debajo del video:
+  ```tsx
+  <button className="w-16 h-16 rounded-full border-4 border-white bg-white/20 hover:bg-white/40 transition-all">
+    <div className="w-12 h-12 rounded-full bg-white mx-auto" />
+  </button>
+  ```
+
+**3. Preview post-captura**
+- Imagen capturada en reemplazo del `<video>`, con mismos bordes redondeados
+- Dos botones: "Retomar" (vuelve al stream) y "Usar esta foto" (llama a `onCapture(file)` y cierra)
+
+**4. Sin permisos / Error**
+- Mensaje descriptivo con icono de cámara tachada
+- Botón "Cerrar"
+
+### Ciclo de vida
+- Al abrir (`isOpen === true`) → `startCamera()`
+- Al cerrar (`isOpen === false`) → `stopCamera()`
+- Al desmontar → `stopCamera()` (useEffect cleanup)
+
+### `<canvas>` oculto
+- Un `<canvas>` con `ref` para `capturePhoto`, oculto con `className="hidden"`. Se usa solo para capturar frames, no se renderiza.
+
+---
+
+## 4. Cambios en RegistroModal.tsx
+
+### Estado nuevo
+```ts
+const [showCamera, setShowCamera] = useState(false);
+const [showMascotaCamera, setShowMascotaCamera] = useState(false);
+```
+
+### Sección "Foto del integrante"
+Se agrega un segundo botón junto al existente "Foto":
+
+```
+[📷 Cámara]  [🖼 Foto]
+```
+
+- Botón "Cámara": abre `<CameraCapture>` para integrante
+- Botón "Foto": comportamiento existente (input file)
+- Layout: dos botones apilados verticalmente dentro del contenedor `w-24`, separados por `gap-2`
+
+```tsx
+{/* Columna de botones */}
+<div className="flex flex-col gap-2">
+  <button type="button" onClick={() => setShowCamera(true)} disabled={isUploading}
+    className="w-24 px-2 py-1.5 border border-gray-300 rounded-lg text-xs text-gray-600 hover:border-caracas-red hover:text-caracas-red transition-colors flex items-center justify-center gap-1">
+    <Camera size={14} /> Cámara
+  </button>
+  {/* botón "Foto" existente */}
+</div>
+```
+
+### Integración con CameraCapture
+```tsx
+<CameraCapture
+  isOpen={showCamera}
+  onClose={() => setShowCamera(false)}
+  onCapture={async (file) => {
+    setShowCamera(false);
+    setFotoFile(file);
+    const dataUrl = await leerArchivoComoDataURL(file);
+    setFotoPreview(dataUrl);
+  }}
+/>
+```
+
+### Sección "Foto mascota"
+Mismo patrón con `showMascotaCamera` y segundo `<CameraCapture>` para la mascota.
+
+---
+
+## 5. Cambios en FichaRefugiadoModal.tsx
+
+Mismo patrón que RegistroModal:
+- Estado `showCamera` / `showMascotaCamera`
+- Botón "Cámara" junto a "Subir foto" (solo si `esMaster`)
+- `<CameraCapture>` integrado con el flujo existente de preview + guardado explícito
+- La lógica de dirty-state y botón "Guardar" no cambia
+
+---
+
+## 6. Scope
+
+**Incluido:**
+- Captura con cámara frontal (user-facing) y trasera
+- Preview y confirmación post-captura
+- Conversión a JPEG calidad 0.9
+- Reutilización del pipeline `useFotoUpload` (validación, upload, preview)
+- Manejo de errores de permisos y compatibilidad
+- Limpieza automática del stream (stop tracks al cerrar)
+- Foto de integrante y foto de mascota en ambos modales
+
+**Excluido:**
+- Grabación de video
+- Filtros o edición de la imagen capturada
+- Cámara en HistoriaClinicaDetalleModal (solo lectura, no upload)
+- Cambios en la validación o el pipeline de upload existente
+- Soporte para múltiples cámaras simultáneas
