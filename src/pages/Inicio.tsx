@@ -469,31 +469,17 @@ export default function Inicio() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Total Refugiados */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-caracas-red flex items-center gap-4 hover:shadow-md transition-shadow">
-          <div className="p-4 bg-caracas-red/10 rounded-xl text-caracas-red shrink-0">
-            <Users size={32} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Modulos Activos */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-caracas-blue flex items-center gap-4 hover:shadow-md transition-shadow">
+          <div className="p-4 bg-caracas-blue/10 rounded-xl text-caracas-blue shrink-0">
+            <Tent size={32} />
           </div>
           <div className="overflow-hidden">
-            <p className="text-sm font-medium text-gray-500 truncate">Total de Integrantes</p>
-            <p className="text-3xl font-bold text-gray-900">{totalRefugiados}</p>
-            <p className="text-xs text-gray-400 mt-1">
-              <span className="text-blue-600 font-medium">{totalHombres}</span> H · <span className="text-pink-600 font-medium">{totalMujeres}</span> M
-            </p>
-          </div>
-        </div>
-
-        {/* Total Familias */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-indigo-500 flex items-center gap-4 hover:shadow-md transition-shadow">
-          <div className="p-4 bg-indigo-500/10 rounded-xl text-indigo-500 shrink-0">
-            <Home size={32} />
-          </div>
-          <div className="overflow-hidden">
-            <p className="text-sm font-medium text-gray-500 truncate">Familias</p>
-            <p className="text-3xl font-bold text-gray-900">{totalFamilias}</p>
+            <p className="text-sm font-medium text-gray-500 truncate">Modulos Activos</p>
+            <p className="text-3xl font-bold text-gray-900">{campamentoSeleccionado?.modulos?.length || 0}</p>
             <p className="text-xs text-gray-400 mt-1 truncate">
-              Grupos familiares
+              Instalados
             </p>
           </div>
         </div>
@@ -511,17 +497,33 @@ export default function Inicio() {
             </p>
           </div>
         </div>
+      </div>
 
-        {/* Modulos Activos */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-caracas-blue flex items-center gap-4 hover:shadow-md transition-shadow">
-          <div className="p-4 bg-caracas-blue/10 rounded-xl text-caracas-blue shrink-0">
-            <Tent size={32} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Total Personas */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-caracas-red flex items-center gap-4 hover:shadow-md transition-shadow">
+          <div className="p-4 bg-caracas-red/10 rounded-xl text-caracas-red shrink-0">
+            <Users size={32} />
           </div>
           <div className="overflow-hidden">
-            <p className="text-sm font-medium text-gray-500 truncate">Modulos Activos</p>
-            <p className="text-3xl font-bold text-gray-900">{campamentoSeleccionado?.modulos?.length || 0}</p>
+            <p className="text-sm font-medium text-gray-500 truncate">Total de Personas</p>
+            <p className="text-3xl font-bold text-gray-900">{totalRefugiados}</p>
+            <p className="text-xs text-gray-400 mt-1">
+              <span className="text-blue-600 font-medium">{totalHombres}</span> H · <span className="text-pink-600 font-medium">{totalMujeres}</span> M
+            </p>
+          </div>
+        </div>
+
+        {/* Total Familias */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-indigo-500 flex items-center gap-4 hover:shadow-md transition-shadow">
+          <div className="p-4 bg-indigo-500/10 rounded-xl text-indigo-500 shrink-0">
+            <Home size={32} />
+          </div>
+          <div className="overflow-hidden">
+            <p className="text-sm font-medium text-gray-500 truncate">Total de Familias</p>
+            <p className="text-3xl font-bold text-gray-900">{totalFamilias}</p>
             <p className="text-xs text-gray-400 mt-1 truncate">
-              Instalados
+              Grupos familiares
             </p>
           </div>
         </div>

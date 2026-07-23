@@ -127,9 +127,9 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
         const img = new Image();
         img.onload = () => {
           ctx.drawImage(img, 0, 0);
+          drawBedsWithNumbers(ctx, beds, elementNumberOffset, tipoContabilizacion, occupiedSet, accumulator, bedColorMap);
           drawRectangles(ctx, rectangles);
           drawTexts(ctx, texts);
-          drawBedsWithNumbers(ctx, beds, elementNumberOffset, tipoContabilizacion, occupiedSet, accumulator, bedColorMap);
           bedsRenderRef.current = accumulator;
         };
         img.src = parsed.drawingBase64;
@@ -141,9 +141,9 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
 
     const occupiedSet = new Set(occupiedBeds);
     const accumulator: BedRenderInfo[] = [];
+    drawBedsWithNumbers(ctx, beds, elementNumberOffset, tipoContabilizacion, occupiedSet, accumulator, bedColorMap);
     drawRectangles(ctx, rectangles);
     drawTexts(ctx, texts);
-    drawBedsWithNumbers(ctx, beds, elementNumberOffset, tipoContabilizacion, occupiedSet, accumulator, bedColorMap);
     bedsRenderRef.current = accumulator;
   }, [croquisData, elementNumberOffset, tipoContabilizacion, occupiedBeds]);
 

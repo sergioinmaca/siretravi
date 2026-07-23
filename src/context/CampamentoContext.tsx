@@ -145,6 +145,9 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
           observaciones: (r.observaciones as string) || undefined,
           observaciones_generales: (r.observaciones_generales as string) || undefined,
           parentesco: (r.parentesco as string) || undefined,
+          abrigo_solidario: (r.abrigo_solidario as boolean) || false,
+          registro_captahuella: (r.registro_captahuella as boolean) || false,
+          registro_unico_vivienda: (r.registro_unico_vivienda as boolean) || false,
           foto_url: (r.foto_url as string) || undefined,
           mascota_foto_url: (r.mascota_foto_url as string) || undefined,
         }));
@@ -211,6 +214,9 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         observaciones: r.observaciones || undefined,
         observaciones_generales: r.observaciones_generales || undefined,
         parentesco: r.parentesco || undefined,
+        abrigo_solidario: r.abrigo_solidario || false,
+        registro_captahuella: r.registro_captahuella || false,
+        registro_unico_vivienda: r.registro_unico_vivienda || false,
         foto_url: r.foto_url || undefined,
         mascota_foto_url: r.mascota_foto_url || undefined,
       });
@@ -547,6 +553,9 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         observaciones: nuevo.observaciones || null,
         observaciones_generales: nuevo.observaciones_generales || null,
         parentesco: nuevo.parentesco || null,
+        abrigo_solidario: nuevo.abrigo_solidario,
+        registro_captahuella: nuevo.registro_captahuella,
+        registro_unico_vivienda: nuevo.registro_unico_vivienda,
         foto_url: nuevo.foto_url || null,
       })
       .select()
@@ -598,6 +607,9 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       observaciones: data.observaciones || undefined,
       observaciones_generales: (data.observaciones_generales as string) || undefined,
       parentesco: data.parentesco || undefined,
+      abrigo_solidario: data.abrigo_solidario || false,
+      registro_captahuella: data.registro_captahuella || false,
+      registro_unico_vivienda: data.registro_unico_vivienda || false,
       foto_url: (data.foto_url as string) || undefined,
     };
     setRefugiados(prev => {
@@ -676,6 +688,9 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         observaciones: actualizado.observaciones || null,
         observaciones_generales: actualizado.observaciones_generales || null,
         parentesco: actualizado.parentesco || null,
+        abrigo_solidario: actualizado.abrigo_solidario,
+        registro_captahuella: actualizado.registro_captahuella,
+        registro_unico_vivienda: actualizado.registro_unico_vivienda,
         foto_url: actualizado.foto_url || null,
         mascota_foto_url: actualizado.mascota_foto_url || null,
       })
@@ -785,6 +800,9 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       observaciones: (r.observaciones as string) || undefined,
       observaciones_generales: (r.observaciones_generales as string) || undefined,
       parentesco: (r.parentesco as string) || undefined,
+      abrigo_solidario: (r.abrigo_solidario as boolean) || false,
+      registro_captahuella: (r.registro_captahuella as boolean) || false,
+      registro_unico_vivienda: (r.registro_unico_vivienda as boolean) || false,
       foto_url: (r.foto_url as string) || undefined,
       mascota_foto_url: (r.mascota_foto_url as string) || undefined,
     })) as Refugiado[];
