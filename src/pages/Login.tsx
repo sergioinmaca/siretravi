@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LogIn, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import LoginBackground from '../components/LoginBackground';
+import { useDailyImage } from '../hooks/useDailyImage';
+import loginImages from '../data/login-images.json';
 
 export default function Login() {
   const { login } = useAuth();
@@ -11,6 +14,8 @@ export default function Login() {
   const [showClave, setShowClave] = useState(false);
   const [error, setError] = useState('');
   const [cargando, setCargando] = useState(false);
+
+  const dailySrc = useDailyImage(loginImages as string[]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,9 +38,10 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-caracas-red/5 via-caracas-light to-caracas-blue/5 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
+    <div className="min-h-screen flex items-center justify-center p-4 relative">
+      {dailySrc && <LoginBackground src={dailySrc} />}
+      <div className="w-full max-w-md relative z-10">
+        <div className="bg-white rounded-3xl shadow-2xl overflow-hidden">
 
           {/* Header con branding */}
           <div className="bg-gradient-to-r from-caracas-red to-red-700 p-8 text-center relative overflow-hidden">
