@@ -95,6 +95,7 @@ export interface Refugiado {
   fecha_nacimiento: Date;
   es_jefe_familia: boolean;
   nro_cama?: string;
+  abrigo_solidario: boolean;
   procedencia: string;
   fecha_ingreso?: Date;
   direccion_exacta?: string;
@@ -125,6 +126,8 @@ export interface Refugiado {
   observaciones?: string;
   observaciones_generales?: string;
   parentesco?: string;
+  registro_captahuella: boolean;
+  registro_unico_vivienda: boolean;
   foto_url?: string;
 }
 

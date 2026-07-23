@@ -79,6 +79,9 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     observaciones: '',
     observacionesGenerales: '',
     parentesco: '',
+    abrigoSolidario: false,
+    registroCaptahuella: 'NO',
+    registroUnicoVivienda: 'NO',
   });
 
   // Precargar datos cuando se edita
@@ -141,6 +144,9 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
         observaciones: refugiadoToEdit.observaciones || '',
         observacionesGenerales: refugiadoToEdit.observaciones_generales || '',
         parentesco: refugiadoToEdit.parentesco || '',
+        abrigoSolidario: refugiadoToEdit.abrigo_solidario || false,
+        registroCaptahuella: refugiadoToEdit.registro_captahuella ? 'SI' : 'NO',
+        registroUnicoVivienda: refugiadoToEdit.registro_unico_vivienda ? 'SI' : 'NO',
       });
     } else {
       setFotoPreview(null);
@@ -168,6 +174,9 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
         observaciones: '',
         observacionesGenerales: '',
         parentesco: '',
+        abrigoSolidario: false,
+        registroCaptahuella: 'NO',
+        registroUnicoVivienda: 'NO',
       });
     }
     return () => {
@@ -333,6 +342,9 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       observaciones: formData.observaciones || undefined,
       observaciones_generales: formData.observacionesGenerales || undefined,
       parentesco: formData.parentesco || undefined,
+      abrigo_solidario: formData.abrigoSolidario,
+      registro_captahuella: formData.registroCaptahuella === 'SI',
+      registro_unico_vivienda: formData.registroUnicoVivienda === 'SI',
       foto_url: refugiadoToEdit?.foto_url || undefined,
       mascota_foto_url: refugiadoToEdit?.mascota_foto_url || undefined,
     };
@@ -657,8 +669,15 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
               </div>
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nro de Cama</label>
-                  <input type="text" name="nroCama" value={formData.nroCama} onChange={handleChange} maxLength={3} pattern="[0-9]{0,3}" className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all" placeholder="EJ. 042" />
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nro de cama / Abrigo Solidario</label>
+                  <div className="flex items-center gap-3">
+                    <input type="text" name="nroCama" value={formData.nroCama} onChange={handleChange} maxLength={3} pattern="[0-9]{0,3}" className="w-28 px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all" placeholder="EJ. 042" />
+                    <label className="flex items-center gap-1.5 cursor-pointer select-none py-2.5 px-3 bg-caracas-red border border-caracas-red rounded-xl">
+                      <input type="checkbox" name="abrigoSolidario" checked={formData.abrigoSolidario} onChange={handleChange} className="w-4 h-4 rounded accent-white" />
+                      <Users size={16} className="text-white" />
+                      <span className="text-sm font-medium text-white">Abrigo Solidario</span>
+                    </label>
+                  </div>
                   {formData.nroCama && refugiados.some(
                     r => r.campamento_id === campamentoSeleccionado?.id && r.nro_cama === formData.nroCama && r.id !== refugiadoToEdit?.id
                   ) && (
@@ -1044,7 +1063,33 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                 <textarea name="observacionesGenerales" value={formData.observacionesGenerales} onChange={handleChange} rows={4} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase resize-none" placeholder="Observaciones generales sobre el integrante..." />
               </div>
             </div>
-            
+
+            {/* Tarjeta 8: Registros Institucionales */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <FileText size={18} className="text-blue-600" />
+                </div>
+                <h3 className="font-semibold text-gray-800">8. Registros Institucionales</h3>
+              </div>
+              <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">¿Registro Captahuella?</label>
+                  <select name="registroCaptahuella" value={formData.registroCaptahuella} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all">
+                    <option value="SI">SI</option>
+                    <option value="NO">NO</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">¿Registro Único de Vivienda?</label>
+                  <select name="registroUnicoVivienda" value={formData.registroUnicoVivienda} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all">
+                    <option value="SI">SI</option>
+                    <option value="NO">NO</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
           </form>
         </div>
 

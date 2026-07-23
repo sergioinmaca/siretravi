@@ -401,6 +401,8 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
         'Fecha de Ingreso:', refugiado.fecha_ingreso ? toDisplayDate(refugiado.fecha_ingreso) : '—',
       );
 
+      drawFieldFull('Abrigo Solidario:', refugiado.abrigo_solidario ? 'Sí' : 'No');
+
       drawFieldFull('Procedencia:', refugiado.procedencia || '—');
       drawFieldFull('Direcci\u00f3n Exacta:', refugiado.direccion_exacta || '—');
 
@@ -494,9 +496,18 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
         (refugiado as any).observaciones_generales || '',
       );
 
-      // ── 8. ATENCIONES, BENEFICIOS Y DONACIONES ──
+      // ── 8. REGISTROS INSTITUCIONALES ──
 
-      drawSectionHeader('8', 'Atenciones, Beneficios y Donaciones');
+      drawSectionHeader('8', 'Registros Institucionales');
+
+      drawFieldRowLR(
+        '¿Registro Captahuella?:', refugiado.registro_captahuella ? 'Sí' : 'No',
+        '¿Registro Único de Vivienda?:', refugiado.registro_unico_vivienda ? 'Sí' : 'No',
+      );
+
+      // ── 9. ATENCIONES, BENEFICIOS Y DONACIONES ──
+
+      drawSectionHeader('9', 'Atenciones, Beneficios y Donaciones');
 
       if (atencionesFiltradas.length === 0) {
         ensureSpace(6);
@@ -1079,6 +1090,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
             </div>
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
               <FichaField label="Nro de Cama" value={refugiado.nro_cama || '—'} />
+              <FichaField label="Abrigo Solidario" value={refugiado.abrigo_solidario ? 'Sí' : 'No'} />
               <FichaField label="Procedencia" value={refugiado.procedencia || '—'} />
               <FichaField label="Dirección Exacta" value={refugiado.direccion_exacta || '—'} />
               <FichaField
@@ -1283,6 +1295,20 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
               <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
                 {refugiado.observaciones_generales || '—'}
               </p>
+            </div>
+          </div>
+
+          {/* Registros Institucionales */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <FileText size={18} className="text-blue-600" />
+              </div>
+              <h3 className="font-semibold text-gray-800">Registros Institucionales</h3>
+            </div>
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <FichaField label="¿Registro Captahuella?" value={refugiado.registro_captahuella ? 'Sí' : 'No'} />
+              <FichaField label="¿Registro Único de Vivienda?" value={refugiado.registro_unico_vivienda ? 'Sí' : 'No'} />
             </div>
           </div>
             </div>
