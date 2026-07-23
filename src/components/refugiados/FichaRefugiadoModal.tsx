@@ -401,7 +401,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
         'Fecha de Ingreso:', refugiado.fecha_ingreso ? toDisplayDate(refugiado.fecha_ingreso) : '—',
       );
 
-      drawFieldFull('Abrigo Solidario:', refugiado.abrigo_solidario ? 'Sí' : 'No');
+      drawFieldFull('Estatus:', refugiado.hogar_solidario || '—');
 
       drawFieldFull('Procedencia:', refugiado.procedencia || '—');
       drawFieldFull('Direcci\u00f3n Exacta:', refugiado.direccion_exacta || '—');
@@ -1090,7 +1090,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
             </div>
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
               <FichaField label="Nro de Cama" value={refugiado.nro_cama || '—'} />
-              <FichaField label="Abrigo Solidario" value={refugiado.abrigo_solidario ? 'Sí' : 'No'} />
+              <FichaField label="Estatus" value={refugiado.hogar_solidario || '—'} />
               <FichaField label="Procedencia" value={refugiado.procedencia || '—'} />
               <FichaField label="Dirección Exacta" value={refugiado.direccion_exacta || '—'} />
               <FichaField
