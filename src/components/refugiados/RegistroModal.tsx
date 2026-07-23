@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useCampamento } from '../../context/CampamentoContext';
 import { User, Users, MapPin, Save, AlertCircle, CheckCircle2, X, Accessibility, Shirt, Loader2, Camera, FileText } from 'lucide-react';
 import { useFotoUpload } from '../../hooks/useFotoUpload';
-import type { Refugiado } from '../../types';
+import { ESTATUS_OPTIONS, type Refugiado } from '../../types';
 import { formatAge } from '../../lib/formatAge';
 import { toDateInput, parseDateSafe } from '../../lib/formatDate';
 import DateInput from '../ui/DateInput';
@@ -673,9 +673,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                   <div className="flex items-center gap-3">
                     <input type="text" name="nroCama" value={formData.nroCama} onChange={handleChange} maxLength={3} pattern="[0-9]{0,3}" className="w-28 px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all" placeholder="EJ. 042" />
                     <select name="hogarSolidario" value={formData.hogarSolidario} onChange={handleChange} className="px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all text-gray-800 text-sm">
-                      <option value="PRESENTE">PRESENTE</option>
-                      <option value="HOGAR SOLIDARIO">HOGAR SOLIDARIO</option>
-                      <option value="RETIRADO">RETIRADO</option>
+                      {ESTATUS_OPTIONS.map(op => <option key={op} value={op}>{op}</option>)}
                     </select>
                   </div>
                   {formData.nroCama && refugiados.some(

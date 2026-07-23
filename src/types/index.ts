@@ -131,6 +131,9 @@ export interface Refugiado {
   foto_url?: string;
 }
 
+export const ESTATUS_OPTIONS = ['PRESENTE', 'HOGAR SOLIDARIO', 'RETIRADO'] as const;
+export type Estatus = typeof ESTATUS_OPTIONS[number];
+
 export interface HistoriaClinica {
   id: string;
   refugiado_id: string;
