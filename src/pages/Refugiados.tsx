@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
 import { Search, UserPlus, FileText, Pencil, Trash2, ShieldOff, Eye, FileDown, Loader2 } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
-import type { Refugiado } from '../types';
+import { ESTATUS_OPTIONS, type Refugiado } from '../types';
 import RegistroModal from '../components/refugiados/RegistroModal';
 import FichaRefugiadoModal from '../components/refugiados/FichaRefugiadoModal';
 import { formatAge, formatAgeParts } from '../lib/formatAge';
@@ -11,7 +11,7 @@ import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 
 export default function Refugiados() {
-  const { campamentoSeleccionado, refugiados = [], familias = [], eliminarRefugiado, obtenerRefugiadosPaginados } = useCampamento();
+  const { campamentoSeleccionado, refugiados = [], familias = [], eliminarRefugiado, obtenerRefugiadosPaginados, actualizarRefugiado } = useCampamento();
   const { tienePermisoPorCampamento } = useAuth();
 
   const tieneAcceso = campamentoSeleccionado
@@ -40,6 +40,7 @@ export default function Refugiados() {
   const [currentPage, setCurrentPage] = useState(1);
   const [exportandoPDF, setExportandoPDF] = useState(false);
   const [exportandoXLSX, setExportandoXLSX] = useState(false);
+  const [editingEstatusId, setEditingEstatusId] = useState<string | null>(null);
   const REGISTROS_POR_PAGINA = 20;
 
   // Debounce búsqueda 400ms
@@ -107,6 +108,7 @@ export default function Refugiados() {
         edad: formatAge(r.fecha_nacimiento),
         jerarquia: jerarquiaStr,
         cama: r.nro_cama,
+        estatus: r.hogar_solidario || 'PRESENTE',
         refugiado: r,
       };
     });
@@ -158,16 +160,18 @@ export default function Refugiados() {
             edad: formatAge(r.fecha_nacimiento),
             jerarquia: jerarquiaStr,
             cama: r.nro_cama || '-',
+        estatus: ((r.hogar_solidario || '').trim() || 'PRESENTE').toUpperCase(),
           };
         });
 
       const cols = [
-        { key: 'codigo', header: 'C\u00f3digo', w: 20 },
-        { key: 'cedula', header: 'C\u00e9dula', w: 18 },
-        { key: 'nombre', header: 'Apellidos y Nombres', w: 62 },
+        { key: 'codigo', header: 'C\u00f3digo', w: 17 },
+        { key: 'cedula', header: 'C\u00e9dula', w: 16 },
+        { key: 'nombre', header: 'Apellidos y Nombres', w: 56 },
         { key: 'edad', header: 'Edad', w: 12 },
-        { key: 'jerarquia', header: 'Jerarqu\u00eda', w: 58 },
-        { key: 'cama', header: 'Cama', w: 16 },
+        { key: 'jerarquia', header: 'Jerarqu\u00eda', w: 50 },
+        { key: 'cama', header: 'Cama', w: 12 },
+        { key: 'estatus', header: 'Estatus', w: 20 },
       ];
 
       const headerHeight = 9;
@@ -297,6 +301,7 @@ export default function Refugiados() {
             'Edad (Unidad)': ageParts?.unidad ?? '',
             'Jerarquía': jerarquiaStr,
             'Cama': r.nro_cama || '-',
+            'Estatus': r.hogar_solidario || 'PRESENTE',
             'Teléfono': r.telefono?.toString() || '—',
             'Parentesco': r.parentesco || '—',
           };
@@ -314,6 +319,7 @@ export default function Refugiados() {
         { wch: 30 },
         { wch: 8 },
         { wch: 16 },
+        { wch: 20 },
         { wch: 20 },
       ];
       ws['!cols'] = colWidths;
@@ -417,13 +423,14 @@ export default function Refugiados() {
                 <th className="py-4 px-6 font-semibold text-sm text-gray-500">Edad</th>
                 <th className="py-4 px-6 font-semibold text-sm text-gray-500">Jerarquía</th>
                 <th className="py-4 px-6 font-semibold text-sm text-gray-500">Cama</th>
+                <th className="py-4 px-6 font-semibold text-sm text-gray-500">Estatus</th>
                 <th className="py-4 px-6 font-semibold text-sm text-gray-500 text-right">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {loadingPaginados ? (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-gray-500">
+                  <td colSpan={9} className="py-12 text-center text-gray-500">
                     <div className="flex flex-col items-center justify-center">
                       <p className="text-lg font-medium text-gray-600">Cargando...</p>
                     </div>
@@ -454,6 +461,50 @@ export default function Refugiados() {
                         <FileText size={14} />
                         {refugiado.cama}
                       </div>
+                    </td>
+                    <td className="py-3 px-6">
+                      {editingEstatusId === refugiado.id ? (
+                        <select
+                          value={refugiado.estatus}
+                          onChange={async (e) => {
+                            const nuevo = e.target.value;
+                            const ok = await actualizarRefugiado(refugiado.refugiado.id, { ...refugiado.refugiado, hogar_solidario: nuevo });
+                            setEditingEstatusId(null);
+                            if (ok) refetch();
+                          }}
+                          onBlur={() => setEditingEstatusId(null)}
+                          autoFocus
+                          className="px-2 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none uppercase"
+                        >
+                          {ESTATUS_OPTIONS.map(op => <option key={op} value={op}>{op}</option>)}
+                        </select>
+                      ) : campamentoSeleccionado && tienePermisoPorCampamento('Integrantes', campamentoSeleccionado.id, 'Modificar') ? (
+                        <button
+                          onClick={() => setEditingEstatusId(refugiado.id)}
+                          className="cursor-pointer"
+                          title="Click para cambiar estatus"
+                        >
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${
+                            refugiado.estatus === 'PRESENTE'
+                              ? 'bg-green-50 text-green-700 border-green-200'
+                              : refugiado.estatus === 'HOGAR SOLIDARIO'
+                              ? 'bg-orange-100 text-orange-800 border-orange-300'
+                              : 'bg-red-50 text-red-700 border-red-200'
+                          }`}>
+                            {refugiado.estatus}
+                          </span>
+                        </button>
+                      ) : (
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${
+                          refugiado.estatus === 'PRESENTE'
+                            ? 'bg-green-50 text-green-700 border-green-200'
+                            : refugiado.estatus === 'HOGAR SOLIDARIO'
+                            ? 'bg-orange-100 text-orange-800 border-orange-300'
+                            : 'bg-red-50 text-red-700 border-red-200'
+                        }`}>
+                          {refugiado.estatus}
+                        </span>
+                      )}
                     </td>
                     <td className="py-3 px-4">
                       <div className="flex items-center justify-end gap-1">
@@ -491,7 +542,7 @@ export default function Refugiados() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={8} className="py-12 text-center text-gray-500">
+                  <td colSpan={9} className="py-12 text-center text-gray-500">
                     <div className="flex flex-col items-center justify-center">
                       <Search size={48} className="text-gray-300 mb-4" />
                       <p className="text-lg font-medium text-gray-600">No se encontraron resultados</p>

@@ -7,7 +7,7 @@ import PlanoGeneralViewer from '../components/constructor/PlanoGeneralViewer';
 import jsPDF from 'jspdf';
 
 export default function Inicio() {
-  const { campamentoSeleccionado, refugiados = [], familias = [] } = useCampamento();
+  const { campamentoSeleccionado, refugiados = [] } = useCampamento();
   const { tienePermisoPorCampamento } = useAuth();
 
   const tieneAcceso = campamentoSeleccionado
@@ -52,7 +52,7 @@ export default function Inicio() {
   const totalMujeres = refugiadosDelCampamento.filter(r => r.genero === false).length;
 
   const totalFamilias = campamentoSeleccionado
-    ? familias.filter(f => f.campamento_id === campamentoSeleccionado.id).length
+    ? new Set(refugiados.filter(r => r.campamento_id === campamentoSeleccionado.id && r.familia_id).map(r => r.familia_id)).size
     : 0;
 
   // Optimización: calcular las edades de los refugiados una sola vez usando useMemo

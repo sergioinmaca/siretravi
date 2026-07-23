@@ -95,7 +95,7 @@ export interface Refugiado {
   fecha_nacimiento: Date;
   es_jefe_familia: boolean;
   nro_cama?: string;
-  abrigo_solidario: boolean;
+  hogar_solidario?: string;
   procedencia: string;
   fecha_ingreso?: Date;
   direccion_exacta?: string;
@@ -130,6 +130,9 @@ export interface Refugiado {
   registro_unico_vivienda: boolean;
   foto_url?: string;
 }
+
+export const ESTATUS_OPTIONS = ['PRESENTE', 'HOGAR SOLIDARIO', 'RETIRADO'] as const;
+export type Estatus = typeof ESTATUS_OPTIONS[number];
 
 export interface HistoriaClinica {
   id: string;
