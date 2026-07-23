@@ -215,6 +215,7 @@ export default function CameraCapture({ isOpen, onClose, onCapture }: CameraCapt
                 </select>
               </div>
             )}
+            <p className="text-[10px] text-gray-400 mt-1.5">¿La cámara no responde? Cierre y vuelva a abrir el navegador.</p>
           </div>
         </div>
 

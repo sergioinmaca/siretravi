@@ -50,6 +50,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
     uploadFoto: uploadFotoHook,
     deleteStorageFile,
     leerArchivoComoDataURL,
+    convertirAJPEG,
   } = useFotoUpload();
 
   const canSave = !!fotoFile || !!mascotaFotoFile;
@@ -620,8 +621,10 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
   };
 
   const handleSelectFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !refugiado) return;
+    const rawFile = e.target.files?.[0];
+    if (!rawFile || !refugiado) return;
+
+    const file = await convertirAJPEG(rawFile);
 
     const error = validarArchivo(file);
     if (error) {
@@ -638,8 +641,10 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
   };
 
   const handleSelectMascotaFoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !refugiado) return;
+    const rawFile = e.target.files?.[0];
+    if (!rawFile || !refugiado) return;
+
+    const file = await convertirAJPEG(rawFile);
 
     const error = validarArchivo(file);
     if (error) {

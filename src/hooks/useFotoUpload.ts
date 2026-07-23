@@ -76,6 +76,48 @@ export function useFotoUpload() {
     });
   };
 
+  const convertirAJPEG = async (file: File): Promise<File> => {
+    if (ALLOWED_TYPES.includes(file.type)) return file;
+
+    try {
+      const dataUrl = await leerArchivoComoDataURL(file);
+
+      const img = new Image();
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('No se pudo decodificar la imagen.'));
+        img.src = dataUrl;
+      });
+
+      const MAX_PX = 12_000_000;
+      let w = img.naturalWidth;
+      let h = img.naturalHeight;
+      if (w * h > MAX_PX) {
+        const r = Math.sqrt(MAX_PX / (w * h));
+        w = Math.round(w * r);
+        h = Math.round(h * r);
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return file;
+      ctx.drawImage(img, 0, 0, w, h);
+
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, 'image/jpeg', 0.9)
+      );
+
+      if (!blob) return file;
+
+      const name = file.name.replace(/\.[^.]+$/, '.jpg') || 'foto.jpg';
+      return new File([blob], name, { type: 'image/jpeg' });
+    } catch {
+      return file;
+    }
+  };
+
   return {
     isUploading,
     uploadError,
@@ -84,5 +126,6 @@ export function useFotoUpload() {
     uploadFoto,
     deleteStorageFile,
     leerArchivoComoDataURL,
+    convertirAJPEG,
   };
 }

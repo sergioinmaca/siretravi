@@ -36,6 +36,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     uploadFoto: uploadFotoHook,
     deleteStorageFile,
     leerArchivoComoDataURL,
+    convertirAJPEG,
   } = useFotoUpload();
   const isEditing = !!refugiadoToEdit;
 
@@ -195,8 +196,10 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
   };
 
   const handleFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const rawFile = e.target.files?.[0];
+    if (!rawFile) return;
+
+    const file = await convertirAJPEG(rawFile);
 
     const error = validarArchivo(file);
     if (error) {
@@ -213,8 +216,10 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
   };
 
   const handleMascotaFotoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const rawFile = e.target.files?.[0];
+    if (!rawFile) return;
+
+    const file = await convertirAJPEG(rawFile);
 
     const error = validarArchivo(file);
     if (error) {
