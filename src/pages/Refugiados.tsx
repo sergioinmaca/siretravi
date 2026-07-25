@@ -7,6 +7,7 @@ import RegistroModal from '../components/refugiados/RegistroModal';
 import FichaRefugiadoModal from '../components/refugiados/FichaRefugiadoModal';
 import { formatAge, formatAgeParts } from '../lib/formatAge';
 import { formatCedula } from '../lib/formatCedula';
+import { obtenerHistoriasClinicas } from '../lib/salud';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 
@@ -160,7 +161,7 @@ export default function Refugiados() {
             edad: formatAge(r.fecha_nacimiento),
             jerarquia: jerarquiaStr,
             cama: r.nro_cama || '-',
-        estatus: ((r.hogar_solidario || '').trim() || 'PRESENTE').toUpperCase(),
+            estatus: ((r.hogar_solidario || '').trim() || 'PRESENTE').toUpperCase(),
           };
         });
 
@@ -269,6 +270,18 @@ export default function Refugiados() {
       const now = new Date();
       const fecha = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
 
+      const historias = await obtenerHistoriasClinicas(campamentoSeleccionado!.id);
+      const historiasMap: Record<string, string> = {};
+      historias.forEach(h => {
+        const parts: string[] = [];
+        if (h.tipo_discapacidad) parts.push(`Discapacidad: ${h.tipo_discapacidad}`);
+        for (let i = 1; i <= 10; i++) {
+          const val = (h as unknown as Record<string, unknown>)[`enf_cronica_${i}`] as string | undefined;
+          if (val) parts.push(`Enf. Crónica ${i}: ${val}`);
+        }
+        if (parts.length > 0) historiasMap[h.refugiado_id] = parts.join(', ');
+      });
+
       const data = refugiados
         .filter(r => r.campamento_id === campamentoSeleccionado?.id)
         .sort((a, b) => {
@@ -297,6 +310,9 @@ export default function Refugiados() {
             'Género': r.genero ? 'M' : 'F',
             'Apellidos': r.apellidos,
             'Nombres': r.nombres,
+            'Fecha de Nacimiento': r.fecha_nacimiento
+              ? `${String(r.fecha_nacimiento.getDate()).padStart(2, '0')}/${String(r.fecha_nacimiento.getMonth() + 1).padStart(2, '0')}/${r.fecha_nacimiento.getFullYear()}`
+              : '',
             'Edad (Valor)': ageParts?.valor ?? '',
             'Edad (Unidad)': ageParts?.unidad ?? '',
             'Jerarquía': jerarquiaStr,
@@ -304,6 +320,7 @@ export default function Refugiados() {
             'Estatus': r.hogar_solidario || 'PRESENTE',
             'Teléfono': r.telefono?.toString() || '—',
             'Parentesco': r.parentesco || '—',
+            'Observaciones': historiasMap[r.id] || '',
           };
         });
 
@@ -314,13 +331,14 @@ export default function Refugiados() {
         { wch: 8 },
         { wch: 22 },
         { wch: 22 },
+        { wch: 16 },
         { wch: 12 },
         { wch: 14 },
         { wch: 30 },
         { wch: 8 },
         { wch: 16 },
         { wch: 20 },
-        { wch: 20 },
+        { wch: 55 },
       ];
       ws['!cols'] = colWidths;
 
@@ -351,11 +369,10 @@ export default function Refugiados() {
               <button
                 onClick={handleExportPDF}
                 disabled={exportandoPDF}
-                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium transition-all shadow-sm ${
-                  exportandoPDF
+                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium transition-all shadow-sm ${exportandoPDF
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     : 'bg-caracas-red hover:bg-red-800 text-white shadow-caracas-red/20 transform hover:-translate-y-0.5'
-                }`}
+                  }`}
               >
                 {exportandoPDF ? <Loader2 size={18} className="animate-spin" /> : <FileDown size={18} />}
                 {exportandoPDF ? 'Generando...' : 'Exportar PDF'}
@@ -363,11 +380,10 @@ export default function Refugiados() {
               <button
                 onClick={handleExportXLSX}
                 disabled={exportandoXLSX}
-                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium transition-all shadow-sm ${
-                  exportandoXLSX
+                className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium transition-all shadow-sm ${exportandoXLSX
                     ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                     : 'bg-green-600 hover:bg-green-700 text-white shadow-green-600/20 transform hover:-translate-y-0.5'
-                }`}
+                  }`}
               >
                 {exportandoXLSX ? <Loader2 size={18} className="animate-spin" /> : <FileDown size={18} />}
                 {exportandoXLSX ? 'Generando...' : 'Exportar XLSX'}
@@ -448,11 +464,10 @@ export default function Refugiados() {
                     </td>
                     <td className="py-3 px-6 text-sm text-gray-600">{refugiado.edad}</td>
                     <td className="py-3 px-3 max-w-[180px]">
-                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium whitespace-normal break-words ${
-                        refugiado.jerarquia === 'Jefe de Familia'
+                      <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium whitespace-normal break-words ${refugiado.jerarquia === 'Jefe de Familia'
                           ? 'bg-caracas-blue/10 text-caracas-blue'
                           : 'bg-gray-100 text-gray-600'
-                      }`}>
+                        }`}>
                         {refugiado.jerarquia}
                       </span>
                     </td>
@@ -484,24 +499,22 @@ export default function Refugiados() {
                           className="cursor-pointer"
                           title="Click para cambiar estatus"
                         >
-                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${
-                            refugiado.estatus === 'PRESENTE'
+                          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${refugiado.estatus === 'PRESENTE'
                               ? 'bg-green-50 text-green-700 border-green-200'
                               : refugiado.estatus === 'HOGAR SOLIDARIO'
-                              ? 'bg-orange-100 text-orange-800 border-orange-300'
-                              : 'bg-red-50 text-red-700 border-red-200'
-                          }`}>
+                                ? 'bg-orange-100 text-orange-800 border-orange-300'
+                                : 'bg-red-50 text-red-700 border-red-200'
+                            }`}>
                             {refugiado.estatus}
                           </span>
                         </button>
                       ) : (
-                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${
-                          refugiado.estatus === 'PRESENTE'
+                        <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${refugiado.estatus === 'PRESENTE'
                             ? 'bg-green-50 text-green-700 border-green-200'
                             : refugiado.estatus === 'HOGAR SOLIDARIO'
-                            ? 'bg-orange-100 text-orange-800 border-orange-300'
-                            : 'bg-red-50 text-red-700 border-red-200'
-                        }`}>
+                              ? 'bg-orange-100 text-orange-800 border-orange-300'
+                              : 'bg-red-50 text-red-700 border-red-200'
+                          }`}>
                           {refugiado.estatus}
                         </span>
                       )}
