@@ -96,9 +96,56 @@ export default function Inicio() {
   const adultosH = adultos.filter(r => r.genero === true).length;
   const adultosM = adultos.filter(r => r.genero === false).length;
 
-  // Calcular ranking de procedencias
+  // Filtrar solo jefes de familia para calculos basados en familias
+  const jefesFamilia = useMemo(() => {
+    return refugiadosDelCampamento.filter(r => r.es_jefe_familia === true);
+  }, [refugiadosDelCampamento]);
+
+  const totalJefes = jefesFamilia.length;
+
+  // Datos para grafico de dona – Tenencia de Vivienda (solo jefes)
+  const tenenciaData = useMemo(() => {
+    const map = new Map<string, number>();
+    jefesFamilia.forEach(j => {
+      const t = j.tenencia_vivienda?.trim() || 'Sin especificar';
+      map.set(t, (map.get(t) || 0) + 1);
+    });
+    const categorias = ['Propia', 'Alquilada', 'Compartida/Familiar', 'Pensión', 'Sin especificar'];
+    return categorias
+      .map(nombre => ({
+        nombre,
+        cantidad: map.get(nombre) || 0,
+      }))
+      .filter(c => c.cantidad > 0);
+  }, [jefesFamilia]);
+
+  // Colores para la dona de tenencia
+  const tenenciaColores: Record<string, string> = {
+    'Propia': '#007229',
+    'Alquilada': '#0033A0',
+    'Compartida/Familiar': '#FFD100',
+    'Pensión': '#bc2f4a',
+    'Sin especificar': '#9CA3AF',
+  };
+
+  // SVG dona – constantes
+  const DONA_RADIUS = 70;
+  const DONA_CIRCUMFERENCE = 2 * Math.PI * DONA_RADIUS;
+
+  const donaSectores = useMemo(() => {
+    let offset = 0;
+    return tenenciaData.map(c => {
+      const pct = c.cantidad / totalJefes;
+      const dash = pct * DONA_CIRCUMFERENCE;
+      const sector = { ...c, pct, dash, offset };
+      offset += dash;
+      return sector;
+    });
+  }, [tenenciaData, totalJefes]);
+
+  // Calcular ranking de procedencias (solo jefes de familia)
   const procedenciasMap = new Map<string, number>();
-  refugiadosDelCampamento.forEach(r => {
+  jefesFamilia.forEach(r => {
     const proc = r.procedencia?.trim() || 'SIN ESPECIFICAR';
     procedenciasMap.set(proc, (procedenciasMap.get(proc) || 0) + 1);
   });
@@ -499,58 +546,113 @@ export default function Inicio() {
         </div>
       </div>
 
-      {/* Ranking de Procedencias */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <div className="flex items-center gap-2 mb-6">
-          <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
-          <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wider">Ranking de Procedencias</h2>
+      {/* Dashboard: Tenencia de Vivienda + Ranking de Procedencias */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* COLUMNA IZQUIERDA: Grafico de Dona – Tenencia de Vivienda */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-1 h-6 bg-caracas-red rounded-full"></div>
+            <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wider">Tenencia de Vivienda</h2>
+          </div>
+
+          {tenenciaData.length > 0 ? (
+            <div className="flex items-center gap-6">
+              <div className="relative w-40 h-40 shrink-0">
+                <svg viewBox="0 0 200 200" className="w-full h-full -rotate-90">
+                  <circle cx="100" cy="100" r={DONA_RADIUS} fill="none" stroke="#F3F4F6" strokeWidth="28" />
+                  {donaSectores.map(s => (
+                    <circle
+                      key={s.nombre}
+                      cx="100" cy="100" r={DONA_RADIUS}
+                      fill="none"
+                      stroke={tenenciaColores[s.nombre] || '#9CA3AF'}
+                      strokeWidth="28"
+                      strokeDasharray={`${s.dash} ${DONA_CIRCUMFERENCE - s.dash}`}
+                      strokeDashoffset={-s.offset}
+                      strokeLinecap="butt"
+                    />
+                  ))}
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-2xl font-bold text-gray-800">{totalJefes}</span>
+                  <span className="text-xs text-gray-400">familias</span>
+                </div>
+              </div>
+              <div className="flex-1 space-y-2.5 min-w-0">
+                {tenenciaData.map(c => (
+                  <div key={c.nombre} className="flex items-center justify-between text-sm">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: tenenciaColores[c.nombre] || '#9CA3AF' }} />
+                      <span className="text-gray-600 truncate">{c.nombre}</span>
+                    </div>
+                    <span className="font-semibold text-gray-800 tabular-nums shrink-0 ml-2">
+                      {c.cantidad} <span className="text-gray-400 font-normal">({((c.cantidad / totalJefes) * 100).toFixed(1)}%)</span>
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-10 text-gray-400">
+              <p className="font-medium">No hay jefes de familia registrados.</p>
+            </div>
+          )}
         </div>
 
-        {procedenciasRanking.length > 0 ? (
-          <div className="space-y-3">
-            {procedenciasRanking.map((proc, index) => {
-              const pct = (proc.cantidad / maxProcedencia) * 100;
-              const color = barColors[index % barColors.length];
-              return (
-                <div
-                  key={proc.nombre}
-                  className={`flex items-center gap-3 group relative ${hoveredBar === index ? 'z-50' : 'z-0'}`}
-                  onMouseEnter={() => setHoveredBar(index)}
-                  onMouseLeave={() => setHoveredBar(null)}
-                >
-                  <p className="text-xs font-semibold text-gray-500 text-right w-36 shrink-0 truncate uppercase" title={proc.nombre}>
-                    {proc.nombre}
-                  </p>
-                  <div className="flex-1 h-7 bg-gray-50 rounded-md relative">
-                    <div
-                      className="h-full rounded-md transition-all duration-500 ease-out"
-                      style={{
-                        width: `${pct}%`,
-                        backgroundColor: color,
-                        minWidth: '24px',
-                        opacity: hoveredBar === null || hoveredBar === index ? 1 : 0.4
-                      }}
-                    />
-                    {/* Tooltip */}
-                    {hoveredBar === index && (
-                      <div className="absolute left-1/2 -translate-x-1/2 -top-14 bg-white border border-gray-200 shadow-xl rounded-lg px-4 py-2 z-50 whitespace-nowrap pointer-events-none">
-                        <p className="text-xs font-bold text-gray-700">{proc.nombre}</p>
-                        <p className="text-xs text-gray-500">
-                          {proc.nombre}: <span className="font-bold text-gray-800">{proc.cantidad}</span> personas <span className="text-gray-400 font-medium">({((proc.cantidad / totalRefugiados) * 100).toFixed(1)}%)</span>
-                        </p>
-                        <div className="absolute left-1/2 -translate-x-1/2 top-full w-2 h-2 bg-white border-r border-b border-gray-200 rotate-45 -mt-1"></div>
-                      </div>
-                    )}
+        {/* COLUMNA DERECHA: Ranking de Procedencias */}
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
+            <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wider">Ranking de Procedencias</h2>
+          </div>
+
+          {procedenciasRanking.length > 0 ? (
+            <div className="space-y-3">
+              {procedenciasRanking.map((proc, index) => {
+                const pct = (proc.cantidad / maxProcedencia) * 100;
+                const color = barColors[index % barColors.length];
+                return (
+                  <div
+                    key={proc.nombre}
+                    className={`flex items-center gap-3 group relative ${hoveredBar === index ? 'z-50' : 'z-0'}`}
+                    onMouseEnter={() => setHoveredBar(index)}
+                    onMouseLeave={() => setHoveredBar(null)}
+                  >
+                    <p className="text-xs font-semibold text-gray-500 text-right w-36 shrink-0 truncate uppercase" title={proc.nombre}>
+                      {proc.nombre}
+                    </p>
+                    <div className="flex-1 h-7 bg-gray-50 rounded-md relative">
+                      <div
+                        className="h-full rounded-md transition-all duration-500 ease-out"
+                        style={{
+                          width: `${pct}%`,
+                          backgroundColor: color,
+                          minWidth: '24px',
+                          opacity: hoveredBar === null || hoveredBar === index ? 1 : 0.4
+                        }}
+                      />
+                      {hoveredBar === index && (
+                        <div className="absolute left-1/2 -translate-x-1/2 -top-14 bg-white border border-gray-200 shadow-xl rounded-lg px-4 py-2 z-50 whitespace-nowrap pointer-events-none">
+                          <p className="text-xs font-bold text-gray-700">{proc.nombre}</p>
+                          <p className="text-xs text-gray-500">
+                            {proc.nombre}: <span className="font-bold text-gray-800">{proc.cantidad}</span> familias <span className="text-gray-400 font-medium">({((proc.cantidad / totalJefes) * 100).toFixed(1)}%)</span>
+                          </p>
+                          <div className="absolute left-1/2 -translate-x-1/2 top-full w-2 h-2 bg-white border-r border-b border-gray-200 rotate-45 -mt-1"></div>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          <div className="text-center py-10 text-gray-400">
-            <p className="font-medium">No hay integrantes registrados para mostrar procedencias.</p>
-          </div>
-        )}
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-10 text-gray-400">
+              <p className="font-medium">No hay jefes de familia registrados para mostrar procedencias.</p>
+            </div>
+          )}
+        </div>
+
       </div>
 
       {/* Distribucion del Campamento — Croquis por Modulo */}

@@ -686,6 +686,10 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                       <input type="radio" name="tenenciaVivienda" checked={formData.tenenciaVivienda === 'Compartida/Familiar'} onChange={() => setFormData(prev => ({ ...prev, tenenciaVivienda: 'Compartida/Familiar' }))} className="w-5 h-5 text-caracas-red focus:ring-caracas-red" />
                       <span className="text-gray-700">Compartida / Familiar</span>
                     </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="radio" name="tenenciaVivienda" checked={formData.tenenciaVivienda === 'Pensión'} onChange={() => setFormData(prev => ({ ...prev, tenenciaVivienda: 'Pensión' }))} className="w-5 h-5 text-caracas-red focus:ring-caracas-red" />
+                      <span className="text-gray-700">Pensión</span>
+                    </label>
                   </div>
                 </div>
 
