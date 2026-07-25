@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
-import { Search, UserPlus, FileText, Pencil, Trash2, ShieldOff, Eye, FileDown, Loader2 } from 'lucide-react';
+import { Search, UserPlus, FileText, Pencil, Trash2, ShieldOff, Eye, FileDown, Loader2, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
 import { ESTATUS_OPTIONS, type Refugiado } from '../types';
@@ -42,6 +42,8 @@ export default function Refugiados() {
   const [exportandoPDF, setExportandoPDF] = useState(false);
   const [exportandoXLSX, setExportandoXLSX] = useState(false);
   const [editingEstatusId, setEditingEstatusId] = useState<string | null>(null);
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const REGISTROS_POR_PAGINA = 20;
 
   // Debounce búsqueda 400ms
@@ -67,7 +69,9 @@ export default function Refugiados() {
         campamentoSeleccionado.id,
         page,
         REGISTROS_POR_PAGINA,
-        debouncedSearch
+        debouncedSearch,
+        sortColumn ?? undefined,
+        sortColumn ? sortDirection : undefined
       );
       setPaginados(data);
       setTotalCount(count);
@@ -76,7 +80,7 @@ export default function Refugiados() {
     } finally {
       setLoadingPaginados(false);
     }
-  }, [campamentoSeleccionado, debouncedSearch, obtenerRefugiadosPaginados]);
+  }, [campamentoSeleccionado, debouncedSearch, sortColumn, sortDirection, obtenerRefugiadosPaginados]);
 
   useEffect(() => {
     refetch();
@@ -90,6 +94,11 @@ export default function Refugiados() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch]);
+
+  useEffect(() => {
+    setSortColumn(null);
+    setSortDirection('asc');
+  }, [campamentoSeleccionado?.id]);
 
   // Filas a mostrar con jerarquía resuelta
   const displayedRows = useMemo(() => {
@@ -116,6 +125,16 @@ export default function Refugiados() {
   }, [paginados, familias]);
 
   const totalPages = Math.ceil(totalCount / REGISTROS_POR_PAGINA);
+
+  const handleSort = (column: string) => {
+    if (sortColumn === column) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+    setCurrentPage(1);
+  };
 
   const handleEliminar = async (id: string) => {
     if (window.confirm('¿Estás seguro de que deseas eliminar este integrante? Esta acción no se puede deshacer.')) {
@@ -432,14 +451,14 @@ export default function Refugiados() {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-white border-b border-gray-100">
-                <th className="py-4 px-6 font-semibold text-sm text-gray-500">Código</th>
-                <th className="py-4 px-6 font-semibold text-sm text-gray-500">Cédula</th>
-                <th className="py-4 px-6 font-semibold text-sm text-gray-500">Género</th>
-                <th className="py-4 px-6 font-semibold text-sm text-gray-500">Apellidos y Nombres</th>
-                <th className="py-4 px-6 font-semibold text-sm text-gray-500">Edad</th>
-                <th className="py-4 px-6 font-semibold text-sm text-gray-500">Jerarquía</th>
-                <th className="py-4 px-6 font-semibold text-sm text-gray-500">Cama</th>
-                <th className="py-4 px-6 font-semibold text-sm text-gray-500">Estatus</th>
+                <SortableHeader column="codigo" label="Código" sortColumn={sortColumn} sortDirection={sortDirection} onClick={handleSort} />
+                <SortableHeader column="cedula" label="Cédula" sortColumn={sortColumn} sortDirection={sortDirection} onClick={handleSort} />
+                <SortableHeader column="genero" label="Género" sortColumn={sortColumn} sortDirection={sortDirection} onClick={handleSort} />
+                <SortableHeader column="apellidos" label="Apellidos y Nombres" sortColumn={sortColumn} sortDirection={sortDirection} onClick={handleSort} />
+                <SortableHeader column="edad" label="Edad" sortColumn={sortColumn} sortDirection={sortDirection} onClick={handleSort} />
+                <SortableHeader column="jerarquia" label="Jerarquía" sortColumn={sortColumn} sortDirection={sortDirection} onClick={handleSort} />
+                <SortableHeader column="cama" label="Cama" sortColumn={sortColumn} sortDirection={sortDirection} onClick={handleSort} />
+                <SortableHeader column="estatus" label="Estatus" sortColumn={sortColumn} sortDirection={sortDirection} onClick={handleSort} />
                 <th className="py-4 px-6 font-semibold text-sm text-gray-500 text-right">Acciones</th>
               </tr>
             </thead>
@@ -571,23 +590,41 @@ export default function Refugiados() {
         {/* Controles de Paginación */}
         {totalPages > 1 && (
           <div className="p-4 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between">
-            <button
-              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-              disabled={currentPage === 1 || loadingPaginados}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Anterior
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1 || loadingPaginados}
+                className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronsLeft size={16} />
+              </button>
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1 || loadingPaginados}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Anterior
+              </button>
+            </div>
             <span className="text-sm text-gray-500">
               Página {currentPage} de {totalPages}
             </span>
-            <button
-              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages || loadingPaginados}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Siguiente
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages || loadingPaginados}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Siguiente
+              </button>
+              <button
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages || loadingPaginados}
+                className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <ChevronsRight size={16} />
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -617,5 +654,39 @@ export default function Refugiados() {
       />
 
     </div>
+  );
+}
+
+function SortableHeader({
+  column,
+  label,
+  sortColumn,
+  sortDirection,
+  onClick,
+}: {
+  column: string;
+  label: string;
+  sortColumn: string | null;
+  sortDirection: 'asc' | 'desc';
+  onClick: (column: string) => void;
+}) {
+  const isActive = sortColumn === column;
+
+  return (
+    <th
+      className="py-4 px-6 font-semibold text-sm text-gray-500 cursor-pointer select-none hover:bg-gray-50 transition-colors"
+      onClick={() => onClick(column)}
+    >
+      <span className="inline-flex items-center gap-1">
+        {label}
+        {isActive ? (
+          <span className="text-caracas-red text-xs ml-0.5">
+            {sortDirection === 'asc' ? '\u25B2' : '\u25BC'}
+          </span>
+        ) : (
+          <span className="text-gray-300 text-xs ml-0.5">{'\u25B2'}</span>
+        )}
+      </span>
+    </th>
   );
 }
