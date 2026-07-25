@@ -264,7 +264,7 @@ export default function CameraCapture({ isOpen, onClose, onCapture }: CameraCapt
                   autoPlay
                   playsInline
                   muted
-                  className="w-full aspect-[4/3] object-cover scale-x-[-1]"
+                  className="w-full aspect-[4/3] object-cover"
                 />
               )}
 

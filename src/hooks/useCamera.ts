@@ -57,9 +57,9 @@ export function useCamera() {
     setError(null);
     setStatus('starting');
 
-    const constraints = {
-      video: { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } },
-    };
+    const constraints = deviceId
+      ? { video: { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } } }
+      : { video: { width: { ideal: 1280 }, height: { ideal: 720 } } };
     console.log('[startCamera] constraints:', JSON.stringify(constraints));
 
     console.time('[startCamera] getUserMedia');
@@ -122,17 +122,15 @@ export function useCamera() {
       if (cropRect) {
         canvas.width = cropRect.w * scale;
         canvas.height = cropRect.h * scale;
-        ctx.scale(-scale, scale);
         ctx.drawImage(
           video,
           cropRect.x, cropRect.y, cropRect.w, cropRect.h,
-          -cropRect.w, 0, cropRect.w, cropRect.h
+          0, 0, cropRect.w * scale, cropRect.h * scale
         );
       } else {
         canvas.width = video.videoWidth * scale;
         canvas.height = video.videoHeight * scale;
-        ctx.scale(-scale, scale);
-        ctx.drawImage(video, -canvas.width / scale, 0, canvas.width / scale, canvas.height / scale);
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       }
 
       const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
