@@ -275,7 +275,7 @@ export default function HistoriaClinicaModal({ isOpen, onClose, historiaToEdit, 
           tenencia_vivienda: refOriginal!.tenencia_vivienda,
           ingreso_familiar: refOriginal!.ingreso_familiar,
           parentesco: refOriginal!.parentesco,
-          abrigo_solidario: refOriginal!.abrigo_solidario,
+          hogar_solidario: refOriginal!.hogar_solidario,
           registro_captahuella: refOriginal!.registro_captahuella,
           registro_unico_vivienda: refOriginal!.registro_unico_vivienda,
         });
