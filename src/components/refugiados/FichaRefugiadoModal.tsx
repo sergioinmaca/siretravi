@@ -395,6 +395,10 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
         drawField('Parentesco con el Jefe/a:', refugiado.parentesco || '—', margin + contentW / 2, contentW / 2 - 2);
       }
       y += 6;
+      const familiaActual = familias.find(f => f.id === refugiado.familia_id);
+      if (familiaActual) {
+        drawFieldFull('Familia:', familiaActual.nombre);
+      }
 
       drawFieldRowLR(
         'Nro de Cama:', refugiado.nro_cama || '—',
