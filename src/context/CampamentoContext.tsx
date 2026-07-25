@@ -21,7 +21,7 @@ interface CampamentoContextType {
   eliminarRefugiado: (id: string) => Promise<void>;
   actualizarRefugiado: (id: string, actualizado: Refugiado) => Promise<boolean>;
   actualizarFotoRefugiado: (id: string, data: { foto_url?: string | null; mascota_foto_url?: string | null }) => Promise<boolean>;
-  obtenerRefugiadosPaginados: (campamentoId: string, page: number, pageSize: number, searchTerm?: string) => Promise<{ data: Refugiado[]; count: number }>;
+  obtenerRefugiadosPaginados: (campamentoId: string, page: number, pageSize: number, searchTerm?: string, sortColumn?: string, sortDirection?: 'asc' | 'desc') => Promise<{ data: Refugiado[]; count: number }>;
   contarRefugiados: (campamentoId: string, genero?: boolean) => Promise<number>;
 }
 
