@@ -1,9 +1,12 @@
-import { useState, useMemo } from 'react';
-import { Users, Search, ChevronRight, ShieldOff, Trash2 } from 'lucide-react';
+import { useState, useMemo, useCallback } from 'react';
+import { Users, Search, ChevronRight, ShieldOff, Trash2, FileDown, Loader2 } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
 import DetalleFamiliaModal from '../components/familias/DetalleFamiliaModal';
 import type { Familia } from '../types';
+import jsPDF from 'jspdf';
+import * as XLSX from 'xlsx';
+import { formatCedula } from '../lib/formatCedula';
 
 export default function Familias() {
   const { campamentoSeleccionado, familias = [], refugiados = [], eliminarFamilia } = useCampamento();
@@ -25,6 +28,8 @@ export default function Familias() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFamilia, setSelectedFamilia] = useState<Familia | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [exportandoPDF, setExportandoPDF] = useState(false);
+  const [exportandoXLSX, setExportandoXLSX] = useState(false);
 
   const familiasDelCampamento = useMemo(() => {
     if (!campamentoSeleccionado) return [];
@@ -55,6 +60,222 @@ export default function Familias() {
     }
   };
 
+  const handleExportPDF = useCallback(async () => {
+    setExportandoPDF(true);
+    try {
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageW = 210;
+      const pageH = 297;
+      const margin = 10;
+      const now = new Date();
+      const fecha = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
+      const nombreCamp = campamentoSeleccionado?.nombre || 'Campamento';
+
+      const cols = [
+        { key: 'codigo', header: 'C\u00f3digo', w: 22 },
+        { key: 'nombre', header: 'Nombres y Apellidos', w: 42 },
+        { key: 'cedula', header: 'C\u00e9dula', w: 22 },
+        { key: 'sexo', header: 'Sexo', w: 14 },
+        { key: 'cama', header: 'Nro Cama', w: 22 },
+        { key: 'parentesco', header: 'Parentesco', w: 28 },
+      ];
+      const tableWidth = cols.reduce((s, c) => s + c.w, 0);
+      const headerHeight = 8;
+      const rowHeight = 6;
+      const titleGap = 4;
+      const familyGap = 6;
+      const footerH = 10;
+
+      const familiasCamp = familias.filter(f => f.campamento_id === campamentoSeleccionado?.id);
+
+      let currentY = margin;
+      let pageNum = 1;
+
+      pdf.setFontSize(14);
+      pdf.text(`Relaci\u00f3n de Familias \u2014 ${nombreCamp}`, margin, currentY + 5);
+      pdf.setFontSize(8);
+      pdf.setTextColor(107, 114, 128);
+      pdf.text(`Emitido: ${fecha}`, pageW - margin, margin + 5, { align: 'right' });
+      currentY = margin + 12;
+      pdf.setDrawColor(229, 231, 235);
+      pdf.line(margin, currentY, pageW - margin, currentY);
+      currentY += 6;
+
+      const drawFamilyHeader = (title: string) => {
+        pdf.setFontSize(10);
+        pdf.setTextColor(30, 41, 59);
+        pdf.text(title, margin, currentY);
+        currentY += titleGap;
+
+        pdf.setFillColor(243, 244, 246);
+        pdf.rect(margin, currentY, tableWidth, headerHeight, 'F');
+        let hx = margin;
+        cols.forEach(col => {
+          pdf.setFontSize(6.5);
+          pdf.setTextColor(107, 114, 128);
+          pdf.text(col.header, hx + 1.5, currentY + headerHeight - 2);
+          hx += col.w;
+        });
+        currentY += headerHeight;
+      };
+
+      let familyIndex = 0;
+
+      familiasCamp.forEach(familia => {
+        const miembros = refugiados
+          .filter(r => r.familia_id === familia.id)
+          .sort((a, b) => {
+            if (a.es_jefe_familia) return -1;
+            if (b.es_jefe_familia) return 1;
+            return (a.codigo || '').localeCompare(b.codigo || '', undefined, { numeric: true });
+          });
+
+        if (miembros.length === 0) return;
+        familyIndex++;
+
+        const rows = miembros.map(r => ({
+          codigo: r.codigo || '-',
+          nombre: `${r.nombres} ${r.apellidos}`,
+          cedula: formatCedula(r.cedula) ?? 'S/N',
+          sexo: r.genero ? 'M' : 'F',
+          cama: r.nro_cama || '-',
+          parentesco: r.es_jefe_familia ? 'Jefe de Familia' : (r.parentesco || '\u2014'),
+        }));
+
+        if (currentY + titleGap + headerHeight + rowHeight > pageH - margin - footerH) {
+          pdf.addPage();
+          pageNum++;
+          currentY = margin;
+        }
+
+        drawFamilyHeader(`${familyIndex}. Familia: ${familia.nombre}`);
+
+        rows.forEach((row, ri) => {
+          if (currentY + rowHeight > pageH - margin - footerH) {
+            pdf.addPage();
+            pageNum++;
+            currentY = margin;
+            drawFamilyHeader(`${familyIndex}. Familia: ${familia.nombre} (cont.)`);
+          }
+
+          if (ri % 2 === 0) {
+            pdf.setFillColor(249, 250, 251);
+            pdf.rect(margin, currentY, tableWidth, rowHeight, 'F');
+          }
+
+          let cx = margin;
+          cols.forEach(col => {
+            pdf.setDrawColor(229, 231, 235);
+            pdf.setLineWidth(0.2);
+            pdf.rect(cx, currentY, col.w, rowHeight, 'S');
+
+            const value = String(row[col.key as keyof typeof row] || '');
+            pdf.setFontSize(6);
+            pdf.setTextColor(55, 65, 81);
+
+            let display = value;
+            const maxW = col.w - 3;
+            if (pdf.getTextWidth(display) > maxW) {
+              while (display.length > 1 && pdf.getTextWidth(display + '\u2026') > maxW) {
+                display = display.slice(0, -1);
+              }
+              display += '\u2026';
+            }
+            pdf.text(display, cx + 1.5, currentY + rowHeight - 2);
+            cx += col.w;
+          });
+
+          currentY += rowHeight;
+        });
+
+        currentY += familyGap;
+      });
+
+      for (let p = 1; p <= pageNum; p++) {
+        pdf.setPage(p);
+        pdf.setFontSize(7);
+        pdf.setTextColor(156, 163, 175);
+        pdf.text(`P\u00e1gina ${p} de ${pageNum}`, pageW - margin, pageH - 6, { align: 'right' });
+      }
+
+      pdf.save(`familias-${nombreCamp.replace(/\s+/g, '-')}-${fecha}.pdf`);
+    } catch (err) {
+      console.error('Error generando PDF de familias:', err);
+    } finally {
+      setExportandoPDF(false);
+    }
+  }, [campamentoSeleccionado, refugiados, familias]);
+
+  const handleExportXLSX = useCallback(async () => {
+    setExportandoXLSX(true);
+    try {
+      const nombreCamp = campamentoSeleccionado?.nombre || 'Campamento';
+      const now = new Date();
+      const fecha = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
+
+      const aoa: (string | null)[][] = [];
+      const merges: { s: { r: number; c: number }; e: { r: number; c: number } }[] = [];
+
+      const familiasCamp = familias.filter(f => f.campamento_id === campamentoSeleccionado?.id);
+      let familyIndex = 0;
+
+      familiasCamp.forEach(familia => {
+        const miembros = refugiados
+          .filter(r => r.familia_id === familia.id)
+          .sort((a, b) => {
+            if (a.es_jefe_familia) return -1;
+            if (b.es_jefe_familia) return 1;
+            return (a.codigo || '').localeCompare(b.codigo || '', undefined, { numeric: true });
+          });
+
+        if (miembros.length === 0) return;
+        familyIndex++;
+
+        const titleRow = aoa.length;
+        aoa.push([`${familyIndex}. Familia: ${familia.nombre}`, null, null, null, null, null]);
+        merges.push({ s: { r: titleRow, c: 0 }, e: { r: titleRow, c: 5 } });
+
+        aoa.push(['C\u00f3digo', 'Nombres y Apellidos', 'C\u00e9dula', 'Sexo', 'Nro Cama', 'Parentesco']);
+
+        miembros.forEach(r => {
+          aoa.push([
+            r.codigo || '-',
+            `${r.nombres} ${r.apellidos}`,
+            formatCedula(r.cedula) ?? 'S/N',
+            r.genero ? 'M' : 'F',
+            r.nro_cama || '-',
+            r.es_jefe_familia ? 'Jefe de Familia' : (r.parentesco || '\u2014'),
+          ]);
+        });
+
+        aoa.push([null, null, null, null, null, null]);
+      });
+
+      if (aoa.length > 0 && aoa[aoa.length - 1].every(c => c === null)) {
+        aoa.pop();
+      }
+
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws['!merges'] = merges;
+      ws['!cols'] = [
+        { wch: 12 },
+        { wch: 35 },
+        { wch: 16 },
+        { wch: 8 },
+        { wch: 10 },
+        { wch: 22 },
+      ];
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Familias');
+      XLSX.writeFile(wb, `familias-${nombreCamp.replace(/\s+/g, '-')}-${fecha}.xlsx`);
+    } catch (err) {
+      console.error('Error generando XLSX de familias:', err);
+    } finally {
+      setExportandoXLSX(false);
+    }
+  }, [campamentoSeleccionado, refugiados, familias]);
+
   return (
     <div className="space-y-6">
       {/* Cabecera */}
@@ -65,6 +286,34 @@ export default function Familias() {
             Gestionando familias del <span className="font-semibold text-caracas-red">{campamentoSeleccionado?.nombre || 'Ninguno'}</span>
           </p>
         </div>
+        {campamentoSeleccionado && (
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleExportPDF}
+              disabled={exportandoPDF}
+              className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium transition-all shadow-sm ${
+                exportandoPDF
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-caracas-red hover:bg-red-800 text-white shadow-caracas-red/20 transform hover:-translate-y-0.5'
+              }`}
+            >
+              {exportandoPDF ? <Loader2 size={18} className="animate-spin" /> : <FileDown size={18} />}
+              {exportandoPDF ? 'Generando...' : 'Exportar PDF'}
+            </button>
+            <button
+              onClick={handleExportXLSX}
+              disabled={exportandoXLSX}
+              className={`flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-medium transition-all shadow-sm ${
+                exportandoXLSX
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-green-600 hover:bg-green-700 text-white shadow-green-600/20 transform hover:-translate-y-0.5'
+              }`}
+            >
+              {exportandoXLSX ? <Loader2 size={18} className="animate-spin" /> : <FileDown size={18} />}
+              {exportandoXLSX ? 'Generando...' : 'Exportar XLSX'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Barra de búsqueda */}

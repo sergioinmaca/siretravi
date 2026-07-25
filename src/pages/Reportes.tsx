@@ -25,6 +25,10 @@ export default function Reportes() {
     ? tienePermisoPorCampamento('Reportes', campamentoSeleccionado.id, 'Ver')
     : true;
 
+  const puedeExportarIntegrantes = campamentoSeleccionado
+    ? tienePermisoPorCampamento('Reportes', campamentoSeleccionado.id, 'Exportar')
+    : false;
+
   const fecha = useMemo(() => {
     const now = new Date();
     return `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
@@ -432,6 +436,66 @@ export default function Reportes() {
     }
   };
 
+  // ── Exportar XLSX de Integrantes ──────────────────────────────────────────
+  const handleExportRefugiadosXLSX = async () => {
+    setIsGenerating(true);
+    try {
+      const nombreCamp = campamentoSeleccionado?.nombre || 'Campamento';
+      const now = new Date();
+      const fecha = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
+
+      const data = refugiadosDelCampamento.map(r => ({
+        codigo: r.codigo,
+        familia_id: r.familia_id || null,
+        nombres: r.nombres,
+        apellidos: r.apellidos,
+        cedula: r.cedula || null,
+        genero: r.genero,
+        fecha_nacimiento: r.fecha_nacimiento instanceof Date ? r.fecha_nacimiento.toISOString().split('T')[0] : r.fecha_nacimiento,
+        es_jefe_familia: r.es_jefe_familia,
+        nro_cama: r.nro_cama || null,
+        procedencia: r.procedencia || null,
+        fecha_ingreso: r.fecha_ingreso instanceof Date ? r.fecha_ingreso.toISOString().split('T')[0] : (r.fecha_ingreso || null),
+        direccion_exacta: r.direccion_exacta || null,
+        discapacidad: r.discapacidad,
+        embarazo: r.embarazo,
+        tiempo_embarazo: r.tiempo_embarazo || null,
+        mascotas: r.mascotas,
+        tipo_mascota: r.tipo_mascota || null,
+        mascota_sexo: r.mascota_sexo ?? null,
+        mascota_raza: r.mascota_raza || null,
+        mascota_nombre: r.mascota_nombre || null,
+        mascota_edad: r.mascota_edad || null,
+        telefono: r.telefono || null,
+        profesion: r.profesion || null,
+        talla_camisa: r.talla_camisa || null,
+        talla_pantalon: r.talla_pantalon || null,
+        talla_zapatos: r.talla_zapatos || null,
+        alergias: r.alergias,
+        enfermedad_cronica: r.enfermedad_cronica,
+        lesion_sismo: r.lesion_sismo,
+        adulto_mayor_dependencia: r.adulto_mayor_dependencia,
+        lactante: r.lactante ?? null,
+        nivel_educativo: r.nivel_educativo || null,
+        condicion_vivienda: r.condicion_vivienda || null,
+        tenencia_vivienda: r.tenencia_vivienda || null,
+        ingreso_familiar: r.ingreso_familiar || null,
+        observaciones: r.observaciones || null,
+        observaciones_generales: r.observaciones_generales || null,
+        parentesco: r.parentesco || null,
+      }));
+
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Integrantes');
+      XLSX.writeFile(wb, `integrantes-${nombreCamp.replace(/\s+/g, '-')}-${fecha}.xlsx`);
+    } catch (err) {
+      console.error('Error generando XLSX de integrantes:', err);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   // Gráficos dinámicos SVG para inyectar en los reportes
   const renderPieChart = () => {
     const total = datosReporte.masculinos + datosReporte.femeninos;
@@ -693,6 +757,28 @@ export default function Reportes() {
             </button>
           </div>
         </div>
+
+        {/* Card 6: Exportar Integrantes */}
+        {puedeExportarIntegrantes && (
+          <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
+            <div>
+              <h3 className="text-lg font-bold text-slate-800 mb-2">Exportar Integrantes</h3>
+              <p className="text-sm text-slate-500 leading-relaxed">
+                Exporta todos los registros de integrantes del campamento actual en formato Excel con las columnas de Supabase, usando el código correlativo como identificador.
+              </p>
+            </div>
+            <div className="flex gap-4 mt-6 pt-4 border-t border-slate-50">
+              <button
+                onClick={handleExportRefugiadosXLSX}
+                disabled={!campamentoSeleccionado || isGenerating}
+                className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50"
+              >
+                <FileDown size={18} />
+                Exportar XLSX
+              </button>
+            </div>
+          </div>
+        )}
 
       </div>
 

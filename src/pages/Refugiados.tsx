@@ -7,6 +7,7 @@ import RegistroModal from '../components/refugiados/RegistroModal';
 import FichaRefugiadoModal from '../components/refugiados/FichaRefugiadoModal';
 import { formatAge, formatAgeParts } from '../lib/formatAge';
 import { formatCedula } from '../lib/formatCedula';
+import { obtenerHistoriasClinicas } from '../lib/salud';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 
@@ -269,6 +270,18 @@ export default function Refugiados() {
       const now = new Date();
       const fecha = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
 
+      const historias = await obtenerHistoriasClinicas(campamentoSeleccionado!.id);
+      const historiasMap: Record<string, string> = {};
+      historias.forEach(h => {
+        const parts: string[] = [];
+        if (h.tipo_discapacidad) parts.push(`Discapacidad: ${h.tipo_discapacidad}`);
+        for (let i = 1; i <= 10; i++) {
+          const val = (h as Record<string, unknown>)[`enf_cronica_${i}`] as string | undefined;
+          if (val) parts.push(`Enf. Crónica ${i}: ${val}`);
+        }
+        if (parts.length > 0) historiasMap[h.refugiado_id] = parts.join(', ');
+      });
+
       const data = refugiados
         .filter(r => r.campamento_id === campamentoSeleccionado?.id)
         .sort((a, b) => {
@@ -297,6 +310,9 @@ export default function Refugiados() {
             'Género': r.genero ? 'M' : 'F',
             'Apellidos': r.apellidos,
             'Nombres': r.nombres,
+            'Fecha de Nacimiento': r.fecha_nacimiento
+              ? `${String(r.fecha_nacimiento.getDate()).padStart(2, '0')}/${String(r.fecha_nacimiento.getMonth() + 1).padStart(2, '0')}/${r.fecha_nacimiento.getFullYear()}`
+              : '',
             'Edad (Valor)': ageParts?.valor ?? '',
             'Edad (Unidad)': ageParts?.unidad ?? '',
             'Jerarquía': jerarquiaStr,
@@ -304,6 +320,7 @@ export default function Refugiados() {
             'Estatus': r.hogar_solidario || 'PRESENTE',
             'Teléfono': r.telefono?.toString() || '—',
             'Parentesco': r.parentesco || '—',
+            'Observaciones': historiasMap[r.id] || '',
           };
         });
 
@@ -314,13 +331,18 @@ export default function Refugiados() {
         { wch: 8 },
         { wch: 22 },
         { wch: 22 },
+        { wch: 16 },
         { wch: 12 },
         { wch: 14 },
         { wch: 30 },
         { wch: 8 },
         { wch: 16 },
         { wch: 20 },
+<<<<<<< HEAD
         { wch: 20 },
+=======
+        { wch: 55 },
+>>>>>>> FIXREPORTEINTEGRANTES
       ];
       ws['!cols'] = colWidths;
 
