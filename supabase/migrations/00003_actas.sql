@@ -44,7 +44,7 @@ BEGIN
       WHERE p.usuario_id = v_usuario_id
         AND m.nombre = p_modulo
         AND p.acciones @> ARRAY[p_accion]
-        AND (p.campamentos IS NULL OR p.campamentos @> ARRAY[p_campamento_id::TEXT])
+        AND (p.campamentos IS NULL OR p.campamentos @> ARRAY[p_campamento_id])
     );
   END IF;
 END;

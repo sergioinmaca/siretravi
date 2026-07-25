@@ -123,25 +123,34 @@ export async function obtenerActas(campamentoId: string): Promise<Acta[]> {
   return ((data || []) as Record<string, unknown>[]).map(mapActa);
 }
 
-export async function crearActa(acta: Omit<Acta, 'id' | 'codigo' | 'created_at'>): Promise<Acta | null> {
-  // Obtener siguiente código
+export async function crearActa(acta: Omit<Acta, 'id' | 'codigo' | 'created_at'>): Promise<Acta> {
   let secuencia = 1;
-  const { data: actual } = await supabase
+  const { data: actual, error: errContador } = await supabase
     .from('contadores_actas')
     .select('ultimo_secuencia')
     .eq('campamento_id', acta.campamento_id)
     .maybeSingle();
 
+  if (errContador) {
+    throw new Error(`Error al leer contador de actas: ${errContador.message}`);
+  }
+
   if (actual) {
     secuencia = (actual.ultimo_secuencia as number) + 1;
-    await supabase
+    const { error: errUpdate } = await supabase
       .from('contadores_actas')
       .update({ ultimo_secuencia: secuencia } as Record<string, unknown>)
       .eq('campamento_id', acta.campamento_id);
+    if (errUpdate) {
+      throw new Error(`Error al actualizar contador de actas: ${errUpdate.message}`);
+    }
   } else {
-    await supabase
+    const { error: errInsert } = await supabase
       .from('contadores_actas')
       .insert({ campamento_id: acta.campamento_id, ultimo_secuencia: 1 });
+    if (errInsert) {
+      throw new Error(`Error al insertar contador de actas: ${errInsert.message}`);
+    }
   }
 
   const codigo = `ACT-${String(secuencia).padStart(4, '0')}`;
@@ -160,9 +169,13 @@ export async function crearActa(acta: Omit<Acta, 'id' | 'codigo' | 'created_at'>
     .select()
     .single();
 
-  if (error || !data) {
+  if (error) {
     console.error('Error al crear acta:', error);
-    return null;
+    throw new Error(error.message);
+  }
+
+  if (!data) {
+    throw new Error('No se recibieron datos al crear el acta.');
   }
 
   return mapActa(data as Record<string, unknown>);
