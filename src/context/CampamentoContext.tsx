@@ -729,7 +729,9 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
     campamentoId: string,
     page: number,
     pageSize: number,
-    searchTerm?: string
+    searchTerm?: string,
+    sortColumn?: string,
+    sortDirection?: 'asc' | 'desc'
   ): Promise<{ data: Refugiado[]; count: number }> => {
     const from = (page - 1) * pageSize;
     const to = from + pageSize - 1;
@@ -737,9 +739,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
     let query = supabase
       .from('refugiados')
       .select('*', { count: 'exact' })
-      .eq('campamento_id', campamentoId)
-      .order('created_at', { ascending: true })
-      .range(from, to);
+      .eq('campamento_id', campamentoId);
 
     if (searchTerm?.trim()) {
       const term = searchTerm.trim();
@@ -751,6 +751,41 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         query = query.or(textFields);
       }
     }
+
+    if (sortColumn && sortDirection) {
+      const ascending = sortDirection === 'asc';
+
+      switch (sortColumn) {
+        case 'codigo':
+          query = query.order('codigo', { ascending });
+          break;
+        case 'cedula':
+          query = query.order('cedula', { ascending, nullsFirst: !ascending });
+          break;
+        case 'genero':
+          query = query.order('genero', { ascending });
+          break;
+        case 'apellidos':
+          query = query.order('apellidos', { ascending }).order('nombres', { ascending });
+          break;
+        case 'edad':
+          query = query.order('fecha_nacimiento', { ascending: !ascending });
+          break;
+        case 'jerarquia':
+          query = query.order('es_jefe_familia', { ascending });
+          break;
+        case 'cama':
+          query = query.order('nro_cama', { ascending });
+          break;
+        case 'estatus':
+          query = query.order('hogar_solidario', { ascending });
+          break;
+      }
+    } else {
+      query = query.order('created_at', { ascending: true });
+    }
+
+    query = query.range(from, to);
 
     const { data, error, count } = await query;
 
