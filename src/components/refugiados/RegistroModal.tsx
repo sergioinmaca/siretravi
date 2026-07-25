@@ -557,7 +557,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                       onChange={handleMascotaFotoChange}
                     />
                     <div>
-                      <p className="text-xs text-gray-400 mt-1">Formatos JPG, PNG o WEBP. Máx. 5 MB.</p>
+                      <p className="text-xs text-gray-400 mt-1">Formatos JPG o JPEG. Máx. 1 MB.</p>
                       {fotoUploadError && (
                         <p className="text-xs text-red-500 mt-1">{fotoUploadError}</p>
                       )}

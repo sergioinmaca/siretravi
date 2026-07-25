@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { supabase } from '../lib/supabase';
 
-const MAX_SIZE_MB = 5;
+const MAX_SIZE_MB = 1;
 const MAX_SIZE_BYTES = MAX_SIZE_MB * 1024 * 1024;
-const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-const ALLOWED_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
+const ALLOWED_TYPES = ['image/jpeg'];
+const ALLOWED_EXTENSIONS = ['jpg', 'jpeg'];
 
 export function useFotoUpload() {
   const [isUploading, setIsUploading] = useState(false);
@@ -16,7 +16,7 @@ export function useFotoUpload() {
     const extOk = ALLOWED_EXTENSIONS.includes(ext);
 
     if (!typeOk && !extOk) {
-      return `Formato no permitido. Use JPG, PNG o WEBP.`;
+      return `Formato no permitido. Use JPG o JPEG.`;
     }
     if (file.size > MAX_SIZE_BYTES) {
       return `La imagen excede el tama\u00f1o m\u00e1ximo de ${MAX_SIZE_MB} MB.`;
