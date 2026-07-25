@@ -338,11 +338,7 @@ export default function Refugiados() {
         { wch: 8 },
         { wch: 16 },
         { wch: 20 },
-<<<<<<< HEAD
-        { wch: 20 },
-=======
         { wch: 55 },
->>>>>>> FIXREPORTEINTEGRANTES
       ];
       ws['!cols'] = colWidths;
 
