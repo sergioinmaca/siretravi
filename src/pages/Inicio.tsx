@@ -144,6 +144,38 @@ export default function Inicio() {
     });
   }, [tenenciaData, totalJefes]);
 
+  // Datos para gráfico de dona – Situación de Estatus (todos los integrantes del campamento)
+  const totalIntegrantes = refugiadosDelCampamento.length;
+  const estatusData = useMemo(() => {
+    const categorias = ['PRESENTE', 'HOGAR SOLIDARIO', 'RETIRADO'];
+    const map = new Map<string, number>();
+    refugiadosDelCampamento.forEach(r => {
+      const s = ((r.hogar_solidario || '').trim().toUpperCase() || 'PRESENTE');
+      map.set(s, (map.get(s) || 0) + 1);
+    });
+    return categorias
+      .map(nombre => ({ nombre, cantidad: map.get(nombre) || 0 }))
+      .filter(c => c.cantidad > 0);
+  }, [refugiadosDelCampamento]);
+
+  const estatusColores: Record<string, string> = {
+    'PRESENTE': '#10B981',
+    'HOGAR SOLIDARIO': '#F59E0B',
+    'RETIRADO': '#EF4444',
+  };
+
+  const estatusSectores = useMemo(() => {
+    if (totalIntegrantes === 0) return [];
+    let offset = 0;
+    return estatusData.map(c => {
+      const pct = c.cantidad / totalIntegrantes;
+      const dash = pct * DONA_CIRCUMFERENCE;
+      const sector = { ...c, pct, dash, offset };
+      offset += dash;
+      return sector;
+    });
+  }, [estatusData, totalIntegrantes]);
+
   // Calcular ranking de procedencias (solo jefes de familia)
   const procedenciasMap = new Map<string, number>();
   jefesFamilia.forEach(r => {
@@ -681,58 +713,114 @@ export default function Inicio() {
         </div>
       </div>
 
-      {/* Dashboard: Tenencia de Vivienda + Ranking de Procedencias */}
+      {/* Dashboard: Tenencia de Vivienda + Estatus | Ranking de Procedencias */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-        {/* COLUMNA IZQUIERDA: Grafico de Dona – Tenencia de Vivienda */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="w-1 h-6 bg-caracas-red rounded-full"></div>
-            <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wider">Tenencia de Vivienda</h2>
-          </div>
+        {/* COLUMNA IZQUIERDA: Tenencia de Vivienda + Situación de Estatus apilados */}
+        <div className="flex flex-col gap-6">
 
-          {tenenciaData.length > 0 ? (
-            <div className="flex items-center gap-6">
-              <div className="relative w-40 h-40 shrink-0">
-                <svg viewBox="0 0 200 200" className="w-full h-full -rotate-90">
-                  <circle cx="100" cy="100" r={DONA_RADIUS} fill="none" stroke="#F3F4F6" strokeWidth="28" />
-                  {donaSectores.map(s => (
-                    <circle
-                      key={s.nombre}
-                      cx="100" cy="100" r={DONA_RADIUS}
-                      fill="none"
-                      stroke={tenenciaColores[s.nombre] || '#9CA3AF'}
-                      strokeWidth="28"
-                      strokeDasharray={`${s.dash} ${DONA_CIRCUMFERENCE - s.dash}`}
-                      strokeDashoffset={-s.offset}
-                      strokeLinecap="butt"
-                    />
+          {/* Grafico de Dona – Tenencia de Vivienda */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center gap-2 mb-6">
+              <div className="w-1 h-6 bg-caracas-red rounded-full"></div>
+              <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wider">Tenencia de Vivienda</h2>
+            </div>
+
+            {tenenciaData.length > 0 ? (
+              <div className="flex items-center gap-6">
+                <div className="relative w-40 h-40 shrink-0">
+                  <svg viewBox="0 0 200 200" className="w-full h-full -rotate-90">
+                    <circle cx="100" cy="100" r={DONA_RADIUS} fill="none" stroke="#F3F4F6" strokeWidth="28" />
+                    {donaSectores.map(s => (
+                      <circle
+                        key={s.nombre}
+                        cx="100" cy="100" r={DONA_RADIUS}
+                        fill="none"
+                        stroke={tenenciaColores[s.nombre] || '#9CA3AF'}
+                        strokeWidth="28"
+                        strokeDasharray={`${s.dash} ${DONA_CIRCUMFERENCE - s.dash}`}
+                        strokeDashoffset={-s.offset}
+                        strokeLinecap="butt"
+                      />
+                    ))}
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-2xl font-bold text-gray-800">{totalJefes}</span>
+                    <span className="text-xs text-gray-400">familias</span>
+                  </div>
+                </div>
+                <div className="flex-1 space-y-2.5 min-w-0">
+                  {tenenciaData.map(c => (
+                    <div key={c.nombre} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: tenenciaColores[c.nombre] || '#9CA3AF' }} />
+                        <span className="text-gray-600 truncate">{c.nombre}</span>
+                      </div>
+                      <span className="font-semibold text-gray-800 tabular-nums shrink-0 ml-2">
+                        {c.cantidad} <span className="text-gray-400 font-normal">({((c.cantidad / totalJefes) * 100).toFixed(1)}%)</span>
+                      </span>
+                    </div>
                   ))}
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-2xl font-bold text-gray-800">{totalJefes}</span>
-                  <span className="text-xs text-gray-400">familias</span>
                 </div>
               </div>
-              <div className="flex-1 space-y-2.5 min-w-0">
-                {tenenciaData.map(c => (
-                  <div key={c.nombre} className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: tenenciaColores[c.nombre] || '#9CA3AF' }} />
-                      <span className="text-gray-600 truncate">{c.nombre}</span>
-                    </div>
-                    <span className="font-semibold text-gray-800 tabular-nums shrink-0 ml-2">
-                      {c.cantidad} <span className="text-gray-400 font-normal">({((c.cantidad / totalJefes) * 100).toFixed(1)}%)</span>
-                    </span>
-                  </div>
-                ))}
+            ) : (
+              <div className="text-center py-10 text-gray-400">
+                <p className="font-medium">No hay jefes de familia registrados.</p>
               </div>
+            )}
+          </div>
+
+          {/* Grafico de Dona – Situación de Estatus (todos los integrantes) */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+            <div className="flex items-center gap-2 mb-6">
+              <div className="w-1 h-6 bg-amber-500 rounded-full"></div>
+              <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wider">Situación de Estatus</h2>
             </div>
-          ) : (
-            <div className="text-center py-10 text-gray-400">
-              <p className="font-medium">No hay jefes de familia registrados.</p>
-            </div>
-          )}
+
+            {estatusData.length > 0 ? (
+              <div className="flex items-center gap-6">
+                <div className="relative w-40 h-40 shrink-0">
+                  <svg viewBox="0 0 200 200" className="w-full h-full -rotate-90">
+                    <circle cx="100" cy="100" r={DONA_RADIUS} fill="none" stroke="#F3F4F6" strokeWidth="28" />
+                    {estatusSectores.map(s => (
+                      <circle
+                        key={s.nombre}
+                        cx="100" cy="100" r={DONA_RADIUS}
+                        fill="none"
+                        stroke={estatusColores[s.nombre] || '#9CA3AF'}
+                        strokeWidth="28"
+                        strokeDasharray={`${s.dash} ${DONA_CIRCUMFERENCE - s.dash}`}
+                        strokeDashoffset={-s.offset}
+                        strokeLinecap="butt"
+                      />
+                    ))}
+                  </svg>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-2xl font-bold text-gray-800">{totalIntegrantes}</span>
+                    <span className="text-xs text-gray-400">integrantes</span>
+                  </div>
+                </div>
+                <div className="flex-1 space-y-2.5 min-w-0">
+                  {estatusData.map(c => (
+                    <div key={c.nombre} className="flex items-center justify-between text-sm">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: estatusColores[c.nombre] || '#9CA3AF' }} />
+                        <span className="text-gray-600 truncate capitalize">{c.nombre.charAt(0) + c.nombre.slice(1).toLowerCase()}</span>
+                      </div>
+                      <span className="font-semibold text-gray-800 tabular-nums shrink-0 ml-2">
+                        {c.cantidad} <span className="text-gray-400 font-normal">({((c.cantidad / totalIntegrantes) * 100).toFixed(1)}%)</span>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-10 text-gray-400">
+                <p className="font-medium">No hay integrantes registrados.</p>
+              </div>
+            )}
+          </div>
+
         </div>
 
         {/* COLUMNA DERECHA: Ranking de Procedencias */}
