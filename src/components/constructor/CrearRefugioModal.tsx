@@ -500,7 +500,7 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
                         Utiliza las herramientas para dibujar las paredes y luego coloca los iconos de camas sobre el plano.
                       </p>
                       <CroquisEditor
-                        width={1100}
+                        width={1300}
                         height={700}
                         maxLiteras={modulo.literas}
                         maxIndividuales={modulo.camas_individuales}
