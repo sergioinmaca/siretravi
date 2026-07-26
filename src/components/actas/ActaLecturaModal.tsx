@@ -4,6 +4,7 @@ import { useCampamento } from '../../context/CampamentoContext';
 import { obtenerTipoActa } from '../../lib/actas';
 import { formatAge } from '../../lib/formatAge';
 import { formatCedula } from '../../lib/formatCedula';
+import { parseDateSafe } from '../../lib/formatDate';
 import ActaPreview from './ActaPreview';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
@@ -66,7 +67,7 @@ export default function ActaLecturaModal({ isOpen, onClose, acta, refugiado }: A
       : null;
 
   const sistemaVars: Record<string, string> = {
-    fecha_actual: new Date(acta.fecha).toLocaleDateString('es-ES', {
+    fecha_actual: parseDateSafe(acta.fecha).toLocaleDateString('es-ES', {
       day: 'numeric', month: 'long', year: 'numeric',
     }),
     nombre_campamento: campamentoSeleccionado?.nombre || '',
