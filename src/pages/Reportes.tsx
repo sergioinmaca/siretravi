@@ -94,8 +94,8 @@ export default function Reportes() {
     let discapacitados = 0;
 
     // Brackets NNA
-    let nna_0_3 = 0;
-    let nna_4_6 = 0;
+    let nna_0_2 = 0;
+    let nna_3_6 = 0;
     let nna_7_12 = 0;
     let nna_adolescentes = 0;
     let nna_embarazadas = 0;
@@ -140,8 +140,8 @@ export default function Reportes() {
         if (r.genero) nna_masculino++;
         else nna_femenina++;
 
-        if (edad <= 3) nna_0_3++;
-        else if (edad <= 6) nna_4_6++;
+        if (edad <= 2) nna_0_2++;
+        else if (edad <= 6) nna_3_6++;
         else if (edad <= 12) nna_7_12++;
         else if (edad <= 17) nna_adolescentes++;
 
@@ -188,8 +188,8 @@ export default function Reportes() {
       familiasLaGuaira,
       familiasCaracas,
       totalFamilias,
-      nna_0_3,
-      nna_4_6,
+      nna_0_2,
+      nna_3_6,
       nna_7_12,
       nna_adolescentes,
       nna_embarazadas,
@@ -722,7 +722,7 @@ export default function Reportes() {
           <div>
             <h3 className="text-lg font-bold text-slate-800 mb-2">Reporte de Niños, Niñas y Adolescentes</h3>
             <p className="text-sm text-slate-500 leading-relaxed">
-              Resumen enfocado a la población infantil y juvenil menor de 18 años. Clasifica por rangos de edad (0-3, 4-6, 7-12, adolescentes) y detecta alertas críticas como discapacidad e infancia gestante.
+              Resumen enfocado a la población infantil y juvenil menor de 18 años. Clasifica por rangos de edad (0-2, 3-6, 7-12, adolescentes) y detecta alertas críticas como discapacidad e infancia gestante.
             </p>
           </div>
           <div className="flex gap-4 mt-6 pt-4 border-t border-slate-50">
@@ -1138,15 +1138,15 @@ export default function Reportes() {
                     </thead>
                     <tbody>
                       <tr className="border-b border-slate-300">
-                        <td className="py-[4.5px] px-0.5 text-base font-bold tracking-wide">0-3 AÑOS</td>
+                        <td className="py-[4.5px] px-0.5 text-base font-bold tracking-wide">0-2 AÑOS</td>
                         <td className="py-[4.5px] px-0.5 text-lg font-black text-center text-[#C21807] w-24">
-                          {String(datosReporte.nna_0_3).padStart(2, '0')}
+                          {String(datosReporte.nna_0_2).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="border-b border-slate-300">
-                        <td className="py-[4.5px] px-0.5 text-base font-bold tracking-wide">4-6 AÑOS</td>
+                        <td className="py-[4.5px] px-0.5 text-base font-bold tracking-wide">3-6 AÑOS</td>
                         <td className="py-[4.5px] px-0.5 text-lg font-black text-center text-[#C21807] w-24">
-                          {String(datosReporte.nna_4_6).padStart(2, '0')}
+                          {String(datosReporte.nna_3_6).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="border-b border-slate-300">
