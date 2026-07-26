@@ -75,7 +75,7 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
 
   // Cuando cambia la cantidad de modulos, generar/destruir subformularios
   const handleCantidadModulosChange = (val: number) => {
-    const n = Math.max(0, Math.min(val, 20)); // maximo 20 modulos
+    const n = Math.max(0, Math.min(val, 25)); // maximo 25 modulos
     setCantidadModulos(n);
     setModulos(prev => {
       if (n > prev.length) {
@@ -289,7 +289,7 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
                     required
                     type="number"
                     min={0}
-                    max={20}
+                    max={25}
                     value={cantidadModulos || ''}
                     onChange={e => handleCantidadModulosChange(Number(e.target.value))}
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all"
