@@ -82,11 +82,11 @@ export default function Inicio() {
   const adultoMayorH = adultoMayor.filter(r => r.genero === true).length;
   const adultoMayorM = adultoMayor.filter(r => r.genero === false).length;
 
-  const lactantes = refugiadosConEdad.filter(r => r.edad >= 0 && r.edad <= 3);
+  const lactantes = refugiadosConEdad.filter(r => r.edad >= 0 && r.edad <= 2);
   const lactantesH = lactantes.filter(r => r.genero === true).length;
   const lactantesM = lactantes.filter(r => r.genero === false).length;
 
-  const noLactantes = refugiadosConEdad.filter(r => r.edad >= 4 && r.edad <= 11);
+  const noLactantes = refugiadosConEdad.filter(r => r.edad >= 3 && r.edad <= 11);
   const noLactantesH = noLactantes.filter(r => r.genero === true).length;
   const noLactantesM = noLactantes.filter(r => r.genero === false).length;
 
@@ -640,7 +640,7 @@ export default function Inicio() {
               </div>
             </div>
             <p className="text-xs text-gray-400">
-              0 a 3 años · <span className="text-blue-600 font-medium">{lactantesH} H</span> · <span className="text-pink-600 font-medium">{lactantesM} M</span>
+              0 a 2 años · <span className="text-blue-600 font-medium">{lactantesH} H</span> · <span className="text-pink-600 font-medium">{lactantesM} M</span>
             </p>
           </div>
 
@@ -656,7 +656,7 @@ export default function Inicio() {
               </div>
             </div>
             <p className="text-xs text-gray-400">
-              4 a 11 años · <span className="text-blue-600 font-medium">{noLactantesH} H</span> · <span className="text-pink-600 font-medium">{noLactantesM} M</span>
+              3 a 11 años · <span className="text-blue-600 font-medium">{noLactantesH} H</span> · <span className="text-pink-600 font-medium">{noLactantesM} M</span>
             </p>
           </div>
         </div>
