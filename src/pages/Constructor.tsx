@@ -1,13 +1,14 @@
 import { useState, useMemo } from 'react';
-import { Tent, BedDouble, MapPin, Plus, ShieldOff } from 'lucide-react';
+import { Tent, BedDouble, MapPin, Plus, ShieldOff, Trash2, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
 import type { Campamento } from '../types';
 import CrearRefugioModal from '../components/constructor/CrearRefugioModal';
+import { buscarFotosHuerfanas, eliminarFotosHuerfanas } from '../hooks/useFotoUpload';
 
 export default function Constructor() {
   const { campamentos } = useCampamento();
-  const { tienePermiso, obtenerCampamentosPermitidos } = useAuth();
+  const { tienePermiso, obtenerCampamentosPermitidos, usuarioActual } = useAuth();
 
   const campamentosPermitidos = useMemo(() => {
     const idsPermitidos = obtenerCampamentosPermitidos('Constructor');
@@ -17,10 +18,62 @@ export default function Constructor() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCamp, setEditingCamp] = useState<Campamento | null>(null);
 
+  const [limpiando, setLimpiando] = useState(false);
+  const [resultadoLimpieza, setResultadoLimpieza] = useState<{
+    tipo: 'exito' | 'error';
+    mensaje: string;
+  } | null>(null);
+
+  const esMaster = usuarioActual?.es_master === true;
+
   const calcularTotalCamas = (campamento: typeof campamentos[0]) => {
     return campamento.modulos.reduce((total, c) => {
       return total + (c.literas * 2) + c.camas_individuales + (c.camas_duplex * 2);
     }, 0);
+  };
+
+  const handleLimpiarHuerfanas = async () => {
+    setLimpiando(true);
+    setResultadoLimpieza(null);
+    try {
+      const huerfanas = await buscarFotosHuerfanas();
+      if (huerfanas.length === 0) {
+        setResultadoLimpieza({ tipo: 'exito', mensaje: 'No se encontraron fotos huérfanas. Todo está limpio.' });
+        setLimpiando(false);
+        return;
+      }
+
+      const confirmar = window.confirm(
+        `Se encontraron ${huerfanas.length} foto(s) huérfana(s) en Storage. ¿Desea eliminarlas todas?`
+      );
+      if (!confirmar) {
+        setLimpiando(false);
+        return;
+      }
+
+      const paths = huerfanas.map(h => h.storage_path);
+      const { eliminadas, fallidas } = await eliminarFotosHuerfanas(paths);
+
+      if (fallidas.length > 0) {
+        setResultadoLimpieza({
+          tipo: 'error',
+          mensaje: `Se eliminaron ${eliminadas} foto(s), pero ${fallidas.length} no pudieron eliminarse. Revise la consola.`,
+        });
+      } else {
+        setResultadoLimpieza({
+          tipo: 'exito',
+          mensaje: `Se eliminaron ${eliminadas} foto(s) huérfana(s) correctamente.`,
+        });
+      }
+    } catch (err) {
+      console.error('[Constructor] Error al limpiar huérfanas:', err);
+      setResultadoLimpieza({
+        tipo: 'error',
+        mensaje: 'Error al buscar o eliminar fotos huérfanas. Verifique que la función RPC esté instalada en Supabase.',
+      });
+    } finally {
+      setLimpiando(false);
+    }
   };
 
   return (
@@ -45,6 +98,53 @@ export default function Constructor() {
           </button>
         )}
       </div>
+
+      {esMaster && (
+        <div className="bg-white rounded-2xl shadow-sm border border-amber-200 overflow-hidden">
+          <div className="bg-amber-50/80 border-b border-amber-100 px-6 py-4 flex items-center gap-3">
+            <div className="p-2 bg-amber-100 rounded-lg">
+              <Trash2 size={18} className="text-amber-600" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-800">Mantenimiento del Sistema</h3>
+              <p className="text-xs text-gray-500">Fotos huérfanas en Storage: archivos sin referencia en la base de datos.</p>
+            </div>
+          </div>
+          <div className="p-6">
+            {resultadoLimpieza && (
+              <div className={`p-4 rounded-xl flex items-center gap-3 mb-4 ${
+                resultadoLimpieza.tipo === 'exito'
+                  ? 'bg-green-50 border border-green-200 text-green-800'
+                  : 'bg-red-50 border border-red-200 text-red-800'
+              }`}>
+                {resultadoLimpieza.tipo === 'exito' ? (
+                  <CheckCircle2 size={20} className="text-green-600 shrink-0" />
+                ) : (
+                  <AlertCircle size={20} className="text-red-600 shrink-0" />
+                )}
+                <p className="font-medium text-sm">{resultadoLimpieza.mensaje}</p>
+              </div>
+            )}
+            <button
+              onClick={handleLimpiarHuerfanas}
+              disabled={limpiando}
+              className="flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-5 py-2.5 rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {limpiando ? (
+                <>
+                  <Loader2 size={18} className="animate-spin" />
+                  Escaneando...
+                </>
+              ) : (
+                <>
+                  <Trash2 size={18} />
+                  Buscar y eliminar fotos huérfanas
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Grid de Cards */}
       {campamentosPermitidos.length === 0 ? (

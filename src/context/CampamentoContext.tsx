@@ -516,6 +516,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase
       .from('refugiados')
       .insert({
+        id: nuevo.id || undefined,
         campamento_id: nuevo.campamento_id,
         familia_id: nuevo.familia_id || null,
         codigo,
@@ -563,6 +564,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         registro_captahuella: nuevo.registro_captahuella,
         registro_unico_vivienda: nuevo.registro_unico_vivienda,
         foto_url: nuevo.foto_url || null,
+        mascota_foto_url: nuevo.mascota_foto_url || null,
       })
       .select()
       .single();
@@ -620,6 +622,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       registro_captahuella: data.registro_captahuella || false,
       registro_unico_vivienda: data.registro_unico_vivienda || false,
       foto_url: (data.foto_url as string) || undefined,
+      mascota_foto_url: (data.mascota_foto_url as string) || undefined,
     };
     console.log('[DEBUG-FAMILIA] agregarRefugiado — refugiadoCreado.familia_id:', refugiadoCreado.familia_id, '| id:', refugiadoCreado.id);
     setRefugiados(prev => {

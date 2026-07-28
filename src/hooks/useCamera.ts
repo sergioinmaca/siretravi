@@ -117,32 +117,37 @@ export function useCamera() {
       const ctx = canvas.getContext('2d');
       if (!ctx) return null;
 
-      const scale = 2;
+      try {
+        const scale = 2;
 
-      if (cropRect) {
-        canvas.width = cropRect.w * scale;
-        canvas.height = cropRect.h * scale;
-        ctx.drawImage(
-          video,
-          cropRect.x, cropRect.y, cropRect.w, cropRect.h,
-          0, 0, cropRect.w * scale, cropRect.h * scale
-        );
-      } else {
-        canvas.width = video.videoWidth * scale;
-        canvas.height = video.videoHeight * scale;
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        if (cropRect) {
+          canvas.width = cropRect.w * scale;
+          canvas.height = cropRect.h * scale;
+          ctx.drawImage(
+            video,
+            cropRect.x, cropRect.y, cropRect.w, cropRect.h,
+            0, 0, cropRect.w * scale, cropRect.h * scale
+          );
+        } else {
+          canvas.width = video.videoWidth * scale;
+          canvas.height = video.videoHeight * scale;
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        }
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+        const byteString = atob(dataUrl.split(',')[1]);
+        const ab = new ArrayBuffer(byteString.length);
+        const ia = new Uint8Array(ab);
+        for (let i = 0; i < byteString.length; i++) {
+          ia[i] = byteString.charCodeAt(i);
+        }
+        const blob = new Blob([ab], { type: 'image/jpeg' });
+
+        return new File([blob], `camara_${Date.now()}.jpg`, { type: 'image/jpeg' });
+      } catch (err) {
+        console.error('[useCamera] Error al capturar foto:', err);
+        return null;
       }
-
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
-      const byteString = atob(dataUrl.split(',')[1]);
-      const ab = new ArrayBuffer(byteString.length);
-      const ia = new Uint8Array(ab);
-      for (let i = 0; i < byteString.length; i++) {
-        ia[i] = byteString.charCodeAt(i);
-      }
-      const blob = new Blob([ab], { type: 'image/jpeg' });
-
-      return new File([blob], `camara_${Date.now()}.jpg`, { type: 'image/jpeg' });
     },
     []
   );

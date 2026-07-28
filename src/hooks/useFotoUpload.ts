@@ -60,12 +60,16 @@ export function useFotoUpload() {
     }
   };
 
-  const deleteStorageFile = async (url: string | null | undefined) => {
-    if (!url) return;
+  const deleteStorageFile = async (url: string | null | undefined): Promise<boolean> => {
+    if (!url) return true;
     const match = url.match(/\/fotos-integrantes\/(.+)$/);
-    if (match) {
-      await supabase.storage.from('fotos-integrantes').remove([match[1]]);
+    if (!match) return true;
+    const { error } = await supabase.storage.from('fotos-integrantes').remove([match[1]]);
+    if (error) {
+      console.error('[useFotoUpload] Error al eliminar archivo de Storage:', error, '| path:', match[1]);
+      return false;
     }
+    return true;
   };
 
   const leerArchivoComoDataURL = (file: File): Promise<string> => {
@@ -128,4 +132,37 @@ export function useFotoUpload() {
     leerArchivoComoDataURL,
     convertirAJPEG,
   };
+}
+
+export interface FotoHuerfana {
+  storage_path: string;
+  campamento_id: string;
+  refugiado_id: string;
+  tipo: 'persona' | 'mascota';
+}
+
+export async function buscarFotosHuerfanas(): Promise<FotoHuerfana[]> {
+  const { data, error } = await supabase.rpc('listar_fotos_huerfanas');
+  if (error) {
+    console.error('[buscarFotosHuerfanas] Error al consultar RPC:', error);
+    throw error;
+  }
+  return (data || []) as FotoHuerfana[];
+}
+
+export async function eliminarFotosHuerfanas(paths: string[]): Promise<{ eliminadas: number; fallidas: string[] }> {
+  let eliminadas = 0;
+  const fallidas: string[] = [];
+
+  for (const path of paths) {
+    const { error } = await supabase.storage.from('fotos-integrantes').remove([path]);
+    if (error) {
+      console.error('[eliminarFotosHuerfanas] Error al eliminar:', path, error);
+      fallidas.push(path);
+    } else {
+      eliminadas++;
+    }
+  }
+
+  return { eliminadas, fallidas };
 }

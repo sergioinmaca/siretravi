@@ -678,16 +678,28 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
 
   const handleCameraCapture = async (file: File) => {
     setUploadError(null);
-    const dataUrl = await leerArchivoComoDataURL(file);
+    const jpeg = await convertirAJPEG(file);
+    const error = validarArchivo(jpeg);
+    if (error) {
+      setUploadError(error);
+      return;
+    }
+    setFotoFile(jpeg);
+    const dataUrl = await leerArchivoComoDataURL(jpeg);
     setPreviewUrl(dataUrl);
-    setFotoFile(file);
   };
 
   const handleMascotaCameraCapture = async (file: File) => {
     setUploadError(null);
-    const dataUrl = await leerArchivoComoDataURL(file);
+    const jpeg = await convertirAJPEG(file);
+    const error = validarArchivo(jpeg);
+    if (error) {
+      setUploadError(error);
+      return;
+    }
+    setMascotaFotoFile(jpeg);
+    const dataUrl = await leerArchivoComoDataURL(jpeg);
     setMascotaPreviewUrl(dataUrl);
-    setMascotaFotoFile(file);
   };
 
   const handleGuardar = async () => {

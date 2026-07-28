@@ -247,28 +247,43 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
 
   const handleCameraCapture = async (file: File) => {
     setFotoUploadError(null);
-    setFotoFile(file);
-    const dataUrl = await leerArchivoComoDataURL(file);
+    const jpeg = await convertirAJPEG(file);
+    const error = validarArchivo(jpeg);
+    if (error) {
+      setFotoUploadError(error);
+      return;
+    }
+    setFotoFile(jpeg);
+    const dataUrl = await leerArchivoComoDataURL(jpeg);
     setFotoPreview(dataUrl);
   };
 
   const handleMascotaCameraCapture = async (file: File) => {
     setFotoUploadError(null);
-    setMascotaFotoFile(file);
-    const dataUrl = await leerArchivoComoDataURL(file);
+    const jpeg = await convertirAJPEG(file);
+    const error = validarArchivo(jpeg);
+    if (error) {
+      setFotoUploadError(error);
+      return;
+    }
+    setMascotaFotoFile(jpeg);
+    const dataUrl = await leerArchivoComoDataURL(jpeg);
     setMascotaFotoPreview(dataUrl);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!campamentoSeleccionado || isSubmitting) return;
+    if (!campamentoSeleccionado || submittingRef.current) return;
+
+    submittingRef.current = true;
 
     if (isEditing) {
       const confirmar = window.confirm('¿Estás seguro de que deseas modificar este registro?');
-      if (!confirmar) return;
+      if (!confirmar) {
+        submittingRef.current = false;
+        return;
+      }
     }
-
-    submittingRef.current = true;
 
     setShowError(false);
     setShowSuccess(false);
@@ -309,8 +324,43 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
 
     console.log('[DEBUG-FAMILIA] RegistroModal.handleSubmit — finalFamiliaId:', finalFamiliaId, '| esJefeFamilia:', formData.esJefeFamilia);
 
+    let refugiadoId = refugiadoToEdit?.id || '';
+    const campamentoId = campamentoSeleccionado.id;
+
+    let fotoUrlParaInsert: string | null = null;
+    let mascotaFotoUrlParaInsert: string | null = null;
+
+    if (!isEditing && (fotoFile || mascotaFotoFile)) {
+      refugiadoId = crypto.randomUUID();
+
+      if (fotoFile) {
+        const url = await uploadFotoHook(fotoFile, campamentoId, refugiadoId);
+        if (!url) {
+          setShowError(true);
+          setIsSubmitting(false);
+          submittingRef.current = false;
+          if (familiaCreadaEnEsteSubmit) await eliminarFamilia(familiaCreadaEnEsteSubmit);
+          return;
+        }
+        fotoUrlParaInsert = url;
+      }
+
+      if (mascotaFotoFile) {
+        const url = await uploadFotoHook(mascotaFotoFile, campamentoId, refugiadoId, 'mascota');
+        if (!url) {
+          if (fotoUrlParaInsert) await deleteStorageFile(fotoUrlParaInsert);
+          setShowError(true);
+          setIsSubmitting(false);
+          submittingRef.current = false;
+          if (familiaCreadaEnEsteSubmit) await eliminarFamilia(familiaCreadaEnEsteSubmit);
+          return;
+        }
+        mascotaFotoUrlParaInsert = url;
+      }
+    }
+
     const payload: Refugiado = {
-      id: refugiadoToEdit?.id || '',
+      id: refugiadoId,
       campamento_id: campamentoSeleccionado.id,
       familia_id: finalFamiliaId,
       codigo: refugiadoToEdit?.codigo || '',
@@ -353,13 +403,11 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       hogar_solidario: formData.hogarSolidario,
       registro_captahuella: formData.registroCaptahuella === 'SI',
       registro_unico_vivienda: formData.registroUnicoVivienda === 'SI',
-      foto_url: refugiadoToEdit?.foto_url || undefined,
-      mascota_foto_url: refugiadoToEdit?.mascota_foto_url || undefined,
+      foto_url: fotoUrlParaInsert || refugiadoToEdit?.foto_url || undefined,
+      mascota_foto_url: mascotaFotoUrlParaInsert || refugiadoToEdit?.mascota_foto_url || undefined,
     };
 
     let guardadoExitoso = false;
-    let refugiadoId = refugiadoToEdit?.id || '';
-    const campamentoId = campamentoSeleccionado.id;
 
     console.log('[DEBUG-FAMILIA] RegistroModal.handleSubmit — payload.familia_id:', payload.familia_id, '| llamando a', isEditing ? 'actualizarRefugiado' : 'agregarRefugiado');
 
@@ -374,6 +422,8 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     }
 
     if (!guardadoExitoso) {
+      if (fotoUrlParaInsert) await deleteStorageFile(fotoUrlParaInsert);
+      if (mascotaFotoUrlParaInsert) await deleteStorageFile(mascotaFotoUrlParaInsert);
       if (familiaCreadaEnEsteSubmit) {
         await eliminarFamilia(familiaCreadaEnEsteSubmit);
       }
@@ -389,52 +439,54 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     let mascotaFotoChanged = false;
     let fotoUploadFailed = false;
 
-    if (fotoFile && refugiadoId) {
-      const foto_url = await uploadFotoHook(fotoFile, campamentoId, refugiadoId);
-      if (foto_url) {
-        finalFotoUrl = foto_url;
+    if (isEditing) {
+      if (fotoFile && refugiadoId) {
+        const foto_url = await uploadFotoHook(fotoFile, campamentoId, refugiadoId);
+        if (foto_url) {
+          finalFotoUrl = foto_url;
+          fotoChanged = true;
+          if (refugiadoToEdit?.foto_url) {
+            await deleteStorageFile(refugiadoToEdit.foto_url);
+          }
+        } else {
+          fotoUploadFailed = true;
+        }
+      }
+
+      if (mascotaFotoFile && refugiadoId) {
+        const mascota_foto_url = await uploadFotoHook(mascotaFotoFile, campamentoId, refugiadoId, 'mascota');
+        if (mascota_foto_url) {
+          finalMascotaFotoUrl = mascota_foto_url;
+          mascotaFotoChanged = true;
+          if (refugiadoToEdit?.mascota_foto_url) {
+            await deleteStorageFile(refugiadoToEdit.mascota_foto_url);
+          }
+        } else {
+          fotoUploadFailed = true;
+        }
+      }
+
+      if (!fotoFile && !fotoPreview && refugiadoToEdit?.foto_url) {
+        finalFotoUrl = null;
         fotoChanged = true;
-        if (refugiadoToEdit?.foto_url) {
-          await deleteStorageFile(refugiadoToEdit.foto_url);
-        }
-      } else {
-        fotoUploadFailed = true;
+        await deleteStorageFile(refugiadoToEdit.foto_url);
       }
-    }
 
-    if (mascotaFotoFile && refugiadoId) {
-      const mascota_foto_url = await uploadFotoHook(mascotaFotoFile, campamentoId, refugiadoId, 'mascota');
-      if (mascota_foto_url) {
-        finalMascotaFotoUrl = mascota_foto_url;
+      if (!mascotaFotoFile && !mascotaFotoPreview && refugiadoToEdit?.mascota_foto_url) {
+        finalMascotaFotoUrl = null;
         mascotaFotoChanged = true;
-        if (refugiadoToEdit?.mascota_foto_url) {
-          await deleteStorageFile(refugiadoToEdit.mascota_foto_url);
-        }
-      } else {
-        fotoUploadFailed = true;
+        await deleteStorageFile(refugiadoToEdit.mascota_foto_url);
       }
-    }
 
-    if (!fotoFile && !fotoPreview && refugiadoToEdit?.foto_url) {
-      finalFotoUrl = null;
-      fotoChanged = true;
-      await deleteStorageFile(refugiadoToEdit.foto_url);
-    }
+      if (fotoChanged || mascotaFotoChanged) {
+        const fotoUpdate: { foto_url?: string | null; mascota_foto_url?: string | null } = {};
+        if (fotoChanged) fotoUpdate.foto_url = finalFotoUrl;
+        if (mascotaFotoChanged) fotoUpdate.mascota_foto_url = finalMascotaFotoUrl;
 
-    if (!mascotaFotoFile && !mascotaFotoPreview && refugiadoToEdit?.mascota_foto_url) {
-      finalMascotaFotoUrl = null;
-      mascotaFotoChanged = true;
-      await deleteStorageFile(refugiadoToEdit.mascota_foto_url);
-    }
-
-    if (fotoChanged || mascotaFotoChanged) {
-      const fotoUpdate: { foto_url?: string | null; mascota_foto_url?: string | null } = {};
-      if (fotoChanged) fotoUpdate.foto_url = finalFotoUrl;
-      if (mascotaFotoChanged) fotoUpdate.mascota_foto_url = finalMascotaFotoUrl;
-
-      const ok = await actualizarFotoRefugiado(refugiadoId, fotoUpdate);
-      if (!ok) {
-        fotoUploadFailed = true;
+        const ok = await actualizarFotoRefugiado(refugiadoId, fotoUpdate);
+        if (!ok) {
+          fotoUploadFailed = true;
+        }
       }
     }
 
