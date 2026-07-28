@@ -3,7 +3,7 @@ import {
   X, User, Users, MapPin, Accessibility, Shirt,
   Calendar, Phone, Briefcase, GraduationCap, Heart,
   PawPrint, AlertTriangle, Baby, Stethoscope, FileText, Loader2, Camera,
-  Save, Trash2, ChevronLeft, ChevronRight, Activity, Gift, HeartHandshake,
+  Save, Trash2, ChevronLeft, ChevronRight, ChevronDown, Activity, Gift, HeartHandshake,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { useFotoUpload } from '../../hooks/useFotoUpload';
@@ -33,6 +33,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
   const [isSaving, setIsSaving] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [pagina, setPagina] = useState<1 | 2>(1);
+  const [showMoreBasic, setShowMoreBasic] = useState(false);
   const [atenciones, setAtenciones] = useState<AtencionMedica[]>([]);
   const [loadingRegistros, setLoadingRegistros] = useState(false);
 
@@ -828,8 +829,8 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
   });
 
   return (<>
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-50 flex flex-col md:items-center md:justify-center md:p-4 md:bg-gray-900/40 md:backdrop-blur-sm">
+      <div className="bg-white w-full h-full pt-4 md:pt-0 md:h-auto md:max-h-[90vh] md:max-w-4xl md:rounded-3xl md:shadow-2xl flex flex-col overflow-hidden animate-slide-up relative">
         {/* Hidden file inputs for photo upload */}
         <input
           ref={fileInputRef}
@@ -846,26 +847,38 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
           onChange={handleSelectMascotaFoto}
         />
 
-        {/* Header */}
-        <div className="px-8 py-5 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white">
+        {/* Header — Desktop */}
+        <div className="hidden md:flex px-8 py-5 border-b border-gray-100 items-center justify-between shrink-0 bg-white">
           <div className="flex-1 text-center ml-8">
-            <h2 className="text-xl font-bold text-gray-800">Ficha del Integrante</h2>
+            <h2 className="text-[21px] font-semibold md:text-xl md:font-bold text-gray-800">Ficha del Integrante</h2>
             <p className="text-sm text-gray-500 mt-0.5">
               {refugiado.apellidos}, {refugiado.nombres} — Cód. {refugiado.codigo || '—'}
             </p>
           </div>
-          <button onClick={handleClose} className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition-colors shrink-0">
+          <button onClick={handleClose} className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition-colors shrink-0 hidden md:block">
             <X size={24} />
           </button>
         </div>
 
+        <button onClick={handleClose} className="absolute top-10 right-4 z-20 md:hidden p-2 bg-caracas-red hover:bg-red-800 rounded-full text-white transition-colors">
+          <X size={24} />
+        </button>
+
         {/* Body */}
-        <div className="p-8 overflow-y-auto flex-1 bg-gray-50/30 space-y-6">
+        <div className="px-2 py-4 pb-[72px] md:p-8 overflow-y-auto flex-1 bg-gray-50/30 space-y-6">
+
+          {/* Título móvil — scrollea con el contenido */}
+          <div className="md:hidden">
+            <h2 className="text-[21px] font-semibold text-gray-800">Ficha del Integrante</h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              {refugiado.apellidos}, {refugiado.nombres} — Cód. {refugiado.codigo || '—'}
+            </p>
+          </div>
 
           {pagina === 2 ? (
             /* ── Página 2: Atenciones, Beneficios y Donaciones ── */
             <div className="space-y-6">
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="bg-white rounded-2xl shadow-sm overflow-hidden md:border md:border-gray-100">
                 <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
                   <div className="p-2 bg-teal-100 rounded-lg">
                     <Activity size={18} className="text-teal-600" />
@@ -961,7 +974,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
             /* ── Página 1: Datos del Integrante ── */
             <div className="space-y-6">
             {/* Tarjeta 1: Datos Personales */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden md:border md:border-gray-100">
               <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
                 <div className="p-2 bg-caracas-blue/10 rounded-lg">
                   <User size={18} className="text-caracas-blue" />
@@ -969,7 +982,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
                 <h3 className="font-semibold text-gray-800">Datos Personales</h3>
             </div>
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="md:col-span-2 flex items-start gap-6">
+              <div className="md:col-span-2 flex items-start gap-1">
                 <div className="shrink-0">
                   {previewUrl ? (
                     <div className="relative group">
@@ -1031,7 +1044,6 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
                   )}
                 </div>
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FichaField label="Código" value={refugiado.codigo || '—'} />
                   <FichaField label="Cédula" value={formatCedula(refugiado.cedula) ?? 'S/N'} />
                   <FichaField label="Nombres" value={refugiado.nombres} />
                   <FichaField label="Apellidos" value={refugiado.apellidos} />
@@ -1048,21 +1060,35 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
                 icon={<Phone size={14} />}
                 value={refugiado.telefono?.toString() || '—'}
               />
-              <FichaField
-                label="Profesión / Ocupación"
-                icon={<Briefcase size={14} />}
-                value={refugiado.profesion || '—'}
-              />
-              <FichaField
-                label="Nivel Educativo"
-                icon={<GraduationCap size={14} />}
-                value={refugiado.nivel_educativo || '—'}
-              />
             </div>
+
+            <button
+              onClick={() => setShowMoreBasic(!showMoreBasic)}
+              className="w-full flex items-center justify-center gap-1.5 py-2 text-sm text-caracas-blue hover:bg-blue-50 rounded-lg transition-colors"
+            >
+              {showMoreBasic ? 'Ver menos' : 'Ver más'}
+              <ChevronDown size={16} className={`transition-transform duration-200 ${showMoreBasic ? 'rotate-180' : ''}`} />
+            </button>
+
+            {showMoreBasic && (
+              <div className="border-t border-gray-100 p-1 grid grid-cols-1 md:grid-cols-3 gap-6">
+                <FichaField label="Código" value={refugiado.codigo || '—'} />
+                <FichaField
+                  label="Nivel Educativo"
+                  icon={<GraduationCap size={14} />}
+                  value={refugiado.nivel_educativo || '—'}
+                />
+                <FichaField
+                  label="Profesión / Ocupación"
+                  icon={<Briefcase size={14} />}
+                  value={refugiado.profesion || '—'}
+                />
+              </div>
+            )}
           </div>
 
           {/* Tarjeta 2: Información Familiar */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden md:border md:border-gray-100">
             <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
               <div className="p-2 bg-caracas-green/10 rounded-lg">
                 <Users size={18} className="text-caracas-green" />
@@ -1085,7 +1111,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
           </div>
 
           {/* Tarjeta 3: Ubicación y Procedencia */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden md:border md:border-gray-100">
             <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
               <div className="p-2 bg-yellow-100 rounded-lg">
                 <MapPin size={18} className="text-yellow-600" />
@@ -1106,7 +1132,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
           </div>
 
           {/* Tarjeta 4: Información Adicional */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden md:border md:border-gray-100">
             <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
               <div className="p-2 bg-purple-100 rounded-lg">
                 <Accessibility size={18} className="text-purple-600" />
@@ -1115,46 +1141,56 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
             </div>
             <div className="p-6 space-y-4">
               <div className="flex flex-wrap gap-3">
-                <BadgeSiNo
-                  label="Discapacidad"
-                  value={refugiado.discapacidad}
-                  icon={<Accessibility size={14} />}
-                />
-                <BadgeSiNo
-                  label="Alergias"
-                  value={refugiado.alergias}
-                  icon={<AlertTriangle size={14} />}
-                />
-                <BadgeSiNo
-                  label="Enfermedad Crónica"
-                  value={refugiado.enfermedad_cronica}
-                  icon={<Stethoscope size={14} />}
-                />
-                <BadgeSiNo
-                  label="Lesión por Sismo"
-                  value={refugiado.lesion_sismo}
-                  icon={<AlertTriangle size={14} />}
-                />
-                <BadgeSiNo
-                  label="Adulto Mayor Dependencia"
-                  value={refugiado.adulto_mayor_dependencia}
-                  icon={<User size={14} />}
-                />
-                {refugiado.lactante !== undefined && (
+                {refugiado.discapacidad && (
+                  <BadgeSiNo
+                    label="Discapacidad"
+                    value={true}
+                    icon={<Accessibility size={14} />}
+                  />
+                )}
+                {refugiado.alergias && (
+                  <BadgeSiNo
+                    label="Alergias"
+                    value={true}
+                    icon={<AlertTriangle size={14} />}
+                  />
+                )}
+                {refugiado.enfermedad_cronica && (
+                  <BadgeSiNo
+                    label="Enfermedad Crónica"
+                    value={true}
+                    icon={<Stethoscope size={14} />}
+                  />
+                )}
+                {refugiado.lesion_sismo && (
+                  <BadgeSiNo
+                    label="Lesión por Sismo"
+                    value={true}
+                    icon={<AlertTriangle size={14} />}
+                  />
+                )}
+                {refugiado.adulto_mayor_dependencia && (
+                  <BadgeSiNo
+                    label="Adulto Mayor Dependencia"
+                    value={true}
+                    icon={<User size={14} />}
+                  />
+                )}
+                {refugiado.lactante !== undefined && refugiado.lactante && (
                   <BadgeSiNo
                     label="Lactante"
-                    value={refugiado.lactante}
+                    value={true}
                     icon={<Baby size={14} />}
                   />
                 )}
-                {!refugiado.genero && (
+                {!refugiado.genero && refugiado.embarazo && (
                   <>
                     <BadgeSiNo
                       label="Embarazo"
-                      value={refugiado.embarazo}
+                      value={true}
                       icon={<Heart size={14} />}
                     />
-                    {refugiado.embarazo && refugiado.tiempo_embarazo && (
+                    {refugiado.tiempo_embarazo && (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium bg-pink-50 text-pink-700">
                         <Baby size={14} />
                         {refugiado.tiempo_embarazo} semanas
@@ -1162,12 +1198,21 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
                     )}
                   </>
                 )}
-                <BadgeSiNo
-                  label="Mascotas a cargo"
-                  value={refugiado.mascotas}
-                  icon={<PawPrint size={14} />}
-                />
+                {refugiado.mascotas && (
+                  <BadgeSiNo
+                    label="Mascotas a cargo"
+                    value={true}
+                    icon={<PawPrint size={14} />}
+                  />
+                )}
               </div>
+
+              {!refugiado.discapacidad && !refugiado.alergias && !refugiado.enfermedad_cronica &&
+               !refugiado.lesion_sismo && !refugiado.adulto_mayor_dependencia &&
+               !(refugiado.lactante !== undefined && refugiado.lactante) &&
+               !(!refugiado.genero && refugiado.embarazo) && !refugiado.mascotas && (
+                <p className="text-sm text-gray-400 text-center py-4">Sin información adicional registrada</p>
+              )}
 
               {refugiado.mascotas && (
                 <div className="border-t border-gray-100 pt-4 mt-4 space-y-4">
@@ -1258,22 +1303,28 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
           </div>
 
           {/* Tarjeta 5: Vestimenta */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden md:border md:border-gray-100">
             <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
               <div className="p-2 bg-teal-100 rounded-lg">
                 <Shirt size={18} className="text-teal-600" />
               </div>
               <h3 className="font-semibold text-gray-800">Vestimenta</h3>
             </div>
-            <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-              <FichaField label="Talla de Camisa" value={refugiado.talla_camisa || '—'} />
-              <FichaField label="Talla de Pantalón" value={refugiado.talla_pantalon || '—'} />
-              <FichaField label="Talla de Zapatos" value={refugiado.talla_zapatos || '—'} />
+            <div className="p-6 space-y-4">
+              <div className="grid grid-cols-2 gap-6">
+                <FichaField label="Talla de Camisa" value={refugiado.talla_camisa || '—'} />
+                <FichaField label="Talla de Pantalón" value={refugiado.talla_pantalon || '—'} />
+              </div>
+              <div className="flex justify-center">
+                <div className="w-full max-w-xs">
+                  <FichaField label="Talla de Zapatos" value={refugiado.talla_zapatos || '—'} />
+                </div>
+              </div>
             </div>
           </div>
 
           {/* Tarjeta 6: Observaciones */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden md:border md:border-gray-100">
             <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
               <div className="p-2 bg-gray-100 rounded-lg">
                 <FileText size={18} className="text-gray-600" />
@@ -1288,7 +1339,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
           </div>
 
           {/* Tarjeta 7: Observaciones Generales */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden md:border md:border-gray-100">
             <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
               <div className="p-2 bg-gray-100 rounded-lg">
                 <FileText size={18} className="text-gray-600" />
@@ -1303,7 +1354,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
           </div>
 
           {/* Registros Institucionales */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden md:border md:border-gray-100">
             <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
               <div className="p-2 bg-blue-100 rounded-lg">
                 <FileText size={18} className="text-blue-600" />

@@ -1,5 +1,6 @@
 {
   "hosting": {
+    "site": "gestiondecampamentos-e198b",
     "public": "dist",
     "ignore": [
       "firebase.json",

@@ -34,11 +34,16 @@ export default {
       },
       animation: {
         'slide-in': 'slideIn 300ms ease-out',
+        'slide-up': 'slideUp 300ms ease-out',
       },
       keyframes: {
         slideIn: {
           '0%': { transform: 'translateX(100%)' },
           '100%': { transform: 'translateX(0)' },
+        },
+        slideUp: {
+          '0%': { transform: 'translateY(100%)' },
+          '100%': { transform: 'translateY(0)' },
         },
       },
     },

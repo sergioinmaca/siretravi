@@ -443,28 +443,41 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
   if (!isOpen) return null;
 
   return (<>
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
-      
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-fade-in-up relative">
+    <div className="fixed inset-0 z-50 flex flex-col md:items-center md:justify-center md:p-4 md:bg-gray-900/40 md:backdrop-blur-sm">
+      <div className="bg-white w-full h-full pt-4 md:pt-0 md:h-auto md:max-h-[90vh] md:max-w-4xl md:rounded-3xl md:shadow-2xl flex flex-col overflow-hidden animate-slide-up relative">
         
-        {/* Cabecera del Modal */}
-        <div className="px-8 py-5 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white z-10">
+        {/* Cabecera del Modal — Desktop */}
+        <div className="hidden md:flex px-8 py-5 border-b border-gray-100 items-center justify-between shrink-0 bg-white z-10">
           <div>
-            <h2 className="text-2xl font-bold text-gray-800">
+            <h2 className="text-[21px] font-semibold md:text-2xl md:font-bold text-gray-800">
               {isEditing ? 'Modificar Integrante' : 'Registrar Nuevo Integrante'}
             </h2>
             <p className="text-sm text-gray-500 mt-1">
               Destino: <span className="font-semibold text-caracas-red">{campamentoSeleccionado?.nombre || 'Ninguno'}</span>
             </p>
           </div>
-          <button onClick={onClose} className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition-colors">
+          <button onClick={onClose} className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition-colors hidden md:block">
             <X size={24} />
           </button>
         </div>
 
+        <button onClick={onClose} className="absolute top-10 right-4 z-20 md:hidden p-2 bg-caracas-red hover:bg-red-800 rounded-full text-white transition-colors">
+          <X size={24} />
+        </button>
+
         {/* Cuerpo Scrollable */}
-        <div className="p-8 overflow-y-auto flex-1 bg-gray-50/30">
-          
+        <div className="px-2 py-4 pb-[72px] md:p-8 overflow-y-auto flex-1 bg-gray-50/30">
+
+          {/* Título móvil — scrollea con el contenido */}
+          <div className="md:hidden mb-4">
+            <h2 className="text-[21px] font-semibold text-gray-800">
+              {isEditing ? 'Modificar Integrante' : 'Registrar Nuevo Integrante'}
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">
+              Destino: <span className="font-semibold text-caracas-red">{campamentoSeleccionado?.nombre || 'Ninguno'}</span>
+            </p>
+          </div>
+
           {!campamentoSeleccionado && (
             <div className="bg-orange-50 border border-orange-200 text-orange-800 p-4 rounded-xl flex items-center gap-3 mb-6 shadow-sm">
               <AlertCircle size={20} />
@@ -489,7 +502,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
           <form id="registro-form" onSubmit={handleSubmit} className="space-y-6">
             
             {/* Tarjeta 1: Datos Personales */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden md:border md:border-gray-200">
               <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
                 <div className="p-2 bg-caracas-blue/10 rounded-lg">
                   <User size={18} className="text-caracas-blue" />
@@ -621,7 +634,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
             </div>
 
             {/* Tarjeta 2: Familia */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden md:border md:border-gray-200">
               <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
                 <div className="p-2 bg-caracas-green/10 rounded-lg">
                   <Users size={18} className="text-caracas-green" />
@@ -660,7 +673,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
             </div>
 
             {/* Tarjeta 3: Ubicación */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden md:border md:border-gray-200">
               <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
                 <div className="p-2 bg-yellow-100 rounded-lg">
                   <MapPin size={18} className="text-yellow-600" />
@@ -703,7 +716,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
 
             {/* Tarjeta 4: Situación Socioeconómica de la Vivienda de Origen */}
             {formData.esJefeFamilia && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden md:border md:border-gray-200">
               <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
                 <div className="p-2 bg-orange-100 rounded-lg">
                   <MapPin size={18} className="text-orange-600" />
@@ -745,7 +758,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
 
                 <div className="border-t border-gray-100 pt-4">
                   <label className="block text-sm font-medium text-gray-700 mb-3">Ingreso Familiar Principal antes de la Emergencia</label>
-                  <div className="flex flex-wrap gap-6">
+                  <div className="flex flex-wrap gap-1">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input type="radio" name="ingresoFamiliar" checked={formData.ingresoFamiliar === 'Trabajo formal'} onChange={() => setFormData(prev => ({ ...prev, ingresoFamiliar: 'Trabajo formal' }))} className="w-5 h-5 text-caracas-red focus:ring-caracas-red" />
                       <span className="text-gray-700">Trabajo formal</span>
@@ -774,7 +787,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
             )}
 
             {/* Tarjeta 5: Información Adicional */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden md:border md:border-gray-200">
               <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
                 <div className="p-2 bg-purple-100 rounded-lg">
                   <Accessibility size={18} className="text-purple-600" />
@@ -963,7 +976,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                             </div>
                             <div>
                               <label className="block text-sm font-medium text-gray-700 mb-1">Sexo de la Mascota</label>
-                              <div className="flex gap-6">
+                              <div className="flex gap-1">
                                 <label className="flex items-center gap-2 cursor-pointer">
                                   <input
                                     type="radio"
@@ -1030,7 +1043,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
             </div>
             
             {/* Tarjeta 6: Vestimenta */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden md:border md:border-gray-200">
               <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
                 <div className="p-2 bg-teal-100 rounded-lg">
                   <Shirt size={18} className="text-teal-600" />
@@ -1054,7 +1067,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
             </div>
 
             {/* Tarjeta 7: Observaciones Generales */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden md:border md:border-gray-200">
               <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
                 <div className="p-2 bg-gray-100 rounded-lg">
                   <FileText size={18} className="text-gray-600" />
@@ -1067,7 +1080,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
             </div>
 
             {/* Tarjeta 8: Registros Institucionales */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden md:border md:border-gray-200">
               <div className="bg-gray-50/80 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
                 <div className="p-2 bg-blue-100 rounded-lg">
                   <FileText size={18} className="text-blue-600" />
@@ -1092,22 +1105,24 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
               </div>
             </div>
 
-          </form>
-        </div>
+            {/* Botones de acción */}
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden md:border md:border-gray-200">
+              <div className="p-6 flex items-center justify-end gap-3">
+                <button onClick={onClose} type="button" className="px-6 py-2.5 rounded-xl text-gray-600 font-medium hover:bg-gray-200 transition-colors">
+                  Cancelar
+                </button>
+                <button type="submit" disabled={!campamentoSeleccionado || isSubmitting} className="flex items-center bg-caracas-red hover:bg-red-800 text-white px-5 py-2 rounded-xl font-medium transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px] justify-center">
+                  {isSubmitting ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : (
+                    <Save size={18} />
+                  )}
+                  {isSubmitting ? 'Guardando...' : isEditing ? 'Guardar Cambios' : 'Guardar Registro'}
+                </button>
+              </div>
+            </div>
 
-        {/* Footer del Modal */}
-        <div className="px-8 py-5 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
-          <button onClick={onClose} type="button" className="px-6 py-2.5 rounded-xl text-gray-600 font-medium hover:bg-gray-200 transition-colors">
-            Cancelar
-          </button>
-          <button form="registro-form" type="submit" disabled={!campamentoSeleccionado || isSubmitting} className="flex items-center gap-2 bg-caracas-red hover:bg-red-800 text-white px-8 py-2.5 rounded-xl font-medium transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed min-w-[180px] justify-center">
-            {isSubmitting ? (
-              <Loader2 size={18} className="animate-spin" />
-            ) : (
-              <Save size={18} />
-            )}
-            {isSubmitting ? 'Guardando...' : isEditing ? 'Guardar Cambios' : 'Guardar Registro'}
-          </button>
+          </form>
         </div>
 
       </div>
