@@ -4,6 +4,6 @@
 
 @layer base {
   body {
-    @apply bg-caracas-light text-gray-900 antialiased min-h-screen;
+    @apply bg-caracas-light text-gray-900 antialiased min-h-screen overflow-x-hidden;
   }
 }

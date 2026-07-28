@@ -56,6 +56,7 @@ export default function MainLayout() {
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [showTransition, setShowTransition] = useState(false);
   const [showGreeting, setShowGreeting] = useState(true);
+  const [showSidebarText, setShowSidebarText] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { campamentos, campamentoSeleccionado, seleccionarCampamento, loading, errorCarga } = useCampamento();
@@ -164,6 +165,14 @@ export default function MainLayout() {
     window.location.reload();
   };
 
+  useEffect(() => {
+    if (isSidebarOpen) {
+      const timer = setTimeout(() => setShowSidebarText(true), 150);
+      return () => clearTimeout(timer);
+    }
+    setShowSidebarText(false);
+  }, [isSidebarOpen]);
+
 
   if (loading || errorCarga) {
     return (
@@ -203,14 +212,12 @@ export default function MainLayout() {
       {/* Sidebar — Desktop */}
       <aside
         className={`${isSidebarOpen ? 'w-64' : 'w-20'
-          } hidden md:flex bg-white border-r border-gray-200 transition-all duration-300 ease-in-out flex-col relative shadow-sm z-30`}
+          } hidden md:flex bg-white border-r border-gray-200 transition-[width] duration-300 ease-in-out flex-col relative shadow-sm z-30 overflow-hidden`}
       >
         <div className="h-16 flex items-center justify-between px-4 border-b border-gray-100 shrink-0">
-          {isSidebarOpen && (
-            <span className="text-caracas-red font-bold text-md truncate ml-2">
-              GESTIÓN DE CAMPAMENTOS
-            </span>
-          )}
+          <span className="text-caracas-red font-bold text-md truncate ml-2 transition-opacity duration-150" style={{ opacity: showSidebarText ? 1 : 0 }}>
+            GESTIÓN DE CAMPAMENTOS
+          </span>
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             className="p-2 rounded-xl hover:bg-gray-100 text-gray-500 transition-colors mx-auto"
@@ -219,7 +226,7 @@ export default function MainLayout() {
           </button>
         </div>
 
-        <nav className="flex-1 py-6 flex flex-col gap-2 px-3 overflow-y-auto">
+        <nav className="flex-1 py-6 flex flex-col gap-2 px-3 overflow-y-auto overflow-x-hidden">
           {menuItemsFiltrados.map((item) => {
             const Icon = item.icon;
             const isActive = item.path === '/salud'
@@ -236,19 +243,17 @@ export default function MainLayout() {
                 title={!isSidebarOpen ? item.label : undefined}
               >
                 <Icon size={22} className={`shrink-0 ${isActive ? 'text-white' : 'text-gray-400 group-hover:text-caracas-red'}`} />
-                {isSidebarOpen && (
-                  <span className="font-medium whitespace-nowrap">
-                    {item.label}
-                  </span>
-                )}
+                <span className="font-medium whitespace-nowrap transition-opacity duration-150" style={{ opacity: showSidebarText ? 1 : 0 }}>
+                  {item.label}
+                </span>
               </Link>
             );
           })}
         </nav>
 
         <div className="border-t border-gray-100 px-3 py-4 shrink-0">
-          {isSidebarOpen && usuarioActual && (
-            <div className="flex items-center gap-3 px-3 mb-3">
+          {usuarioActual && (
+            <div className="flex items-center gap-3 px-3 mb-3 transition-opacity duration-150" style={{ opacity: showSidebarText ? 1 : 0 }}>
               <UserCircle size={32} className="text-gray-400 shrink-0" />
               <div className="overflow-hidden">
                 <p className="text-sm font-semibold text-gray-700 truncate leading-tight">
@@ -260,22 +265,26 @@ export default function MainLayout() {
               </div>
             </div>
           )}
-          <div className="flex items-center gap-2 px-3">
+          <div className="flex flex-col gap-2">
             <button
               onClick={hardRefresh}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#2596be] text-white hover:brightness-110 transition-colors flex-1"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#2596be] text-white hover:brightness-110 transition-colors"
               title={!isSidebarOpen ? 'Refrescar' : undefined}
             >
               <RefreshCw size={20} className="shrink-0" />
-              {isSidebarOpen && <span className="font-medium">Refrescar</span>}
+              <span className={`overflow-hidden transition-all duration-150 ${showSidebarText ? 'max-w-[200px] opacity-100' : 'max-w-0 opacity-0'}`}>
+                <span className="font-medium leading-none whitespace-nowrap">Refrescar</span>
+              </span>
             </button>
             <button
               onClick={handleLogout}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors flex-1"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-caracas-red text-white hover:bg-red-800 transition-colors"
               title={!isSidebarOpen ? 'Cerrar Sesión' : undefined}
             >
               <LogOut size={20} className="shrink-0" />
-              {isSidebarOpen && <span className="font-medium">Cerrar Sesión</span>}
+              <span className={`overflow-hidden transition-all duration-150 ${showSidebarText ? 'max-w-[200px] opacity-100' : 'max-w-0 opacity-0'}`}>
+                <span className="font-medium leading-none whitespace-nowrap">Cerrar Sesión</span>
+              </span>
             </button>
           </div>
         </div>
@@ -403,7 +412,7 @@ export default function MainLayout() {
           )}
         </div>
 
-        <div className={`text-xs text-white text-center truncate px-2 pb-1 transition-all duration-500 ${showGreeting ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
+        <div className={`text-xs text-white text-center truncate px-2 pb-1 transition-all duration-150 ${showGreeting ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
           Hola, {usuarioActual?.nombres || 'Usuario'}
         </div>
       </div>
