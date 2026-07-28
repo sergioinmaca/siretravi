@@ -8,6 +8,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import pptxgen from 'pptxgenjs';
 import * as XLSX from 'xlsx';
+import XLSXStyle from 'xlsx-js-style';
 import { formatAgeParts } from '../lib/formatAge';
 import { formatCedula } from '../lib/formatCedula';
 import { obtenerHistoriasClinicas } from '../lib/salud';
@@ -559,6 +560,294 @@ export default function Reportes() {
     }
   };
 
+  // ── Exportar XLSX Data Única de Campamento ─────────────────────────────────
+  const handleExportDataUnicaXLSX = async () => {
+    setIsGenerating(true);
+    try {
+      const nombreCamp = campamentoSeleccionado?.nombre || 'Campamento';
+      const now = new Date();
+      const fecha = `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
+
+      // 1. Cargar historias clínicas para la columna OBSERVACIÓN
+      const historias = await obtenerHistoriasClinicas(campamentoSeleccionado!.id);
+      const hcMap: Record<string, string> = {};
+      historias.forEach(h => {
+        const parts: string[] = [];
+        if (h.tipo_discapacidad) parts.push(`Discapacidad: ${h.tipo_discapacidad}`);
+        for (let i = 1; i <= 10; i++) {
+          const val = (h as unknown as Record<string, unknown>)[`enf_cronica_${i}`] as string | undefined;
+          if (val) parts.push(`Enf. Crónica ${i}: ${val}`);
+        }
+        if (parts.length > 0) hcMap[h.refugiado_id] = parts.join(' | ');
+      });
+
+      // 2. Construir filas agrupadas por familia
+      type PadronRow = {
+        nucleoNum: number | null;
+        nucleoMiembros: number | null;
+        esJefe: boolean;
+        nombresApellidos: string;
+        cedula: string;
+        fechaNacimiento: string;
+        sexo: string;
+        edad: string;
+        parentesco: string;
+        telefono: string;
+        procedenciaCaracas: string;
+        procedenciaLaGuaira: string;
+        observacion: string;
+        separador?: boolean;
+      };
+
+      const rows: PadronRow[] = [];
+      let nucleoNum = 0;
+      let totalFamiliasCaracas = 0;
+      let totalFamiliasLaGuaira = 0;
+      let totalPersonasCaracas = 0;
+      let totalPersonasLaGuaira = 0;
+
+      const familiasSorted = [...familiasDelCampamento].sort((a, b) =>
+        a.nombre.localeCompare(b.nombre)
+      );
+
+      familiasSorted.forEach(fam => {
+        const miembros = refugiadosDelCampamento
+          .filter(r => r.familia_id === fam.id)
+          .sort((a, b) => (a.es_jefe_familia ? -1 : b.es_jefe_familia ? 1 : 0));
+        if (miembros.length === 0) return;
+        nucleoNum++;
+        const cantMiembros = miembros.length;
+
+        // Procedencia de la familia basada en el jefe (o primer miembro)
+        const jefe = miembros.find(m => m.es_jefe_familia) || miembros[0];
+        const famProc = getProcedenciaEstado(jefe.procedencia || '');
+        if (famProc === 'CARACAS') { totalFamiliasCaracas++; totalPersonasCaracas += cantMiembros; }
+        else { totalFamiliasLaGuaira++; totalPersonasLaGuaira += cantMiembros; }
+
+        miembros.forEach((r, idx) => {
+          const ageParts = formatAgeParts(r.fecha_nacimiento);
+          const edad = ageParts ? `${ageParts.valor} ${ageParts.unidad}` : '';
+          const fnDate = r.fecha_nacimiento instanceof Date ? r.fecha_nacimiento : new Date(r.fecha_nacimiento);
+          const proc = getProcedenciaEstado(r.procedencia || '');
+          const obs: string[] = [];
+          if (r.embarazo) obs.push(r.tiempo_embarazo ? `Embarazada (${r.tiempo_embarazo} sem.)` : 'Embarazada');
+          const hcObs = hcMap[r.id];
+          if (hcObs) obs.push(hcObs);
+          rows.push({
+            nucleoNum: idx === 0 ? nucleoNum : null,
+            nucleoMiembros: idx === 0 ? cantMiembros : null,
+            esJefe: r.es_jefe_familia,
+            nombresApellidos: `${r.nombres} ${r.apellidos}`,
+            cedula: formatCedula(r.cedula) ?? 'S/N',
+            fechaNacimiento: `${String(fnDate.getDate()).padStart(2, '0')}/${String(fnDate.getMonth() + 1).padStart(2, '0')}/${fnDate.getFullYear()}`,
+            sexo: r.genero ? 'M' : 'F',
+            edad,
+            parentesco: r.parentesco || '',
+            telefono: r.telefono?.toString() || '',
+            procedenciaCaracas: proc === 'CARACAS' ? 'X' : '',
+            procedenciaLaGuaira: proc === 'LA GUAIRA' ? 'X' : '',
+            observacion: obs.join(' | '),
+          });
+        });
+        rows.push({ separador: true } as any);
+      });
+
+      // Integrantes sin familia al final
+      const sinFamilia = refugiadosDelCampamento
+        .filter(r => !r.familia_id)
+        .sort((a, b) => (a.codigo || '').localeCompare(b.codigo || '', undefined, { numeric: true }));
+      sinFamilia.forEach(r => {
+        nucleoNum++;
+        const ageParts = formatAgeParts(r.fecha_nacimiento);
+        const edad = ageParts ? `${ageParts.valor} ${ageParts.unidad}` : '';
+        const fnDate = r.fecha_nacimiento instanceof Date ? r.fecha_nacimiento : new Date(r.fecha_nacimiento);
+        const proc = getProcedenciaEstado(r.procedencia || '');
+        if (proc === 'CARACAS') { totalFamiliasCaracas++; totalPersonasCaracas++; }
+        else { totalFamiliasLaGuaira++; totalPersonasLaGuaira++; }
+        const obs: string[] = [];
+        if (r.embarazo) obs.push(r.tiempo_embarazo ? `Embarazada (${r.tiempo_embarazo} sem.)` : 'Embarazada');
+        const hcObs = hcMap[r.id];
+        if (hcObs) obs.push(hcObs);
+        rows.push({
+          nucleoNum,
+          nucleoMiembros: 1,
+          esJefe: true,
+          nombresApellidos: `${r.nombres} ${r.apellidos}`,
+          cedula: formatCedula(r.cedula) ?? 'S/N',
+          fechaNacimiento: `${String(fnDate.getDate()).padStart(2, '0')}/${String(fnDate.getMonth() + 1).padStart(2, '0')}/${fnDate.getFullYear()}`,
+          sexo: r.genero ? 'M' : 'F',
+          edad,
+          parentesco: r.parentesco || '',
+          telefono: r.telefono?.toString() || '',
+          procedenciaCaracas: proc === 'CARACAS' ? 'X' : '',
+          procedenciaLaGuaira: proc === 'LA GUAIRA' ? 'X' : '',
+          observacion: obs.join(' | '),
+        });
+        rows.push({ separador: true } as any);
+      });
+
+      // 3. Construir hoja con XLSXStyle celda a celda
+      const wb = XLSXStyle.utils.book_new();
+      const ws: Record<string, any> = {};
+      const merges: { s: { r: number; c: number }; e: { r: number; c: number } }[] = [];
+
+      const borderThin = {
+        top:    { style: 'thin', color: { rgb: '000000' } },
+        bottom: { style: 'thin', color: { rgb: '000000' } },
+        left:   { style: 'thin', color: { rgb: '000000' } },
+        right:  { style: 'thin', color: { rgb: '000000' } },
+      };
+
+      const setCell = (r: number, c: number, v: any, s?: any) => {
+        const addr = XLSXStyle.utils.encode_cell({ r, c });
+        ws[addr] = { v, t: typeof v === 'number' ? 'n' : 's', s };
+      };
+
+      // ─── FILAS DE ENCABEZADO SUPERIOR (0-3) ───
+      setCell(0, 4, 'NOMBRE DEL CAMPAMENTO:', { font: { bold: true } });
+      setCell(0, 5, nombreCamp, {});
+      setCell(1, 4, 'RESPONSABLE INSTITUCIONAL:', { font: { bold: true } });
+      setCell(1, 5, '', {});
+      setCell(2, 4, 'PARROQUIA:', { font: { bold: true } });
+      setCell(2, 5, '', {});
+      setCell(3, 4, 'COMUNA:', { font: { bold: true } });
+      setCell(3, 5, '', {});
+
+      // ─── FILAS DE ENCABEZADO DE TABLA (5 y 6 en base-0 -> filas 6 y 7 en Excel) ───
+      const headerStyle = {
+        font: { bold: true },
+        fill: { fgColor: { rgb: 'BDD7EE' } },
+        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+        border: borderThin,
+      };
+
+      // Fila 5 & 6:
+      const mainHeaders: { col: number; text: string }[] = [
+        { col: 0, text: 'N°' },
+        { col: 1, text: 'NUCLEO\nFAMILIAR' },
+        { col: 2, text: 'NOMBRES Y APELLIDOS' },
+        { col: 3, text: 'CÉDULA' },
+        { col: 4, text: 'FECHA\nNACIMIENTO' },
+        { col: 5, text: 'SEXO' },
+        { col: 6, text: 'EDAD' },
+        { col: 7, text: 'PARENTESCO' },
+        { col: 8, text: 'TELÉFONO' },
+        { col: 11, text: 'OBSERVACIÓN\n(Patología, Mujeres Embarazadas, Personas con Condición)' },
+      ];
+
+      mainHeaders.forEach(({ col, text }) => {
+        setCell(5, col, text, headerStyle);
+        setCell(6, col, '', headerStyle);
+        merges.push({ s: { r: 5, c: col }, e: { r: 6, c: col } });
+      });
+
+      // Procedencia (Cols 9 y 10):
+      setCell(5, 9, 'PROCEDENCIA', headerStyle);
+      setCell(5, 10, '', headerStyle);
+      merges.push({ s: { r: 5, c: 9 }, e: { r: 5, c: 10 } });
+
+      setCell(6, 9, 'CARACAS', headerStyle);
+      setCell(6, 10, 'LA GUAIRA', headerStyle);
+
+      // ─── FILAS DE DATOS (Empiezan en fila 7 base-0 = fila 8 en Excel) ───
+      let dataRow = 7;
+      const SALMON = 'F4B9A0';
+
+      rows.forEach((row) => {
+        if ((row as any).separador) {
+          dataRow++; // Fila vacía separadora
+          return;
+        }
+
+        const isJefe = row.esJefe;
+        const bg = isJefe ? SALMON : 'FFFFFF';
+        const cellStyle = (extra?: any) => ({
+          fill: { fgColor: { rgb: bg } },
+          border: borderThin,
+          alignment: { wrapText: true, vertical: 'center', ...extra },
+        });
+
+        // Fusión vertical de columnas N° y NUCLEO FAMILIAR si la familia tiene más de 1 integrante
+        if (row.nucleoNum !== null && row.nucleoMiembros !== null) {
+          const numMiembros = row.nucleoMiembros;
+          if (numMiembros > 1) {
+            merges.push({ s: { r: dataRow, c: 0 }, e: { r: dataRow + numMiembros - 1, c: 0 } });
+            merges.push({ s: { r: dataRow, c: 1 }, e: { r: dataRow + numMiembros - 1, c: 1 } });
+          }
+        }
+
+        setCell(dataRow, 0,  row.nucleoNum    !== null ? row.nucleoNum    : '', cellStyle({ horizontal: 'center' }));
+        setCell(dataRow, 1,  row.nucleoMiembros !== null ? row.nucleoMiembros : '', cellStyle({ horizontal: 'center' }));
+        setCell(dataRow, 2,  row.nombresApellidos,  cellStyle());
+        setCell(dataRow, 3,  row.cedula,             cellStyle({ horizontal: 'center' }));
+        setCell(dataRow, 4,  row.fechaNacimiento,    cellStyle({ horizontal: 'center' }));
+        setCell(dataRow, 5,  row.sexo,               cellStyle({ horizontal: 'center' }));
+        setCell(dataRow, 6,  row.edad,               cellStyle({ horizontal: 'center' }));
+        setCell(dataRow, 7,  row.parentesco,         cellStyle());
+        setCell(dataRow, 8,  row.telefono,           cellStyle({ horizontal: 'center' }));
+        setCell(dataRow, 9,  row.procedenciaCaracas,  cellStyle({ horizontal: 'center' }));
+        setCell(dataRow, 10, row.procedenciaLaGuaira, cellStyle({ horizontal: 'center' }));
+        setCell(dataRow, 11, row.observacion,         cellStyle());
+
+        dataRow++;
+      });
+
+      // ─── TABLAS DE TOTALES ───
+      const totalsRow = dataRow + 1;
+      const labelStyle = { font: { bold: true }, border: borderThin };
+      const valStyle   = { border: borderThin, alignment: { horizontal: 'center' } };
+
+      // Tabla izquierda (cols 0-2)
+      setCell(totalsRow,     0, 'TOTAL FAMILIAS DE CARACAS',  labelStyle);
+      setCell(totalsRow,     1, '', labelStyle);
+      merges.push({ s: { r: totalsRow, c: 0 }, e: { r: totalsRow, c: 1 } });
+      setCell(totalsRow,     2, totalFamiliasCaracas, valStyle);
+
+      setCell(totalsRow + 1, 0, 'TOTAL PERSONAS DE CARACAS',  labelStyle);
+      setCell(totalsRow + 1, 1, '', labelStyle);
+      merges.push({ s: { r: totalsRow + 1, c: 0 }, e: { r: totalsRow + 1, c: 1 } });
+      setCell(totalsRow + 1, 2, totalPersonasCaracas, valStyle);
+
+      // Tabla derecha (cols 4-6)
+      setCell(totalsRow,     4, 'TOTAL FAMILIAS DE LA GUAIRA',  labelStyle);
+      setCell(totalsRow,     5, '', labelStyle);
+      merges.push({ s: { r: totalsRow, c: 4 }, e: { r: totalsRow, c: 5 } });
+      setCell(totalsRow,     6, totalFamiliasLaGuaira, valStyle);
+
+      setCell(totalsRow + 1, 4, 'TOTAL PERSONAS DE LA GUAIRA',  labelStyle);
+      setCell(totalsRow + 1, 5, '', labelStyle);
+      merges.push({ s: { r: totalsRow + 1, c: 4 }, e: { r: totalsRow + 1, c: 5 } });
+      setCell(totalsRow + 1, 6, totalPersonasLaGuaira, valStyle);
+
+      // ─── Metadata de la hoja ───
+      const lastRow = totalsRow + 1;
+      const lastCol = 11;
+      ws['!ref'] = XLSXStyle.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: lastRow, c: lastCol } });
+      ws['!merges'] = merges;
+      ws['!cols'] = [
+        { wch: 5 },   // A: N°
+        { wch: 8 },   // B: NUCLEO FAMILIAR
+        { wch: 30 },  // C: NOMBRES Y APELLIDOS
+        { wch: 13 },  // D: CÉDULA
+        { wch: 13 },  // E: FECHA NACIMIENTO
+        { wch: 6 },   // F: SEXO
+        { wch: 12 },  // G: EDAD
+        { wch: 16 },  // H: PARENTESCO
+        { wch: 14 },  // I: TELÉFONO
+        { wch: 10 },  // J: CARACAS
+        { wch: 10 },  // K: LA GUAIRA
+        { wch: 50 },  // L: OBSERVACIÓN
+      ];
+
+      XLSXStyle.utils.book_append_sheet(wb, ws, 'Data Única');
+      XLSXStyle.writeFile(wb, `data-unica-campamento-${nombreCamp.replace(/\s+/g, '-')}-${fecha}.xlsx`);
+    } catch (err) {
+      console.error('Error generando Data Única XLSX:', err);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   // Gráficos dinámicos SVG para inyectar en los reportes
   const renderPieChart = () => {
     const total = datosReporte.masculinos + datosReporte.femeninos;
@@ -895,6 +1184,26 @@ export default function Reportes() {
             >
               <Presentation size={18} />
               Exportar PowerPoint
+            </button>
+          </div>
+        </div>
+
+        {/* Card 9: Reporte Data Única de Campamento */}
+        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
+          <div>
+            <h3 className="text-lg font-bold text-slate-800 mb-2">Reporte Data Única de Campamento</h3>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Exporta el padrón nominal completo de integrantes agrupados por núcleo familiar, con procedencia (Caracas / La Guaira), datos personales y observaciones de salud. Formato institucional oficial en Excel.
+            </p>
+          </div>
+          <div className="flex gap-4 mt-6 pt-4 border-t border-slate-50">
+            <button
+              onClick={handleExportDataUnicaXLSX}
+              disabled={!campamentoSeleccionado || isGenerating}
+              className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50"
+            >
+              <FileDown size={18} />
+              Exportar XLSX
             </button>
           </div>
         </div>
