@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { toDateInput, parseDateSafe } from '../lib/formatDate';
 import type { Campamento, Refugiado, Familia, Modulo, CroquisGeneral } from '../types';
+import { vaciarCarpetaRefugiado } from '../hooks/useFotoUpload';
 
 interface CampamentoContextType {
   campamentos: Campamento[];
@@ -636,14 +637,8 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
   const eliminarRefugiado = async (id: string) => {
     const refugiado = refugiados.find(r => r.id === id);
 
-    if (refugiado?.foto_url) {
-      const match = refugiado.foto_url.match(/\/fotos-integrantes\/(.+)$/);
-      if (match) await supabase.storage.from('fotos-integrantes').remove([match[1]]);
-    }
-
-    if (refugiado?.mascota_foto_url) {
-      const match = refugiado.mascota_foto_url.match(/\/fotos-integrantes\/(.+)$/);
-      if (match) await supabase.storage.from('fotos-integrantes').remove([match[1]]);
+    if (refugiado) {
+      await vaciarCarpetaRefugiado(refugiado.campamento_id, refugiado.id);
     }
 
     const { error } = await supabase.from('refugiados').delete().eq('id', id);

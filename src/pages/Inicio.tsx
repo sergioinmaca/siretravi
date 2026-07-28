@@ -999,8 +999,8 @@ export default function Inicio() {
                 croquisData={modulo.croquis_data || '{}'}
                 moduloNombre={modulo.nombre}
                 elementNumberOffset={offset}
-                width={1300}
-                height={700}
+                width={1500}
+                height={800}
                 tipoContabilizacion={tipoContabilizacion}
                 occupiedBeds={occupiedBeds}
                 bedOccupants={bedOccupants}

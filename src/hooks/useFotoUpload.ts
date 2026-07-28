@@ -62,7 +62,7 @@ export function useFotoUpload() {
 
   const deleteStorageFile = async (url: string | null | undefined): Promise<boolean> => {
     if (!url) return true;
-    const match = url.match(/\/fotos-integrantes\/(.+)$/);
+    const match = url.match(/\/fotos-integrantes\/([^?#]+)/);
     if (!match) return true;
     const { error } = await supabase.storage.from('fotos-integrantes').remove([match[1]]);
     if (error) {
@@ -139,6 +139,8 @@ export interface FotoHuerfana {
   campamento_id: string;
   refugiado_id: string;
   tipo: 'persona' | 'mascota';
+  preview_url: string;
+  refugiado_nombre: string | null;
 }
 
 export async function buscarFotosHuerfanas(): Promise<FotoHuerfana[]> {
@@ -147,7 +149,49 @@ export async function buscarFotosHuerfanas(): Promise<FotoHuerfana[]> {
     console.error('[buscarFotosHuerfanas] Error al consultar RPC:', error);
     throw error;
   }
-  return (data || []) as FotoHuerfana[];
+  const raw = (data || []) as { storage_path: string; campamento_id: string; refugiado_id: string; tipo: string }[];
+
+  if (raw.length === 0) return [];
+
+  const { data: todosRefugiados } = await supabase
+    .from('refugiados')
+    .select('id, foto_url, mascota_foto_url');
+
+  const pathsValidos = new Set<string>();
+  for (const r of (todosRefugiados || [])) {
+    for (const url of [r.foto_url, r.mascota_foto_url]) {
+      if (!url) continue;
+      const match = (url as string).match(/\/fotos-integrantes\/([^?#]+)/);
+      if (match) pathsValidos.add(match[1]);
+    }
+  }
+
+  const huerfanasReales = raw.filter(h => !pathsValidos.has(h.storage_path));
+  if (huerfanasReales.length < raw.length) {
+    console.warn(
+      `[buscarFotosHuerfanas] Descartadas ${raw.length - huerfanasReales.length} del RPC (falso positivo detectado).`
+    );
+  }
+
+  const idsUnicos = [...new Set(huerfanasReales.map(h => h.refugiado_id))];
+  const { data: refsData } = await supabase
+    .from('refugiados')
+    .select('id, nombres, apellidos')
+    .in('id', idsUnicos);
+
+  const nombrePorId: Record<string, string> = {};
+  for (const r of (refsData || [])) {
+    nombrePorId[r.id] = `${r.nombres} ${r.apellidos}`.trim();
+  }
+
+  return huerfanasReales.map(h => ({
+    storage_path: h.storage_path,
+    campamento_id: h.campamento_id,
+    refugiado_id: h.refugiado_id,
+    tipo: h.tipo as 'persona' | 'mascota',
+    preview_url: supabase.storage.from('fotos-integrantes').getPublicUrl(h.storage_path).data.publicUrl,
+    refugiado_nombre: nombrePorId[h.refugiado_id] || null,
+  }));
 }
 
 export async function eliminarFotosHuerfanas(paths: string[]): Promise<{ eliminadas: number; fallidas: string[] }> {
@@ -165,4 +209,31 @@ export async function eliminarFotosHuerfanas(paths: string[]): Promise<{ elimina
   }
 
   return { eliminadas, fallidas };
+}
+
+export async function vaciarCarpetaRefugiado(campamentoId: string, refugiadoId: string): Promise<void> {
+  const prefix = `${campamentoId}/${refugiadoId}/`;
+  const pathsToRemove: string[] = [];
+
+  const { data: mainFiles } = await supabase.storage.from('fotos-integrantes').list(prefix);
+  if (mainFiles) {
+    for (const f of mainFiles) {
+      if (f.id) pathsToRemove.push(`${prefix}${f.name}`);
+    }
+  }
+
+  const mascotaPrefix = `${prefix}mascota/`;
+  const { data: mascotaFiles } = await supabase.storage.from('fotos-integrantes').list(mascotaPrefix);
+  if (mascotaFiles) {
+    for (const f of mascotaFiles) {
+      if (f.id) pathsToRemove.push(`${mascotaPrefix}${f.name}`);
+    }
+  }
+
+  if (pathsToRemove.length > 0) {
+    const { error } = await supabase.storage.from('fotos-integrantes').remove(pathsToRemove);
+    if (error) {
+      console.error('[vaciarCarpetaRefugiado] Error al eliminar archivos:', error);
+    }
+  }
 }

@@ -26,11 +26,11 @@ AS $$
       AND o.name LIKE '%/%'
   ),
   rutas_referenciadas AS (
-    SELECT substring(r.foto_url FROM '/fotos-integrantes/(.+)$') AS ruta
+    SELECT substring(r.foto_url FROM '/fotos-integrantes/([^?#]+)') AS ruta
     FROM refugiados r
     WHERE r.foto_url IS NOT NULL
     UNION
-    SELECT substring(r.mascota_foto_url FROM '/fotos-integrantes/(.+)$') AS ruta
+    SELECT substring(r.mascota_foto_url FROM '/fotos-integrantes/([^?#]+)') AS ruta
     FROM refugiados r
     WHERE r.mascota_foto_url IS NOT NULL
   )

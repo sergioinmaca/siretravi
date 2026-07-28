@@ -223,8 +223,8 @@ export default function Actas() {
                   moduloNombre={modulo.nombre}
                   campamentoId={campId}
                   elementNumberOffset={offset}
-                  width={1100}
-                  height={700}
+                  width={1500}
+                  height={800}
                   tipoContabilizacion={campamentoSeleccionado?.tipo_contabilizacion || 'elemento'}
                   literasCount={tiposModulo.literas}
                   individualesCount={tiposModulo.individuales}

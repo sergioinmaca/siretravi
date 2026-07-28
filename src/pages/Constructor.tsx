@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
-import { Tent, BedDouble, MapPin, Plus, ShieldOff, Trash2, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Tent, BedDouble, MapPin, Plus, ShieldOff, Trash2, Loader2, CheckCircle2, AlertCircle, Search, User, PawPrint, ImageOff } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
 import type { Campamento } from '../types';
 import CrearRefugioModal from '../components/constructor/CrearRefugioModal';
 import { buscarFotosHuerfanas, eliminarFotosHuerfanas } from '../hooks/useFotoUpload';
+import type { FotoHuerfana } from '../hooks/useFotoUpload';
 
 export default function Constructor() {
   const { campamentos } = useCampamento();
@@ -18,7 +19,10 @@ export default function Constructor() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCamp, setEditingCamp] = useState<Campamento | null>(null);
 
-  const [limpiando, setLimpiando] = useState(false);
+  const [huerfanas, setHuerfanas] = useState<FotoHuerfana[] | null>(null);
+  const [buscando, setBuscando] = useState(false);
+  const [eliminando, setEliminando] = useState(false);
+  const [seleccionados, setSeleccionados] = useState<Set<number>>(new Set());
   const [resultadoLimpieza, setResultadoLimpieza] = useState<{
     tipo: 'exito' | 'error';
     mensaje: string;
@@ -32,47 +36,83 @@ export default function Constructor() {
     }, 0);
   };
 
-  const handleLimpiarHuerfanas = async () => {
-    setLimpiando(true);
+  const nombreCampamento = (id: string) => {
+    return campamentos.find(c => c.id === id)?.nombre || id;
+  };
+
+  const handleBuscarHuerfanas = async () => {
+    setBuscando(true);
+    setHuerfanas(null);
+    setSeleccionados(new Set());
     setResultadoLimpieza(null);
     try {
-      const huerfanas = await buscarFotosHuerfanas();
-      if (huerfanas.length === 0) {
-        setResultadoLimpieza({ tipo: 'exito', mensaje: 'No se encontraron fotos huérfanas. Todo está limpio.' });
-        setLimpiando(false);
-        return;
-      }
+      const result = await buscarFotosHuerfanas();
+      setHuerfanas(result);
+    } catch (err) {
+      console.error('[Constructor] Error al buscar huérfanas:', err);
+      setResultadoLimpieza({
+        tipo: 'error',
+        mensaje: 'Error al buscar fotos huérfanas. Verifique que la función RPC esté instalada en Supabase.',
+      });
+    } finally {
+      setBuscando(false);
+    }
+  };
 
-      const confirmar = window.confirm(
-        `Se encontraron ${huerfanas.length} foto(s) huérfana(s) en Storage. ¿Desea eliminarlas todas?`
-      );
-      if (!confirmar) {
-        setLimpiando(false);
-        return;
-      }
+  const handleEliminarSeleccionadas = async () => {
+    if (!huerfanas || seleccionados.size === 0) return;
+    const seleccionadas = [...seleccionados].map(i => huerfanas[i]);
+    const count = seleccionadas.length;
+    const confirmar = window.confirm(
+      `¿Está seguro de eliminar ${count} foto(s) seleccionada(s)? Esta acción no se puede deshacer.`
+    );
+    if (!confirmar) return;
 
-      const paths = huerfanas.map(h => h.storage_path);
+    setEliminando(true);
+    setResultadoLimpieza(null);
+    try {
+      const paths = seleccionadas.map(h => h.storage_path);
       const { eliminadas, fallidas } = await eliminarFotosHuerfanas(paths);
 
       if (fallidas.length > 0) {
         setResultadoLimpieza({
           tipo: 'error',
-          mensaje: `Se eliminaron ${eliminadas} foto(s), pero ${fallidas.length} no pudieron eliminarse. Revise la consola.`,
+          mensaje: `Se eliminaron ${eliminadas} de ${count} foto(s). ${fallidas.length} no pudieron eliminarse. Revise la consola.`,
         });
       } else {
         setResultadoLimpieza({
           tipo: 'exito',
-          mensaje: `Se eliminaron ${eliminadas} foto(s) huérfana(s) correctamente.`,
+          mensaje: `Se eliminaron ${eliminadas} foto(s) correctamente.`,
         });
       }
+      setHuerfanas(prev => prev ? prev.filter((_, i) => !seleccionados.has(i)) : null);
+      setSeleccionados(new Set());
     } catch (err) {
-      console.error('[Constructor] Error al limpiar huérfanas:', err);
+      console.error('[Constructor] Error al eliminar huérfanas:', err);
       setResultadoLimpieza({
         tipo: 'error',
-        mensaje: 'Error al buscar o eliminar fotos huérfanas. Verifique que la función RPC esté instalada en Supabase.',
+        mensaje: 'Error al eliminar fotos huérfanas.',
       });
     } finally {
-      setLimpiando(false);
+      setEliminando(false);
+    }
+  };
+
+  const toggleSeleccion = (i: number) => {
+    setSeleccionados(prev => {
+      const next = new Set(prev);
+      if (next.has(i)) next.delete(i);
+      else next.add(i);
+      return next;
+    });
+  };
+
+  const toggleTodos = () => {
+    if (!huerfanas) return;
+    if (seleccionados.size === huerfanas.length) {
+      setSeleccionados(new Set());
+    } else {
+      setSeleccionados(new Set(huerfanas.map((_, i) => i)));
     }
   };
 
@@ -125,23 +165,146 @@ export default function Constructor() {
                 <p className="font-medium text-sm">{resultadoLimpieza.mensaje}</p>
               </div>
             )}
-            <button
-              onClick={handleLimpiarHuerfanas}
-              disabled={limpiando}
-              className="flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-5 py-2.5 rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {limpiando ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" />
-                  Escaneando...
-                </>
-              ) : (
-                <>
-                  <Trash2 size={18} />
-                  Buscar y eliminar fotos huérfanas
-                </>
-              )}
-            </button>
+
+            {huerfanas === null ? (
+              <button
+                onClick={handleBuscarHuerfanas}
+                disabled={buscando}
+                className="flex items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-5 py-2.5 rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {buscando ? (
+                  <>
+                    <Loader2 size={18} className="animate-spin" />
+                    Escaneando Storage...
+                  </>
+                ) : (
+                  <>
+                    <Search size={18} />
+                    Buscar fotos huérfanas
+                  </>
+                )}
+              </button>
+            ) : huerfanas.length === 0 ? (
+              <div className="p-4 rounded-xl flex items-center gap-3 bg-green-50 border border-green-200 text-green-800">
+                <CheckCircle2 size={20} className="text-green-600 shrink-0" />
+                <p className="font-medium text-sm">No se encontraron fotos huérfanas. Todo está limpio.</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-gray-200">
+                        <th className="text-center py-2 px-1 w-8">
+                          <input
+                            type="checkbox"
+                            checked={huerfanas.length > 0 && seleccionados.size === huerfanas.length}
+                            ref={el => {
+                              if (el) el.indeterminate = seleccionados.size > 0 && seleccionados.size < huerfanas.length;
+                            }}
+                            onChange={toggleTodos}
+                            className="w-4 h-4 rounded border-gray-300 text-caracas-red focus:ring-caracas-red cursor-pointer"
+                          />
+                        </th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-600">Foto</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-600">Tipo</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-600">Nombres y Apellidos</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-600">Motivo</th>
+                        <th className="text-left py-2 px-3 font-semibold text-gray-600">Campamento</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {huerfanas.map((h, i) => (
+                        <tr key={i} className="border-b border-gray-100 hover:bg-gray-50">
+                          <td className="py-2 px-1 text-center">
+                            <input
+                              type="checkbox"
+                              checked={seleccionados.has(i)}
+                              onChange={() => toggleSeleccion(i)}
+                              className="w-4 h-4 rounded border-gray-300 text-caracas-red focus:ring-caracas-red cursor-pointer"
+                            />
+                          </td>
+                          <td className="py-2 px-3">
+                            <div className="w-16 h-16 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center border border-gray-200">
+                              <img
+                                src={h.preview_url}
+                                alt={`Foto ${h.tipo}`}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                  (e.target as HTMLImageElement).parentElement!.classList.add('text-gray-400');
+                                }}
+                              />
+                              <ImageOff size={20} className="hidden" />
+                            </div>
+                          </td>
+                          <td className="py-2 px-3">
+                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
+                              h.tipo === 'persona'
+                                ? 'bg-blue-100 text-blue-700'
+                                : 'bg-amber-100 text-amber-700'
+                            }`}>
+                              {h.tipo === 'persona' ? (
+                                <User size={12} />
+                              ) : (
+                                <PawPrint size={12} />
+                              )}
+                              {h.tipo === 'persona' ? 'Persona' : 'Mascota'}
+                            </span>
+                          </td>
+                          <td className="py-2 px-3">
+                            {h.refugiado_nombre ? (
+                              <span className="text-gray-800 font-medium">{h.refugiado_nombre}</span>
+                            ) : (
+                              <span className="text-gray-400 italic">—</span>
+                            )}
+                          </td>
+                          <td className="py-2 px-3">
+                            {h.refugiado_nombre ? (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-500">
+                                <AlertCircle size={10} />
+                                Foto sobrante
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-50 text-red-600">
+                                <AlertCircle size={10} />
+                                Integrante eliminado
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-2 px-3 text-gray-600">
+                            {nombreCampamento(h.campamento_id)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                  <p className="text-sm text-gray-500">
+                    Se encontraron <span className="font-bold text-gray-800">{huerfanas.length}</span> foto(s) huérfana(s).
+                  </p>
+                  <button
+                    onClick={handleEliminarSeleccionadas}
+                    disabled={eliminando || seleccionados.size === 0}
+                    className="flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white px-5 py-2.5 rounded-xl font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md"
+                  >
+                    {eliminando ? (
+                      <>
+                        <Loader2 size={18} className="animate-spin" />
+                        Eliminando...
+                      </>
+                    ) : (
+                      <>
+                        <Trash2 size={18} />
+                        Eliminar seleccionadas{seleccionados.size > 0 ? ` (${seleccionados.size})` : ''}
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
