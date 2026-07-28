@@ -295,7 +295,7 @@ export default function MainLayout() {
         </header>
 
         {/* Mobile Header */}
-        <header className="relative flex md:hidden h-14 bg-white border-b border-gray-200 items-center justify-between px-4 shadow-sm shrink-0 z-20">
+        <header className="fixed top-0 left-0 right-0 w-full flex md:hidden h-14 bg-white border-b border-gray-200 items-center justify-between px-4 shadow-sm z-30">
           <div className="flex flex-col min-w-0 overflow-hidden">
             <span className="text-[21px] font-semibold text-gray-800 leading-tight">{moduloActual}</span>
             {campamentoSeleccionado && (
@@ -311,7 +311,7 @@ export default function MainLayout() {
         </header>
 
         {/* Content */}
-        <div className={`flex-1 min-h-0 overflow-y-auto bg-caracas-light ${isMobile ? 'p-4 pb-[72px]' : 'p-8'}`}>
+        <div className={`flex-1 min-h-0 overflow-y-auto bg-caracas-light z-0 ${isMobile ? 'p-4 pt-14 pb-[72px]' : 'p-8'}`}>
           <div className={location.pathname === '/agenda' ? 'flex-1 min-h-0 flex flex-col overflow-hidden' : 'max-w-7xl mx-auto'}>
             <Outlet />
           </div>
