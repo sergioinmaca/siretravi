@@ -59,6 +59,7 @@ const PlanoGeneralViewer = forwardRef<HTMLCanvasElement, PlanoGeneralViewerProps
 
   const isPanningRef = useRef(false);
   const panStartRef = useRef({ x: 0, y: 0, offsetX: 0, offsetY: 0 });
+  const pinchRef = useRef({ dist: 0, zoom: 1, offsetX: 0, offsetY: 0 });
 
   const setCanvasRef = useCallback((node: HTMLCanvasElement | null) => {
     internalCanvasRef.current = node;
@@ -194,43 +195,97 @@ const PlanoGeneralViewer = forwardRef<HTMLCanvasElement, PlanoGeneralViewerProps
     isPanningRef.current = false;
   };
 
+  const getTouchCenter = (touches: React.TouchList) => {
+    const t0 = touches[0];
+    const t1 = touches[1];
+    return { cx: (t0.clientX + t1.clientX) / 2, cy: (t0.clientY + t1.clientY) / 2 };
+  };
+
+  const getTouchDistance = (touches: React.TouchList) => {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
   const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (zoom <= 1.0) return;
-    const touch = e.touches[0];
-    if (!touch) return;
+    if (zoom <= 1.0 && e.touches.length < 2) return;
     e.preventDefault();
-    isPanningRef.current = true;
     const canvas = internalCanvasRef.current;
     if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    panStartRef.current = {
-      x: touch.clientX * scaleX,
-      y: touch.clientY * scaleY,
-      offsetX,
-      offsetY
-    };
+
+    if (e.touches.length === 2) {
+      const dist = getTouchDistance(e.touches);
+      pinchRef.current = { dist, zoom, offsetX, offsetY };
+    } else if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      isPanningRef.current = true;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      panStartRef.current = {
+        x: touch.clientX * scaleX,
+        y: touch.clientY * scaleY,
+        offsetX,
+        offsetY
+      };
+    }
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (!isPanningRef.current) return;
-    const touch = e.touches[0];
-    if (!touch) return;
     e.preventDefault();
     const canvas = internalCanvasRef.current;
     if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
-    const dx = touch.clientX * scaleX - panStartRef.current.x;
-    const dy = touch.clientY * scaleY - panStartRef.current.y;
-    setOffsetX(panStartRef.current.offsetX + dx);
-    setOffsetY(panStartRef.current.offsetY + dy);
+
+    if (e.touches.length === 2) {
+      const p = pinchRef.current;
+      const newDist = getTouchDistance(e.touches);
+      const { cx, cy } = getTouchCenter(e.touches);
+      const rect = canvas.getBoundingClientRect();
+      const canvasX = (cx - rect.left) * (canvas.width / rect.width);
+      const canvasY = (cy - rect.top) * (canvas.height / rect.height);
+      const scale = newDist / p.dist;
+      const newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, p.zoom * scale));
+      const newOffsetX = canvasX - (canvasX - p.offsetX) * (newZoom / p.zoom);
+      const newOffsetY = canvasY - (canvasY - p.offsetY) * (newZoom / p.zoom);
+      if (newZoom <= 1.0) {
+        setZoom(1.0);
+        setOffsetX(0);
+        setOffsetY(0);
+      } else {
+        setZoom(newZoom);
+        setOffsetX(newOffsetX);
+        setOffsetY(newOffsetY);
+      }
+    } else if (e.touches.length === 1 && isPanningRef.current) {
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const dx = touch.clientX * scaleX - panStartRef.current.x;
+      const dy = touch.clientY * scaleY - panStartRef.current.y;
+      setOffsetX(panStartRef.current.offsetX + dx);
+      setOffsetY(panStartRef.current.offsetY + dy);
+    }
   };
 
-  const handleTouchEnd = () => {
-    isPanningRef.current = false;
+  const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 0) {
+      isPanningRef.current = false;
+    } else if (e.touches.length === 1 && zoom > 1.0) {
+      isPanningRef.current = true;
+      const touch = e.touches[0];
+      const canvas = internalCanvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      panStartRef.current = {
+        x: touch.clientX * scaleX,
+        y: touch.clientY * scaleY,
+        offsetX,
+        offsetY
+      };
+    }
   };
 
   const handleWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
@@ -307,7 +362,7 @@ const PlanoGeneralViewer = forwardRef<HTMLCanvasElement, PlanoGeneralViewerProps
           onTouchEnd={handleTouchEnd}
           onWheel={handleWheel}
           className={`w-full block ${zoom > 1.0 ? 'cursor-grab' : 'cursor-default'}`}
-          style={{ imageRendering: 'auto', touchAction: zoom > 1.0 ? 'none' : 'auto' }}
+          style={{ imageRendering: 'auto', touchAction: 'none' }}
         />
         <div className="flex items-center gap-2 justify-center py-2 border-t border-gray-100 bg-gray-50">
           <button

@@ -2,6 +2,7 @@ import { useState, useMemo, useRef, useCallback } from 'react';
 import { Users, BedDouble, Tent, Home, Baby, Heart, Sparkles, ShieldOff, FileDown, Loader2, Milk, UserCheck } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
+import { useIsMobile } from '../hooks/useIsMobile';
 import CroquisViewer, { countElements, contarTiposDesdeCroquis } from '../components/constructor/CroquisViewer';
 import PlanoGeneralViewer from '../components/constructor/PlanoGeneralViewer';
 import jsPDF from 'jspdf';
@@ -9,6 +10,7 @@ import jsPDF from 'jspdf';
 export default function Inicio() {
   const { campamentoSeleccionado, refugiados = [] } = useCampamento();
   const { tienePermisoPorCampamento } = useAuth();
+  const isMobile = useIsMobile();
 
   const tieneAcceso = campamentoSeleccionado
     ? tienePermisoPorCampamento('Inicio', campamentoSeleccionado.id, 'Ver')
@@ -543,65 +545,69 @@ export default function Inicio() {
     <div className="space-y-6">
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-gray-800">Visión General</h2>
-        <p className="text-gray-500">
+        <p className="text-gray-500 max-md:max-w-[calc(100vw-2rem)] max-md:[overflow-wrap:anywhere]">
           Mostrando indicadores para: <span className="font-semibold text-caracas-red">{campamentoSeleccionado?.nombre || 'Ninguno'}</span>
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 md:gap-6 max-md:-mx-4">
         {/* Modulos Activos */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-caracas-blue flex items-center gap-4 hover:shadow-md transition-shadow">
-          <div className="p-4 bg-caracas-blue/10 rounded-xl text-caracas-blue shrink-0">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-caracas-blue flex items-center gap-4 hover:shadow-md transition-shadow max-md:bg-caracas-blue max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:border-l-0 max-md:px-4 max-md:py-3 max-md:gap-2">
+          <Tent size={isMobile ? 18 : 32} className="max-md:text-white shrink-0 md:hidden" />
+          <div className="max-md:hidden p-4 bg-caracas-blue/10 rounded-xl text-caracas-blue shrink-0">
             <Tent size={32} />
           </div>
           <div className="overflow-hidden">
-            <p className="text-sm font-medium text-gray-500 truncate">Modulos Activos</p>
-            <p className="text-3xl font-bold text-gray-900">{campamentoSeleccionado?.modulos?.length || 0}</p>
-            <p className="text-xs text-gray-400 mt-1 truncate">
+            <p className="text-sm font-medium text-gray-500 truncate max-md:text-white">Modulos Activos</p>
+            <p className="text-3xl font-bold text-gray-900 max-md:text-white max-md:text-xl">{campamentoSeleccionado?.modulos?.length || 0}</p>
+            <p className="text-xs text-gray-400 mt-1 truncate max-md:text-base max-md:text-yellow-300">
               Instalados
             </p>
           </div>
         </div>
 
         {/* Capacidad / Camas */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-caracas-green flex items-center gap-4 hover:shadow-md transition-shadow">
-          <div className="p-4 bg-caracas-green/10 rounded-xl text-caracas-green shrink-0">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-caracas-green flex items-center gap-4 hover:shadow-md transition-shadow max-md:bg-caracas-green max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:border-l-0 max-md:px-4 max-md:py-3 max-md:gap-2">
+          <BedDouble size={isMobile ? 18 : 32} className="max-md:text-white shrink-0 md:hidden" />
+          <div className="max-md:hidden p-4 bg-caracas-green/10 rounded-xl text-caracas-green shrink-0">
             <BedDouble size={32} />
           </div>
           <div className="overflow-hidden">
-            <p className="text-sm font-medium text-gray-500 truncate">Camas Disponibles</p>
-            <p className="text-3xl font-bold text-gray-900">{disponiblesCroquis}</p>
-            <p className="text-xs text-gray-400 mt-1">
-              <span className="text-caracas-red font-medium">{uniqueOccupiedBedsSet.size}</span> Ocupadas / {totalCamasCroquis} Totales
+            <p className="text-sm font-medium text-gray-500 truncate max-md:text-white">Camas Disponibles</p>
+            <p className="text-3xl font-bold text-gray-900 max-md:text-white max-md:text-xl">{disponiblesCroquis}</p>
+            <p className="text-xs text-gray-400 mt-1 max-md:text-base max-md:text-yellow-300">
+              <span className="text-caracas-red font-medium max-md:text-yellow-300">{uniqueOccupiedBedsSet.size}</span> Ocupadas / {totalCamasCroquis} Totales
             </p>
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 md:gap-6 max-md:-mx-4">
         {/* Total Personas */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-caracas-red flex items-center gap-4 hover:shadow-md transition-shadow">
-          <div className="p-4 bg-caracas-red/10 rounded-xl text-caracas-red shrink-0">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-caracas-red flex items-center gap-4 hover:shadow-md transition-shadow max-md:bg-caracas-red max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:border-l-0 max-md:px-4 max-md:py-3 max-md:gap-2">
+          <Users size={isMobile ? 18 : 32} className="max-md:text-white shrink-0 md:hidden" />
+          <div className="max-md:hidden p-4 bg-caracas-red/10 rounded-xl text-caracas-red shrink-0">
             <Users size={32} />
           </div>
           <div className="overflow-hidden">
-            <p className="text-sm font-medium text-gray-500 truncate">Total de Personas</p>
-            <p className="text-3xl font-bold text-gray-900">{totalRefugiados}</p>
-            <p className="text-xs text-gray-400 mt-1">
-              <span className="text-blue-600 font-medium">{totalHombres}</span> H · <span className="text-pink-600 font-medium">{totalMujeres}</span> M
+            <p className="text-sm font-medium text-gray-500 truncate max-md:text-white">Total de Personas</p>
+            <p className="text-3xl font-bold text-gray-900 max-md:text-white max-md:text-xl">{totalRefugiados}</p>
+            <p className="text-xs text-gray-400 mt-1 max-md:text-base max-md:text-yellow-300">
+              <span className="text-blue-600 font-medium max-md:text-blue-300">{totalHombres}</span> H · <span className="text-pink-600 font-medium max-md:text-pink-300">{totalMujeres}</span> M
             </p>
           </div>
         </div>
 
         {/* Total Familias */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-indigo-500 flex items-center gap-4 hover:shadow-md transition-shadow">
-          <div className="p-4 bg-indigo-500/10 rounded-xl text-indigo-500 shrink-0">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-indigo-500 flex items-center gap-4 hover:shadow-md transition-shadow max-md:bg-indigo-500 max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:border-l-0 max-md:px-4 max-md:py-3 max-md:gap-2">
+          <Home size={isMobile ? 18 : 32} className="max-md:text-white shrink-0 md:hidden" />
+          <div className="max-md:hidden p-4 bg-indigo-500/10 rounded-xl text-indigo-500 shrink-0">
             <Home size={32} />
           </div>
           <div className="overflow-hidden">
-            <p className="text-sm font-medium text-gray-500 truncate">Total de Familias</p>
-            <p className="text-3xl font-bold text-gray-900">{totalFamilias}</p>
-            <p className="text-xs text-gray-400 mt-1 truncate">
+            <p className="text-sm font-medium text-gray-500 truncate max-md:text-white">Total de Familias</p>
+            <p className="text-3xl font-bold text-gray-900 max-md:text-white max-md:text-xl">{totalFamilias}</p>
+            <p className="text-xs text-gray-400 mt-1 truncate max-md:text-base max-md:text-yellow-300">
               Grupos familiares
             </p>
           </div>
@@ -611,103 +617,109 @@ export default function Inicio() {
       {/* Indicadores Demográficos Detallados */}
       <div className="space-y-6">
         {/* Cards de Niñez */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-y-2 md:gap-6 max-md:-mx-4">
           {/* Niños (0-11) */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-orange-400 hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-orange-100 rounded-xl text-orange-500">
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-orange-400 hover:shadow-md transition-shadow max-md:bg-[#e76e1c] max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:border-l-0 max-md:px-4 max-md:py-3">
+            <div className="flex items-center gap-3 mb-4 max-md:gap-2 max-md:mb-0">
+              <Baby size={isMobile ? 18 : 28} className="max-md:text-white shrink-0 md:hidden" />
+              <div className="max-md:hidden p-3 bg-orange-100 rounded-xl text-orange-500">
                 <Baby size={28} />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500">Niños</p>
-                <p className="text-2xl font-bold text-gray-900">{ninos.length}</p>
+                <p className="text-sm font-medium text-gray-500 max-md:text-white">Niños</p>
+                <p className="text-2xl font-bold text-gray-900 max-md:text-white max-md:text-lg">{ninos.length}</p>
               </div>
             </div>
-            <p className="text-xs text-gray-400">
-              0 a 11 años · <span className="text-blue-600 font-medium">{ninosH} H</span> · <span className="text-pink-600 font-medium">{ninosM} M</span>
+            <p className="text-xs text-gray-400 max-md:text-base max-md:text-yellow-300">
+              0 a 11 años · <span className="text-blue-600 font-medium max-md:text-blue-200">{ninosH} H</span> · <span className="text-pink-600 font-medium max-md:text-pink-200">{ninosM} M</span>
             </p>
           </div>
 
           {/* Niños Lactantes (0-3) */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-orange-400 hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-sky-100 rounded-xl text-sky-500">
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-orange-400 hover:shadow-md transition-shadow max-md:bg-[#e98b3f] max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:border-l-0 max-md:px-4 max-md:py-3">
+            <div className="flex items-center gap-3 mb-4 max-md:gap-2 max-md:mb-0">
+              <Milk size={isMobile ? 18 : 28} className="max-md:text-white shrink-0 md:hidden" />
+              <div className="max-md:hidden p-3 bg-sky-100 rounded-xl text-sky-500">
                 <Milk size={28} />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500">Niños Lactantes</p>
-                <p className="text-2xl font-bold text-gray-900">{lactantes.length}</p>
+                <p className="text-sm font-medium text-gray-500 max-md:text-white">Niños Lactantes</p>
+                <p className="text-2xl font-bold text-gray-900 max-md:text-white max-md:text-lg">{lactantes.length}</p>
               </div>
             </div>
-            <p className="text-xs text-gray-400">
-              0 a 2 años · <span className="text-blue-600 font-medium">{lactantesH} H</span> · <span className="text-pink-600 font-medium">{lactantesM} M</span>
+            <p className="text-xs text-gray-400 max-md:text-base max-md:text-yellow-300">
+              0 a 2 años · <span className="text-blue-600 font-medium max-md:text-blue-200">{lactantesH} H</span> · <span className="text-pink-600 font-medium max-md:text-pink-200">{lactantesM} M</span>
             </p>
           </div>
 
           {/* No Lactantes (4-11) */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-orange-300 hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-amber-100 rounded-xl text-amber-600">
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-orange-500 hover:shadow-md transition-shadow max-md:bg-[#ce8043] max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:border-l-0 max-md:px-4 max-md:py-3">
+            <div className="flex items-center gap-3 mb-4 max-md:gap-2 max-md:mb-0">
+              <Baby size={isMobile ? 18 : 28} className="max-md:text-white shrink-0 md:hidden" />
+              <div className="max-md:hidden p-3 bg-amber-100 rounded-xl text-amber-600">
                 <Baby size={28} />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500">No Lactantes</p>
-                <p className="text-2xl font-bold text-gray-900">{noLactantes.length}</p>
+                <p className="text-sm font-medium text-gray-500 max-md:text-white">No Lactantes</p>
+                <p className="text-2xl font-bold text-gray-900 max-md:text-white max-md:text-lg">{noLactantes.length}</p>
               </div>
             </div>
-            <p className="text-xs text-gray-400">
-              3 a 11 años · <span className="text-blue-600 font-medium">{noLactantesH} H</span> · <span className="text-pink-600 font-medium">{noLactantesM} M</span>
+            <p className="text-xs text-gray-400 max-md:text-base max-md:text-yellow-300">
+              3 a 11 años · <span className="text-blue-600 font-medium max-md:text-blue-200">{noLactantesH} H</span> · <span className="text-pink-600 font-medium max-md:text-pink-200">{noLactantesM} M</span>
             </p>
           </div>
         </div>
 
         {/* Adolescentes, Adultos, Adulto Mayor */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-y-2 md:gap-6 max-md:-mx-4">
           {/* Adolescentes (12-17) */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-yellow-400 hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-yellow-100 rounded-xl text-yellow-600">
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-amber-500 hover:shadow-md transition-shadow max-md:bg-amber-500 max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:border-l-0 max-md:px-4 max-md:py-3">
+            <div className="flex items-center gap-3 mb-4 max-md:gap-2 max-md:mb-0">
+              <Sparkles size={isMobile ? 18 : 28} className="max-md:text-white shrink-0 md:hidden" />
+              <div className="max-md:hidden p-3 bg-yellow-100 rounded-xl text-yellow-600">
                 <Sparkles size={28} />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500">Adolescentes</p>
-                <p className="text-2xl font-bold text-gray-900">{adolescentes.length}</p>
+                <p className="text-sm font-medium text-gray-500 max-md:text-white">Adolescentes</p>
+                <p className="text-2xl font-bold text-gray-900 max-md:text-white max-md:text-lg">{adolescentes.length}</p>
               </div>
             </div>
-            <p className="text-xs text-gray-400">
-              12 a 17 años · <span className="text-blue-600 font-medium">{adolescentesH} H</span> · <span className="text-pink-600 font-medium">{adolescentesM} M</span>
+            <p className="text-xs text-gray-400 max-md:text-base max-md:text-yellow-300">
+              12 a 17 años · <span className="text-blue-600 font-medium max-md:text-blue-200">{adolescentesH} H</span> · <span className="text-pink-600 font-medium max-md:text-pink-200">{adolescentesM} M</span>
             </p>
           </div>
 
           {/* Adultos (18-59 H / 18-54 M) */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-emerald-400 hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-emerald-100 rounded-xl text-emerald-600">
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-emerald-400 hover:shadow-md transition-shadow max-md:bg-[#48ba8d] max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:border-l-0 max-md:px-4 max-md:py-3">
+            <div className="flex items-center gap-3 mb-4 max-md:gap-2 max-md:mb-0">
+              <UserCheck size={isMobile ? 18 : 28} className="max-md:text-white shrink-0 md:hidden" />
+              <div className="max-md:hidden p-3 bg-emerald-100 rounded-xl text-emerald-600">
                 <UserCheck size={28} />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500">Adultos</p>
-                <p className="text-2xl font-bold text-gray-900">{adultos.length}</p>
+                <p className="text-sm font-medium text-gray-500 max-md:text-white">Adultos</p>
+                <p className="text-2xl font-bold text-gray-900 max-md:text-white max-md:text-lg">{adultos.length}</p>
               </div>
             </div>
-            <p className="text-xs text-gray-400">
-              H 18-59 / M 18-54 · <span className="text-blue-600 font-medium">{adultosH} H</span> · <span className="text-pink-600 font-medium">{adultosM} M</span>
+            <p className="text-xs text-gray-400 max-md:text-base max-md:text-yellow-300">
+              H 18-59 / M 18-54 · <span className="text-blue-600 font-medium max-md:text-blue-200">{adultosH} H</span> · <span className="text-pink-600 font-medium max-md:text-pink-200">{adultosM} M</span>
             </p>
           </div>
 
           {/* Adulto Mayor */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-rose-400 hover:shadow-md transition-shadow">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="p-3 bg-rose-100 rounded-xl text-rose-500">
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-rose-400 hover:shadow-md transition-shadow max-md:bg-[#d57177] max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:border-l-0 max-md:px-4 max-md:py-3">
+            <div className="flex items-center gap-3 mb-4 max-md:gap-2 max-md:mb-0">
+              <Heart size={isMobile ? 18 : 28} className="max-md:text-white shrink-0 md:hidden" />
+              <div className="max-md:hidden p-3 bg-rose-100 rounded-xl text-rose-500">
                 <Heart size={28} />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500">Adulto Mayor</p>
-                <p className="text-2xl font-bold text-gray-900">{adultoMayor.length}</p>
+                <p className="text-sm font-medium text-gray-500 max-md:text-white">Adulto Mayor</p>
+                <p className="text-2xl font-bold text-gray-900 max-md:text-white max-md:text-lg">{adultoMayor.length}</p>
               </div>
             </div>
-            <p className="text-xs text-gray-400">
-              H &ge;60 / M &ge;55 · <span className="text-blue-600 font-medium">{adultoMayorH} H</span> · <span className="text-pink-600 font-medium">{adultoMayorM} M</span>
+            <p className="text-xs text-gray-400 max-md:text-base max-md:text-yellow-300">
+              H &ge;60 / M &ge;55 · <span className="text-blue-600 font-medium max-md:text-blue-200">{adultoMayorH} H</span> · <span className="text-pink-600 font-medium max-md:text-pink-200">{adultoMayorM} M</span>
             </p>
           </div>
         </div>
@@ -717,10 +729,10 @@ export default function Inicio() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* COLUMNA IZQUIERDA: Tenencia de Vivienda + Situación de Estatus apilados */}
-        <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-y-2 md:gap-6">
 
           {/* Grafico de Dona – Tenencia de Vivienda */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 max-md:bg-transparent max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3 max-md:-mx-4">
             <div className="flex items-center gap-2 mb-6">
               <div className="w-1 h-6 bg-caracas-red rounded-full"></div>
               <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wider">Tenencia de Vivienda</h2>
@@ -771,7 +783,7 @@ export default function Inicio() {
           </div>
 
           {/* Grafico de Dona – Situación de Estatus (todos los integrantes) */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 max-md:bg-transparent max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3 max-md:-mx-4">
             <div className="flex items-center gap-2 mb-6">
               <div className="w-1 h-6 bg-amber-500 rounded-full"></div>
               <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wider">Situación de Estatus</h2>
@@ -824,7 +836,7 @@ export default function Inicio() {
         </div>
 
         {/* COLUMNA DERECHA: Ranking de Procedencias */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 max-md:bg-transparent max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3 max-md:max-w-[calc(100vw-1rem)] max-md:-ml-4 max-md:mr-0">
           <div className="flex items-center gap-2 mb-6">
             <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
             <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wider">Ranking de Procedencias</h2>
@@ -838,14 +850,14 @@ export default function Inicio() {
                 return (
                   <div
                     key={proc.nombre}
-                    className={`flex items-center gap-3 group relative ${hoveredBar === index ? 'z-50' : 'z-0'}`}
+                    className={`flex items-center gap-3 group relative max-md:flex-col max-md:items-start max-md:gap-1 max-md:overflow-hidden ${hoveredBar === index ? 'z-50 max-md:overflow-visible' : 'z-0'}`}
                     onMouseEnter={() => setHoveredBar(index)}
                     onMouseLeave={() => setHoveredBar(null)}
                   >
-                    <p className="text-xs font-semibold text-gray-500 text-right w-36 shrink-0 truncate uppercase" title={proc.nombre}>
+                    <p className="text-xs font-semibold text-gray-500 text-right w-36 shrink-0 truncate uppercase max-md:w-full max-md:text-left max-md:whitespace-normal max-md:overflow-visible" title={proc.nombre}>
                       {proc.nombre}
                     </p>
-                    <div className="flex-1 h-7 bg-gray-50 rounded-md relative">
+                    <div className="flex-1 h-7 bg-gray-50 rounded-md relative max-md:w-full max-md:flex-none">
                       <div
                         className="h-full rounded-md transition-all duration-500 ease-out"
                         style={{
@@ -856,7 +868,7 @@ export default function Inicio() {
                         }}
                       />
                       {hoveredBar === index && (
-                        <div className="absolute left-1/2 -translate-x-1/2 -top-14 bg-white border border-gray-200 shadow-xl rounded-lg px-4 py-2 z-50 whitespace-nowrap pointer-events-none">
+                        <div className="absolute left-1/2 -translate-x-1/2 -top-14 bg-white border border-gray-200 shadow-xl rounded-lg px-4 py-2 z-[999] whitespace-nowrap pointer-events-none">
                           <p className="text-xs font-bold text-gray-700">{proc.nombre}</p>
                           <p className="text-xs text-gray-500">
                             {proc.nombre}: <span className="font-bold text-gray-800">{proc.cantidad}</span> familias <span className="text-gray-400 font-medium">({((proc.cantidad / totalJefes) * 100).toFixed(1)}%)</span>
@@ -1000,7 +1012,8 @@ export default function Inicio() {
                 moduloNombre={modulo.nombre}
                 elementNumberOffset={offset}
                 width={1500}
-                height={800}
+                height={isMobile ? 1500 : 800}
+                portrait={isMobile}
                 tipoContabilizacion={tipoContabilizacion}
                 occupiedBeds={occupiedBeds}
                 bedOccupants={bedOccupants}

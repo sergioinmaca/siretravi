@@ -59,12 +59,23 @@ interface CroquisViewerProps {
   duplexCount?: number;
   disponiblesModulo?: number;
   bedColorMap?: Record<string, string>;
+  portrait?: boolean;
 }
 
-const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function CroquisViewer({ croquisData, moduloNombre, width = 700, height = 600, elementNumberOffset = 0, tipoContabilizacion = 'elemento', occupiedBeds = [], bedOccupants = {}, literasCount, individualesCount, duplexCount, disponiblesModulo, bedColorMap }, ref) {
+const ZOOM_MIN = 0.5;
+const ZOOM_MAX = 3.0;
+const ZOOM_STEP = 0.1;
+
+const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function CroquisViewer({ croquisData, moduloNombre, width = 700, height = 600, elementNumberOffset = 0, tipoContabilizacion = 'elemento', occupiedBeds = [], bedOccupants = {}, literasCount, individualesCount, duplexCount, disponiblesModulo, bedColorMap, portrait = false }, ref) {
   const internalCanvasRef = useRef<HTMLCanvasElement>(null);
   const bedsRenderRef = useRef<BedRenderInfo[]>([]);
   const [hoveredBed, setHoveredBed] = useState<HoveredBed | null>(null);
+  const [zoom, setZoom] = useState(1.0);
+  const [offsetX, setOffsetX] = useState(0);
+  const [offsetY, setOffsetY] = useState(0);
+  const isPanningRef = useRef(false);
+  const panStartRef = useRef({ x: 0, y: 0, offsetX: 0, offsetY: 0 });
+  const pinchRef = useRef({ dist: 0, zoom: 1, offsetX: 0, offsetY: 0 });
 
   const setCanvasRef = useCallback((node: HTMLCanvasElement | null) => {
     internalCanvasRef.current = node;
@@ -78,16 +89,15 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
     let beds: PlacedBed[] = [];
     let rectangles: PlacedRectangle[] = [];
     let texts: PlacedText[] = [];
+    let drawingBase64: string | null = null;
 
     try {
       const parsed = JSON.parse(croquisData);
       const rawObjects: Record<string, unknown>[] = parsed.objects || parsed.beds || [];
+      drawingBase64 = parsed.drawingBase64 || null;
       beds = rawObjects
         .filter(o => o.kind === 'bed' || !o.kind)
         .map(o => ({
@@ -119,35 +129,85 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
           color: o.color as string,
           id: o.id as string,
         }));
-
-      const occupiedSet = new Set(occupiedBeds);
-      const accumulator: BedRenderInfo[] = [];
-
-      if (parsed.drawingBase64) {
-        const img = new Image();
-        img.onload = () => {
-          ctx.drawImage(img, 0, 0);
-          drawBedsWithNumbers(ctx, beds, elementNumberOffset, tipoContabilizacion, occupiedSet, accumulator, bedColorMap);
-          drawRectangles(ctx, rectangles);
-          drawTexts(ctx, texts);
-          bedsRenderRef.current = accumulator;
-        };
-        img.src = parsed.drawingBase64;
-        return;
-      }
     } catch {
-      // Si el JSON no parsea, dejamos canvas en blanco
+      // blank
     }
 
     const occupiedSet = new Set(occupiedBeds);
     const accumulator: BedRenderInfo[] = [];
-    drawBedsWithNumbers(ctx, beds, elementNumberOffset, tipoContabilizacion, occupiedSet, accumulator, bedColorMap);
-    drawRectangles(ctx, rectangles);
-    drawTexts(ctx, texts);
-    bedsRenderRef.current = accumulator;
-  }, [croquisData, elementNumberOffset, tipoContabilizacion, occupiedBeds]);
+
+    const finishRender = () => {
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      if (portrait) { ctx.translate(width, 0); ctx.rotate(Math.PI / 2); }
+      ctx.translate(offsetX, offsetY);
+      ctx.scale(zoom, zoom);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, width, Math.max(height, width));
+      drawBedsWithNumbers(ctx, beds, elementNumberOffset, tipoContabilizacion, occupiedSet, accumulator, bedColorMap);
+      drawRectangles(ctx, rectangles);
+      drawTexts(ctx, texts);
+      bedsRenderRef.current = accumulator;
+    };
+
+    if (drawingBase64) {
+      const img = new Image();
+      img.onload = () => {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        if (portrait) { ctx.translate(width, 0); ctx.rotate(Math.PI / 2); }
+        ctx.translate(offsetX, offsetY);
+        ctx.scale(zoom, zoom);
+        ctx.drawImage(img, 0, 0);
+        drawBedsWithNumbers(ctx, beds, elementNumberOffset, tipoContabilizacion, occupiedSet, accumulator, bedColorMap);
+        drawRectangles(ctx, rectangles);
+        drawTexts(ctx, texts);
+        bedsRenderRef.current = accumulator;
+      };
+      img.src = drawingBase64;
+    } else {
+      finishRender();
+    }
+  }, [croquisData, elementNumberOffset, tipoContabilizacion, occupiedBeds, zoom, offsetX, offsetY]);
+
+  const screenToWorld = useCallback((sx: number, sy: number) => {
+    let x: number, y: number;
+    if (portrait) {
+      x = sy;
+      y = width - sx;
+    } else {
+      x = sx;
+      y = sy;
+    }
+    return { wx: (x - offsetX) / zoom, wy: (y - offsetY) / zoom };
+  }, [portrait, height, offsetX, offsetY, zoom]);
+
+  const worldToScreen = useCallback((wx: number, wy: number) => {
+    const x = wx * zoom + offsetX;
+    const y = wy * zoom + offsetY;
+    if (portrait) {
+      return { sx: width - y, sy: x };
+    }
+    return { sx: x, sy: y };
+  }, [portrait, height, offsetX, offsetY, zoom]);
 
   const handleCanvasMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (isPanningRef.current) {
+      const canvas = internalCanvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const dx = (e.clientX - panStartRef.current.x) * scaleX;
+      const dy = (e.clientY - panStartRef.current.y) * scaleY;
+      if (portrait) {
+        setOffsetX(panStartRef.current.offsetX + dy);
+        setOffsetY(panStartRef.current.offsetY - dx);
+      } else {
+        setOffsetX(panStartRef.current.offsetX + dx);
+        setOffsetY(panStartRef.current.offsetY + dy);
+      }
+      return;
+    }
+
     const canvas = internalCanvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -155,11 +215,12 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
     const scaleY = canvas.height / rect.height;
     const mouseX = (e.clientX - rect.left) * scaleX;
     const mouseY = (e.clientY - rect.top) * scaleY;
+    const { wx: worldX, wy: worldY } = screenToWorld(mouseX, mouseY);
 
     let found: HoveredBed | null = null;
     for (const bed of bedsRenderRef.current) {
-      const dx = mouseX - bed.x;
-      const dy = mouseY - bed.y;
+      const dx = worldX - bed.x;
+      const dy = worldY - bed.y;
       const angle = (bed.rotation * Math.PI) / 180;
       const cos = Math.cos(-angle);
       const sin = Math.sin(-angle);
@@ -179,11 +240,151 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
       }
     }
     setHoveredBed(found);
-  }, []);
+  }, [zoom, offsetX, offsetY]);
 
   const handleCanvasMouseLeave = useCallback(() => {
     setHoveredBed(null);
   }, []);
+
+  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (zoom <= 1.0) return;
+    isPanningRef.current = true;
+    const canvas = internalCanvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    panStartRef.current = {
+      x: e.clientX * (canvas.width / rect.width),
+      y: e.clientY * (canvas.height / rect.height),
+      offsetX,
+      offsetY
+    };
+  }, [zoom, offsetX, offsetY]);
+
+  const handleMouseUp = useCallback(() => {
+    isPanningRef.current = false;
+  }, []);
+
+  const getTouchCenter = (touches: React.TouchList) => {
+    const t0 = touches[0];
+    const t1 = touches[1];
+    return { cx: (t0.clientX + t1.clientX) / 2, cy: (t0.clientY + t1.clientY) / 2 };
+  };
+
+  const getTouchDistance = (touches: React.TouchList) => {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  };
+
+  const handleTouchStart = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (zoom <= 1.0 && e.touches.length < 2) return;
+    e.preventDefault();
+    const canvas = internalCanvasRef.current;
+    if (!canvas) return;
+
+    if (e.touches.length === 2) {
+      const dist = getTouchDistance(e.touches);
+      pinchRef.current = { dist, zoom, offsetX, offsetY };
+    } else if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      isPanningRef.current = true;
+      panStartRef.current = {
+        x: touch.clientX * (canvas.width / rect.width),
+        y: touch.clientY * (canvas.height / rect.height),
+        offsetX,
+        offsetY
+      };
+    }
+  }, [zoom, offsetX, offsetY]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    const canvas = internalCanvasRef.current;
+    if (!canvas) return;
+
+    if (e.touches.length === 2) {
+      const p = pinchRef.current;
+      const newDist = getTouchDistance(e.touches);
+      const { cx, cy } = getTouchCenter(e.touches);
+      const rect = canvas.getBoundingClientRect();
+      const canvasX = (cx - rect.left) * (canvas.width / rect.width);
+      const canvasY = (cy - rect.top) * (canvas.height / rect.height);
+      const rx = portrait ? canvasY : canvasX;
+      const ry = portrait ? width - canvasX : canvasY;
+      const scale = newDist / p.dist;
+      const newZoom = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, p.zoom * scale));
+      const newOffsetX = rx - (rx - p.offsetX) * (newZoom / p.zoom);
+      const newOffsetY = ry - (ry - p.offsetY) * (newZoom / p.zoom);
+      if (newZoom <= 1.0) {
+        setZoom(1.0);
+        setOffsetX(0);
+        setOffsetY(0);
+      } else {
+        setZoom(newZoom);
+        setOffsetX(newOffsetX);
+        setOffsetY(newOffsetY);
+      }
+    } else if (e.touches.length === 1 && isPanningRef.current) {
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      const sx = touch.clientX * (canvas.width / rect.width);
+      const sy = touch.clientY * (canvas.height / rect.height);
+      const dx = sx - panStartRef.current.x;
+      const dy = sy - panStartRef.current.y;
+      if (portrait) {
+        setOffsetX(panStartRef.current.offsetX + dy);
+        setOffsetY(panStartRef.current.offsetY - dx);
+      } else {
+        setOffsetX(panStartRef.current.offsetX + dx);
+        setOffsetY(panStartRef.current.offsetY + dy);
+      }
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 0) {
+      isPanningRef.current = false;
+    } else if (e.touches.length === 1 && zoom > 1.0) {
+      isPanningRef.current = true;
+      const touch = e.touches[0];
+      const canvas = internalCanvasRef.current;
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      panStartRef.current = {
+        x: touch.clientX * (canvas.width / rect.width),
+        y: touch.clientY * (canvas.height / rect.height),
+        offsetX,
+        offsetY
+      };
+    }
+  }, [offsetX, offsetY]);
+
+  const zoomIn = useCallback(() => {
+    const canvas = internalCanvasRef.current;
+    if (!canvas) return;
+    const worldX = (-offsetX) / zoom;
+    const worldY = (-offsetY) / zoom;
+    const newZoom = Math.min(ZOOM_MAX, Math.round((zoom + ZOOM_STEP) * 10) / 10);
+    setZoom(newZoom);
+    setOffsetX(-worldX * newZoom);
+    setOffsetY(-worldY * newZoom);
+  }, [zoom, offsetX, offsetY]);
+
+  const zoomOut = useCallback(() => {
+    const worldX = (-offsetX) / zoom;
+    const worldY = (-offsetY) / zoom;
+    const newZoom = Math.max(ZOOM_MIN, Math.round((zoom - ZOOM_STEP) * 10) / 10);
+    if (newZoom <= 1.0) {
+      setZoom(1.0);
+      setOffsetX(0);
+      setOffsetY(0);
+    } else {
+      setZoom(newZoom);
+      setOffsetX(-worldX * newZoom);
+      setOffsetY(-worldY * newZoom);
+    }
+  }, [zoom, offsetX, offsetY]);
 
   return (
     <div className="space-y-3">
@@ -222,10 +423,15 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
             ref={setCanvasRef}
             width={width}
             height={height}
-            className="w-full block"
-            style={{ imageRendering: 'auto' }}
+            className={`w-full block ${zoom > 1.0 ? 'cursor-grab' : 'cursor-default'}`}
+            style={{ imageRendering: 'auto', touchAction: 'none' }}
             onMouseMove={handleCanvasMouseMove}
             onMouseLeave={handleCanvasMouseLeave}
+            onMouseDown={handleMouseDown}
+            onMouseUp={handleMouseUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
           />
           {hoveredBed && (
             <div
@@ -252,6 +458,23 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
             </div>
           )}
         </div>
+        {zoom !== 1.0 && (
+          <div className="flex items-center gap-2 justify-center py-2 border-t border-gray-100 bg-gray-50">
+            <button
+              type="button"
+              onClick={zoomOut}
+              disabled={zoom <= ZOOM_MIN}
+              className="px-2 py-0.5 border rounded text-xs disabled:opacity-30 hover:bg-gray-200 transition-colors"
+            >−</button>
+            <span className="text-xs w-10 text-center text-gray-500">{Math.round(zoom * 100)}%</span>
+            <button
+              type="button"
+              onClick={zoomIn}
+              disabled={zoom >= ZOOM_MAX}
+              className="px-2 py-0.5 border rounded text-xs disabled:opacity-30 hover:bg-gray-200 transition-colors"
+            >+</button>
+          </div>
+        )}
       </div>
     </div>
   );
