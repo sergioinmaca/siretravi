@@ -349,10 +349,10 @@ export default function MainLayout() {
                 >
                   <Icon
                     size={isActive ? 25 : 20}
-                    strokeWidth={2.5}
+                    strokeWidth={2}
                     className={`shrink-0 transition-all duration-200 ease-out text-[#28307d] ${isActive ? 'drop-shadow-sm' : 'opacity-70'}`}
                   />
-                  <span className={`transition-all duration-200 ease-out truncate max-w-full px-0.5 ${isActive ? 'text-[11px] font-semibold text-white' : 'text-[10px] font-medium text-gray-400'}`}>
+                  <span className={`transition-all duration-200 ease-out truncate max-w-full px-0.5 tracking-wide -mt-0.5 ${isActive ? 'text-[11px] font-semibold text-white' : 'text-[10px] font-medium text-[#28307d]'}`}>
                     {item.label}
                   </span>
                   {isActive && (
