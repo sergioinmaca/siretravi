@@ -19,6 +19,7 @@ import {
   FileText,
   Loader2,
   X,
+  RefreshCw,
 } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
@@ -159,6 +160,10 @@ export default function MainLayout() {
     navigate('/login');
   };
 
+  const hardRefresh = () => {
+    window.location.reload();
+  };
+
 
   if (loading || errorCarga) {
     return (
@@ -255,14 +260,24 @@ export default function MainLayout() {
               </div>
             </div>
           )}
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors"
-            title={!isSidebarOpen ? 'Cerrar Sesión' : undefined}
-          >
-            <LogOut size={20} className="shrink-0" />
-            {isSidebarOpen && <span className="font-medium">Cerrar Sesión</span>}
-          </button>
+          <div className="flex items-center gap-2 px-3">
+            <button
+              onClick={hardRefresh}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[#2596be] text-white hover:brightness-110 transition-colors flex-1"
+              title={!isSidebarOpen ? 'Refrescar' : undefined}
+            >
+              <RefreshCw size={20} className="shrink-0" />
+              {isSidebarOpen && <span className="font-medium">Refrescar</span>}
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors flex-1"
+              title={!isSidebarOpen ? 'Cerrar Sesión' : undefined}
+            >
+              <LogOut size={20} className="shrink-0" />
+              {isSidebarOpen && <span className="font-medium">Cerrar Sesión</span>}
+            </button>
+          </div>
         </div>
       </aside>
 
@@ -447,7 +462,14 @@ export default function MainLayout() {
               )}
             </div>
 
-            <div className="border-t border-gray-100 p-3 flex justify-end">
+            <div className="border-t border-gray-100 p-3 flex justify-between gap-3">
+              <button
+                onClick={hardRefresh}
+                className="flex items-center gap-3 px-5 py-3 rounded-xl bg-[#2596be] text-white hover:brightness-110 transition-colors"
+              >
+                <RefreshCw size={20} className="shrink-0" />
+                <span className="font-medium">Refrescar</span>
+              </button>
               <button
                 onClick={handleLogout}
                 className="flex items-center gap-3 px-5 py-3 rounded-xl bg-caracas-red text-white hover:bg-red-800 transition-colors"
