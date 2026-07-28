@@ -58,7 +58,7 @@ export default function MainLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { campamentos, campamentoSeleccionado, seleccionarCampamento, loading, errorCarga } = useCampamento();
-  const { usuarioActual, tienePermiso, obtenerCampamentosPermitidos, logout } = useAuth();
+  const { usuarioActual, permisos, tienePermiso, obtenerCampamentosPermitidos, logout } = useAuth();
   const isMobile = useIsMobile();
   const prevMobile = useRef(isMobile);
   const touchStartX = useRef(0);
@@ -76,6 +76,17 @@ export default function MainLayout() {
     if (permitidos === null) return campamentos;
     return campamentos.filter(c => permitidos.includes(c.id));
   }, [usuarioActual, obtenerCampamentosPermitidos, moduloActual, campamentos]);
+
+  const todosLosCampamentosPermitidos = useMemo(() => {
+    if (!usuarioActual || usuarioActual.es_master) return campamentos;
+    const tieneAccesoTotal = permisos.some(p => p.campamentos === null);
+    if (tieneAccesoTotal) return campamentos;
+    const idsUnicos = new Set<string>();
+    permisos.forEach(p => {
+      if (p.campamentos) p.campamentos.forEach(id => idsUnicos.add(id));
+    });
+    return campamentos.filter(c => idsUnicos.has(c.id));
+  }, [usuarioActual, permisos, campamentos]);
 
   useEffect(() => {
     if (campamentoSeleccionado && campamentosPermitidos.length > 0) {
@@ -139,6 +150,9 @@ export default function MainLayout() {
       else handleCarouselPrev();
     }
   }, [handleCarouselNext, handleCarouselPrev]);
+
+  const abreviarNombreCampamento = (nombre: string) =>
+    nombre.replace(/Campamento Transitorio\s*/gi, 'C.T. ').trim();
 
   const handleLogout = () => {
     logout();
@@ -386,12 +400,12 @@ export default function MainLayout() {
             className="fixed inset-0 bg-black/30 z-40 md:hidden"
             onClick={() => setIsDrawerOpen(false)}
           />
-          <div className="fixed top-0 right-0 h-full w-64 bg-white shadow-xl z-50 md:hidden flex flex-col animate-slide-in">
+          <div className="fixed top-0 right-0 h-full w-96 bg-white shadow-xl z-50 md:hidden flex flex-col animate-slide-in">
             <div className="h-14 flex items-center justify-between px-4 border-b border-gray-100 shrink-0">
               <span className="font-semibold text-gray-700">Menú</span>
               <button
                 onClick={() => setIsDrawerOpen(false)}
-                className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+                className="p-2 rounded-lg bg-caracas-red text-white hover:bg-red-800 transition-colors"
               >
                 <X size={20} />
               </button>
@@ -411,12 +425,32 @@ export default function MainLayout() {
               </div>
             )}
 
-            <div className="flex-1" />
+            <div className="flex-1 overflow-y-auto py-2">
+              <p className="text-xs font-semibold text-caracas-red uppercase px-4 mb-2 mt-1">Campamentos</p>
+              {todosLosCampamentosPermitidos.length > 0 ? (
+                todosLosCampamentosPermitidos.map((camp) => (
+                  <button
+                    key={camp.id}
+                    onClick={() => { seleccionarCampamento(camp.id); setIsDrawerOpen(false); }}
+                    className={`w-full text-left px-4 py-2.5 transition-colors flex items-center gap-3 ${
+                      camp.id === campamentoSeleccionado?.id
+                        ? 'bg-caracas-red/10 text-caracas-red font-medium'
+                        : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    <MapPin size={16} className={camp.id === campamentoSeleccionado?.id ? 'text-caracas-red' : 'text-gray-400'} />
+                    <span className="truncate text-sm">{abreviarNombreCampamento(camp.nombre)}</span>
+                  </button>
+                ))
+              ) : (
+                <p className="px-4 py-4 text-center text-sm text-gray-400">Sin acceso a campamentos</p>
+              )}
+            </div>
 
-            <div className="border-t border-gray-100 p-3">
+            <div className="border-t border-gray-100 p-3 flex justify-end">
               <button
                 onClick={handleLogout}
-                className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+                className="flex items-center gap-3 px-5 py-3 rounded-xl bg-caracas-red text-white hover:bg-red-800 transition-colors"
               >
                 <LogOut size={20} className="shrink-0" />
                 <span className="font-medium">Cerrar Sesión</span>
