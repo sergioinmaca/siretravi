@@ -39,6 +39,7 @@ export default function Familias() {
       .filter(f => f.nombre.includes(term))
       .map(f => {
         const integrantes = refugiados.filter(r => r.familia_id === f.id);
+        console.log('[DEBUG-FAMILIA] Familias — familia:', f.nombre, '| id:', f.id, '| integrantes count:', integrantes.length);
         return { ...f, integrantes: integrantes.length };
       });
   }, [searchTerm, familias, refugiados, campamentoSeleccionado]);

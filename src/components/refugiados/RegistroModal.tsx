@@ -277,6 +277,8 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     let familiaCreadaEnEsteSubmit: string | null = null;
     let finalFamiliaId = formData.familiaId;
 
+    console.log('[DEBUG-FAMILIA] RegistroModal.handleSubmit — formData.familiaId:', formData.familiaId, '| esJefeFamilia:', formData.esJefeFamilia, '| isEditing:', isEditing);
+
     if (formData.esJefeFamilia) {
       if (isEditing && refugiadoToEdit?.familia_id) {
         finalFamiliaId = refugiadoToEdit.familia_id;
@@ -304,6 +306,8 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
         }
       }
     }
+
+    console.log('[DEBUG-FAMILIA] RegistroModal.handleSubmit — finalFamiliaId:', finalFamiliaId, '| esJefeFamilia:', formData.esJefeFamilia);
 
     const payload: Refugiado = {
       id: refugiadoToEdit?.id || '',
@@ -356,6 +360,8 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     let guardadoExitoso = false;
     let refugiadoId = refugiadoToEdit?.id || '';
     const campamentoId = campamentoSeleccionado.id;
+
+    console.log('[DEBUG-FAMILIA] RegistroModal.handleSubmit — payload.familia_id:', payload.familia_id, '| llamando a', isEditing ? 'actualizarRefugiado' : 'agregarRefugiado');
 
     if (isEditing && refugiadoToEdit) {
       guardadoExitoso = await actualizarRefugiado(refugiadoToEdit.id, payload);

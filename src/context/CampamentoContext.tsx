@@ -88,7 +88,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
           supabase.from('campamentos').select('*').order('created_at', { ascending: true }),
           supabase.from('carpas').select('*').order('orden', { ascending: true }),
           supabase.from('familias').select('*').order('created_at', { ascending: true }),
-          supabase.from('refugiados').select('*').order('created_at', { ascending: true }),
+          supabase.from('refugiados').select('*').limit(100000).order('created_at', { ascending: true }),
         ]);
 
         const campsRows = (campsData || []) as Record<string, unknown>[];
@@ -155,6 +155,8 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         setCampamentos(campamentosMapped);
         setFamilias(familiasMapped);
         setRefugiados(refugiadosMapped);
+
+        console.log('[DEBUG-FAMILIA] Carga inicial — refugiados:', refugiadosMapped.length, '| familias:', familiasMapped.length, '| refugiados con familia_id:', refugiadosMapped.filter(r => r.familia_id).length, '| sin familia_id:', refugiadosMapped.filter(r => !r.familia_id).length);
 
         // Restaurar campamento guardado o seleccionar el primero
         if (campamentosMapped.length > 0) {
@@ -224,11 +226,13 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       const channel = supabase.channel('campamentos-realtime')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'refugiados' }, (payload) => {
           if (payload.eventType === 'INSERT') {
+            console.log('[DEBUG-FAMILIA] Realtime INSERT — payload.new.familia_id:', (payload.new as Record<string, unknown>).familia_id, '| payload.new.id:', (payload.new as Record<string, unknown>).id);
             setRefugiados(prev => {
               if (prev.find(r => r.id === payload.new.id)) return prev;
               return [...prev, mapRefugiadoPayload(payload.new)];
             });
           } else if (payload.eventType === 'UPDATE') {
+            console.log('[DEBUG-FAMILIA] Realtime UPDATE — payload.new.familia_id:', (payload.new as Record<string, unknown>).familia_id, '| payload.new.id:', (payload.new as Record<string, unknown>).id);
             setRefugiados(prev => prev.map(r => r.id === payload.new.id ? mapRefugiadoPayload(payload.new) : r));
           } else if (payload.eventType === 'DELETE') {
             setRefugiados(prev => prev.filter(r => r.id !== payload.old.id));
@@ -507,6 +511,8 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
 
     const codigo = `${campPref}-${String(secuencia).padStart(4, '0')}`;
 
+    console.log('[DEBUG-FAMILIA] agregarRefugiado — INSERT con familia_id:', nuevo.familia_id, '| es_jefe_familia:', nuevo.es_jefe_familia);
+
     const { data, error } = await supabase
       .from('refugiados')
       .insert({
@@ -563,8 +569,11 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
 
     if (error || !data) {
       console.error('Error al registrar refugiado:', error);
+      console.log('[DEBUG-FAMILIA] agregarRefugiado — ERROR en INSERT, error:', error, '| data:', data);
       return null;
     }
+
+    console.log('[DEBUG-FAMILIA] agregarRefugiado — respuesta Supabase, data.familia_id:', (data as Record<string, unknown>).familia_id, '| data.id:', (data as Record<string, unknown>).id);
 
     const refugiadoCreado: Refugiado = {
       id: data.id,
@@ -612,6 +621,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       registro_unico_vivienda: data.registro_unico_vivienda || false,
       foto_url: (data.foto_url as string) || undefined,
     };
+    console.log('[DEBUG-FAMILIA] agregarRefugiado — refugiadoCreado.familia_id:', refugiadoCreado.familia_id, '| id:', refugiadoCreado.id);
     setRefugiados(prev => {
       if (prev.find(r => r.id === refugiadoCreado.id)) return prev;
       return [...prev, refugiadoCreado];
@@ -643,6 +653,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
 
   // ── Actualizar Refugiado ───────────────────────────────────────────────
   const actualizarRefugiado = async (id: string, actualizado: Refugiado): Promise<boolean> => {
+    console.log('[DEBUG-FAMILIA] actualizarRefugiado — id:', id, '| familia_id:', actualizado.familia_id, '| es_jefe_familia:', actualizado.es_jefe_familia);
     const { error } = await supabase
       .from('refugiados')
       .update({
@@ -701,7 +712,14 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       return false;
     }
 
-    setRefugiados(prev => prev.map(r => r.id === id ? { ...actualizado, id } : r));
+    setRefugiados(prev => {
+      const existe = prev.find(r => r.id === id);
+      if (existe) {
+        return prev.map(r => r.id === id ? { ...actualizado, id } : r);
+      }
+      return [...prev, { ...actualizado, id }];
+    });
+    console.log('[DEBUG-FAMILIA] actualizarRefugiado — estado local actualizado, familia_id:', actualizado.familia_id);
     return true;
   };
 

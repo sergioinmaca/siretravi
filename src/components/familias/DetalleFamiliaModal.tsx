@@ -53,6 +53,8 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
   const integrantes = refugiados.filter(r => r.familia_id === familia.id);
   const jefe = integrantes.find(r => r.es_jefe_familia);
 
+  console.log('[DEBUG-FAMILIA] DetalleFamiliaModal — familia.id:', familia.id, '| familia.nombre:', familia.nombre, '| total refugiados en contexto:', refugiados.length, '| integrantes encontrados:', integrantes.length, '| IDs:', integrantes.map(r => r.id));
+
   const sortedIntegrantes = [...integrantes].sort((a, b) =>
     a.es_jefe_familia ? -1 : b.es_jefe_familia ? 1 : 0
   );
