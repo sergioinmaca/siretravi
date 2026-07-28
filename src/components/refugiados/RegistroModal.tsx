@@ -20,6 +20,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
   const [showError, setShowError] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const submittingRef = useRef(false);
   const [fotoFile, setFotoFile] = useState<File | null>(null);
   const [fotoPreview, setFotoPreview] = useState<string | null>(null);
   const [mascotaFotoFile, setMascotaFotoFile] = useState<File | null>(null);
@@ -267,6 +268,8 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       if (!confirmar) return;
     }
 
+    submittingRef.current = true;
+
     setShowError(false);
     setShowSuccess(false);
     setIsSubmitting(true);
@@ -293,6 +296,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
           if (!familiaCreada) {
             setShowError(true);
             setIsSubmitting(false);
+            submittingRef.current = false;
             return;
           }
           finalFamiliaId = familiaCreada.id;
@@ -369,6 +373,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       }
       setShowError(true);
       setIsSubmitting(false);
+      submittingRef.current = false;
       return;
     }
 
@@ -429,8 +434,10 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
 
     if (fotoUploadFailed) {
       setShowError(true);
+      submittingRef.current = false;
     } else {
       setShowSuccess(true);
+      submittingRef.current = false;
       setTimeout(() => {
         setShowSuccess(false);
         onClose();
@@ -438,6 +445,98 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     }
 
     setIsSubmitting(false);
+  };
+
+  const isDirty = () => {
+    if (isEditing && refugiadoToEdit) {
+      return formData.nombres !== refugiadoToEdit.nombres ||
+        formData.apellidos !== refugiadoToEdit.apellidos ||
+        (formData.cedula || '') !== (refugiadoToEdit.cedula?.toString() || '') ||
+        formData.genero !== (refugiadoToEdit.genero ? 'M' : 'F') ||
+        formData.fechaNacimiento !== toDateInput(new Date(refugiadoToEdit.fecha_nacimiento)) ||
+        formData.nroCama !== (refugiadoToEdit.nro_cama || '') ||
+        formData.procedencia !== refugiadoToEdit.procedencia ||
+        formData.direccionExacta !== (refugiadoToEdit.direccion_exacta || '') ||
+        (formData.fechaIngreso || '') !== (refugiadoToEdit.fecha_ingreso ? toDateInput(refugiadoToEdit.fecha_ingreso) : '') ||
+        formData.telefono !== (refugiadoToEdit.telefono?.toString() || '') ||
+        formData.profesion !== (refugiadoToEdit.profesion || '') ||
+        formData.tallaCamisa !== (refugiadoToEdit.talla_camisa || '') ||
+        formData.tallaPantalon !== (refugiadoToEdit.talla_pantalon || '') ||
+        formData.tallaZapatos !== (refugiadoToEdit.talla_zapatos || '') ||
+        formData.observaciones !== (refugiadoToEdit.observaciones || '') ||
+        formData.observacionesGenerales !== (refugiadoToEdit.observaciones_generales || '') ||
+        formData.parentesco !== (refugiadoToEdit.parentesco || '') ||
+        formData.nivelEducativo !== (refugiadoToEdit.nivel_educativo || '') ||
+        formData.mascotaNombre !== (refugiadoToEdit.mascota_nombre || '') ||
+        formData.mascotaRaza !== (refugiadoToEdit.mascota_raza || '') ||
+        formData.mascotaEdad !== (refugiadoToEdit.mascota_edad?.toString() || '') ||
+        formData.tipoMascota !== (refugiadoToEdit.tipo_mascota || '') ||
+        formData.esJefeFamilia !== refugiadoToEdit.es_jefe_familia ||
+        formData.discapacidad !== refugiadoToEdit.discapacidad ||
+        formData.alergias !== refugiadoToEdit.alergias ||
+        formData.enfermedadCronica !== refugiadoToEdit.enfermedad_cronica ||
+        formData.lesionSismo !== refugiadoToEdit.lesion_sismo ||
+        formData.adultoMayorDependencia !== refugiadoToEdit.adulto_mayor_dependencia ||
+        formData.lactante !== (refugiadoToEdit.lactante || false) ||
+        formData.embarazo !== refugiadoToEdit.embarazo ||
+        formData.mascotas !== refugiadoToEdit.mascotas ||
+        formData.hogarSolidario !== (refugiadoToEdit.hogar_solidario || 'PRESENTE') ||
+        formData.registroCaptahuella !== (refugiadoToEdit.registro_captahuella ? 'SI' : 'NO') ||
+        formData.registroUnicoVivienda !== (refugiadoToEdit.registro_unico_vivienda ? 'SI' : 'NO') ||
+        fotoFile !== null ||
+        mascotaFotoFile !== null ||
+        (fotoPreview !== null && fotoPreview !== refugiadoToEdit.foto_url) ||
+        (mascotaFotoPreview !== null && mascotaFotoPreview !== refugiadoToEdit.mascota_foto_url);
+    }
+
+    return formData.nombres !== '' ||
+      formData.apellidos !== '' ||
+      formData.cedula !== '' ||
+      formData.genero !== 'M' ||
+      formData.fechaNacimiento !== '' ||
+      formData.nroCama !== '' ||
+      formData.procedencia !== '' ||
+      formData.direccionExacta !== '' ||
+      formData.fechaIngreso !== '' ||
+      formData.telefono !== '' ||
+      formData.profesion !== '' ||
+      formData.tallaCamisa !== '' ||
+      formData.tallaPantalon !== '' ||
+      formData.tallaZapatos !== '' ||
+      formData.observaciones !== '' ||
+      formData.observacionesGenerales !== '' ||
+      formData.parentesco !== '' ||
+      formData.nivelEducativo !== '' ||
+      formData.mascotaNombre !== '' ||
+      formData.mascotaRaza !== '' ||
+      formData.mascotaEdad !== '' ||
+      formData.tipoMascota !== '' ||
+      formData.discapacidad !== false ||
+      formData.alergias !== false ||
+      formData.enfermedadCronica !== false ||
+      formData.lesionSismo !== false ||
+      formData.adultoMayorDependencia !== false ||
+      formData.lactante !== false ||
+      formData.embarazo !== false ||
+      formData.mascotas !== false ||
+      formData.esJefeFamilia !== true ||
+      formData.hogarSolidario !== 'PRESENTE' ||
+      formData.registroCaptahuella !== 'NO' ||
+      formData.registroUnicoVivienda !== 'NO' ||
+      fotoFile !== null ||
+      mascotaFotoFile !== null ||
+      fotoPreview !== null ||
+      mascotaFotoPreview !== null;
+  };
+
+  const handleClose = () => {
+    if (submittingRef.current) return;
+    if (isDirty()) {
+      if (!window.confirm('Estás saliendo de un registro con información cargada. ¿Seguro que quieres salir?')) {
+        return;
+      }
+    }
+    onClose();
   };
 
   if (!isOpen) return null;
@@ -456,12 +555,12 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
               Destino: <span className="font-semibold text-caracas-red">{campamentoSeleccionado?.nombre || 'Ninguno'}</span>
             </p>
           </div>
-          <button onClick={onClose} className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition-colors hidden md:block">
+          <button onClick={handleClose} className="p-2 bg-gray-100 hover:bg-gray-200 rounded-full text-gray-600 transition-colors hidden md:block">
             <X size={24} />
           </button>
         </div>
 
-        <button onClick={onClose} className="absolute top-10 right-4 z-20 md:hidden p-2 bg-caracas-red hover:bg-red-800 rounded-full text-white transition-colors">
+        <button onClick={handleClose} className="absolute top-10 right-4 z-20 md:hidden p-2 bg-caracas-red hover:bg-red-800 rounded-full text-white transition-colors">
           <X size={24} />
         </button>
 
@@ -1108,7 +1207,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
             {/* Botones de acción */}
             <div className="bg-white rounded-2xl shadow-sm overflow-hidden md:border md:border-gray-200">
               <div className="p-6 flex items-center justify-end gap-3">
-                <button onClick={onClose} type="button" className="px-6 py-2.5 rounded-xl text-gray-600 font-medium hover:bg-gray-200 transition-colors">
+                <button onClick={handleClose} type="button" className="px-6 py-2.5 rounded-xl text-gray-600 font-medium hover:bg-gray-200 transition-colors">
                   Cancelar
                 </button>
                 <button type="submit" disabled={!campamentoSeleccionado || isSubmitting} className="flex items-center bg-caracas-red hover:bg-red-800 text-white px-5 py-2 rounded-xl font-medium transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px] justify-center">
