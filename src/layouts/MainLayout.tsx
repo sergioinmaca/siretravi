@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Home,
@@ -8,6 +8,7 @@ import {
   Settings,
   Menu,
   ChevronLeft,
+  ChevronRight,
   MapPin,
   ChevronDown,
   Heart,
@@ -17,9 +18,11 @@ import {
   Calendar,
   FileText,
   Loader2,
+  X,
 } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
+import { useIsMobile } from '../hooks/useIsMobile';
 
 const menuItems = [
   { path: '/', icon: Home, label: 'Inicio' },
@@ -45,23 +48,28 @@ const pathToModulo: Record<string, string> = {
   '/actas': 'Actas',
 };
 
+
 export default function MainLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [carouselIndex, setCarouselIndex] = useState(0);
+  const [showTransition, setShowTransition] = useState(false);
+  const [showGreeting, setShowGreeting] = useState(true);
   const location = useLocation();
   const navigate = useNavigate();
   const { campamentos, campamentoSeleccionado, seleccionarCampamento, loading, errorCarga } = useCampamento();
   const { usuarioActual, tienePermiso, obtenerCampamentosPermitidos, logout } = useAuth();
+  const isMobile = useIsMobile();
+  const prevMobile = useRef(isMobile);
+  const touchStartX = useRef(0);
 
-  // Filtrar menú según permisos (MASTER ve todo)
   const menuItemsFiltrados = usuarioActual?.es_master
     ? menuItems
     : menuItems.filter(item => tienePermiso(item.label, 'Ver'));
 
-  // Módulo actual según la ruta
   const moduloActual = pathToModulo[location.pathname]
     || (location.pathname.startsWith('/salud') ? 'Salud' : 'Inicio');
 
-  // Campamentos permitidos para el módulo actual
   const campamentosPermitidos = useMemo(() => {
     if (!usuarioActual || usuarioActual.es_master) return campamentos;
     const permitidos = obtenerCampamentosPermitidos(moduloActual);
@@ -69,8 +77,6 @@ export default function MainLayout() {
     return campamentos.filter(c => permitidos.includes(c.id));
   }, [usuarioActual, obtenerCampamentosPermitidos, moduloActual, campamentos]);
 
-  // Auto-seleccionar si el actual ya no está permitido
-  // Auto-seleccionar si el actual ya no está permitido
   useEffect(() => {
     if (campamentoSeleccionado && campamentosPermitidos.length > 0) {
       const siguePermitido = campamentosPermitidos.some(c => c.id === campamentoSeleccionado.id);
@@ -80,10 +86,65 @@ export default function MainLayout() {
     }
   }, [campamentosPermitidos, campamentoSeleccionado, seleccionarCampamento]);
 
+  const maxCarouselIndex = Math.max(0, menuItemsFiltrados.length - 3);
+  const showCarouselArrows = menuItemsFiltrados.length > 3;
+
+  const handleCarouselPrev = useCallback(() => {
+    setCarouselIndex(prev => Math.max(0, prev - 1));
+  }, []);
+
+  const handleCarouselNext = useCallback(() => {
+    setCarouselIndex(prev => Math.min(maxCarouselIndex, prev + 1));
+  }, [maxCarouselIndex]);
+
+  useEffect(() => {
+    if (prevMobile.current !== isMobile) {
+      setShowTransition(true);
+      const timer = setTimeout(() => setShowTransition(false), 250);
+      prevMobile.current = isMobile;
+      return () => clearTimeout(timer);
+    }
+  }, [isMobile]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setShowGreeting(false), 10000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobile) return;
+    const activeIdx = menuItemsFiltrados.findIndex(item =>
+      item.path === '/salud'
+        ? location.pathname.startsWith('/salud')
+        : location.pathname === item.path
+    );
+    if (activeIdx !== -1) {
+      const maxIdx = Math.max(0, menuItemsFiltrados.length - 3);
+      setCarouselIndex(prev => {
+        if (activeIdx < prev) return activeIdx;
+        if (activeIdx > prev + 2) return Math.min(activeIdx - 2, maxIdx);
+        return prev;
+      });
+    }
+  }, [location.pathname, isMobile, menuItemsFiltrados]);
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    const diff = touchStartX.current - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) handleCarouselNext();
+      else handleCarouselPrev();
+    }
+  }, [handleCarouselNext, handleCarouselPrev]);
+
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
+
 
   if (loading || errorCarga) {
     return (
@@ -114,10 +175,16 @@ export default function MainLayout() {
 
   return (
     <div className="flex h-screen bg-caracas-light overflow-hidden">
-      {/* Sidebar */}
+      {showTransition && (
+        <div className="fixed inset-0 z-50 bg-caracas-light flex items-center justify-center">
+          <div className="w-10 h-10 border-[3px] border-gray-200 border-t-caracas-red rounded-full animate-spin" />
+        </div>
+      )}
+
+      {/* Sidebar — Desktop */}
       <aside
         className={`${isSidebarOpen ? 'w-64' : 'w-20'
-          } bg-white border-r border-gray-200 transition-all duration-300 ease-in-out flex flex-col relative shadow-sm z-30`}
+          } hidden md:flex bg-white border-r border-gray-200 transition-all duration-300 ease-in-out flex-col relative shadow-sm z-30`}
       >
         <div className="h-16 flex items-center justify-between px-4 border-b border-gray-100 shrink-0">
           {isSidebarOpen && (
@@ -160,7 +227,6 @@ export default function MainLayout() {
           })}
         </nav>
 
-        {/* Footer del sidebar — usuario + cerrar sesión */}
         <div className="border-t border-gray-100 px-3 py-4 shrink-0">
           {isSidebarOpen && usuarioActual && (
             <div className="flex items-center gap-3 px-3 mb-3">
@@ -188,10 +254,10 @@ export default function MainLayout() {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-h-0 relative">
-        <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 shadow-sm shrink-0 z-20">
+        {/* Desktop Header */}
+        <header className="relative hidden md:flex h-16 bg-white border-b border-gray-200 items-center justify-between px-8 shadow-sm shrink-0 z-20">
           <h1 className="text-xl font-semibold text-gray-800">Panel de Control</h1>
 
-          {/* Dropdown de Selección de Campamento */}
           <div className="relative group">
             <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
               <MapPin size={18} className="text-caracas-red" />
@@ -228,12 +294,137 @@ export default function MainLayout() {
           </div>
         </header>
 
-        <div className="flex-1 min-h-0 overflow-y-auto p-8 bg-caracas-light">
+        {/* Mobile Header */}
+        <header className="relative flex md:hidden h-14 bg-white border-b border-gray-200 items-center justify-between px-4 shadow-sm shrink-0 z-20">
+          <div className="flex flex-col min-w-0 overflow-hidden">
+            <span className="text-[21px] font-semibold text-gray-800 leading-tight">{moduloActual}</span>
+            {campamentoSeleccionado && (
+              <span className="text-xs text-gray-400 leading-tight truncate">{campamentoSeleccionado.nombre}</span>
+            )}
+          </div>
+          <button
+            onClick={() => setIsDrawerOpen(true)}
+            className="p-2 rounded-lg hover:bg-gray-100 text-gray-600 transition-colors shrink-0 ml-2"
+          >
+            <Menu size={22} />
+          </button>
+        </header>
+
+        {/* Content */}
+        <div className={`flex-1 min-h-0 overflow-y-auto bg-caracas-light ${isMobile ? 'p-4 pb-[72px]' : 'p-8'}`}>
           <div className={location.pathname === '/agenda' ? 'flex-1 min-h-0 flex flex-col overflow-hidden' : 'max-w-7xl mx-auto'}>
             <Outlet />
           </div>
         </div>
       </main>
+
+      {/* Mobile Tab Bar */}
+      <div className="flex md:hidden fixed bottom-0 left-0 right-0 h-[72px] bg-[#ffb41d] border-t border-[#e6a61a] z-40 flex-col" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+        <div
+          className="flex-1 flex items-center"
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
+          {showCarouselArrows && (
+            <button
+              onClick={handleCarouselPrev}
+              disabled={carouselIndex === 0}
+              className={`p-3 h-full flex items-center justify-center shrink-0 ${carouselIndex === 0 ? 'opacity-30' : 'text-[#28307d] hover:opacity-70'}`}
+            >
+              <ChevronLeft size={16} strokeWidth={3} />
+            </button>
+          )}
+
+          <div className="flex-1 flex items-center justify-around overflow-hidden">
+            {menuItemsFiltrados.slice(carouselIndex, carouselIndex + 3).map((item) => {
+              const Icon = item.icon;
+              const isActive = item.path === '/salud'
+                ? location.pathname.startsWith('/salud')
+                : location.pathname === item.path;
+              return (
+                <Link
+                  key={item.path}
+                  to={item.path}
+                  className="flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 py-1"
+                >
+                  <Icon
+                    size={isActive ? 25 : 20}
+                    strokeWidth={2.5}
+                    className={`shrink-0 transition-all duration-200 ease-out text-[#28307d] ${isActive ? 'drop-shadow-sm' : 'opacity-70'}`}
+                  />
+                  <span className={`transition-all duration-200 ease-out truncate max-w-full px-0.5 ${isActive ? 'text-[11px] font-semibold text-white' : 'text-[10px] font-medium text-gray-400'}`}>
+                    {item.label}
+                  </span>
+                  {isActive && (
+                    <div className="w-4 h-0.5 bg-[#28307d] rounded-full" />
+                  )}
+                </Link>
+              );
+            })}
+          </div>
+
+          {showCarouselArrows && (
+            <button
+              onClick={handleCarouselNext}
+              disabled={carouselIndex >= maxCarouselIndex}
+              className={`p-3 h-full flex items-center justify-center shrink-0 ${carouselIndex >= maxCarouselIndex ? 'opacity-30' : 'text-[#28307d] hover:opacity-70'}`}
+            >
+              <ChevronRight size={16} strokeWidth={3} />
+            </button>
+          )}
+        </div>
+
+        <div className={`text-xs text-white text-center truncate px-2 pb-1 transition-all duration-500 ${showGreeting ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}>
+          Hola, {usuarioActual?.nombres || 'Usuario'}
+        </div>
+      </div>
+
+      {/* Hamburger Drawer */}
+      {isDrawerOpen && (
+        <>
+          <div
+            className="fixed inset-0 bg-black/30 z-40 md:hidden"
+            onClick={() => setIsDrawerOpen(false)}
+          />
+          <div className="fixed top-0 right-0 h-full w-64 bg-white shadow-xl z-50 md:hidden flex flex-col animate-slide-in">
+            <div className="h-14 flex items-center justify-between px-4 border-b border-gray-100 shrink-0">
+              <span className="font-semibold text-gray-700">Menú</span>
+              <button
+                onClick={() => setIsDrawerOpen(false)}
+                className="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {usuarioActual && (
+              <div className="flex items-center gap-3 px-4 py-4 border-b border-gray-50">
+                <UserCircle size={36} className="text-gray-400 shrink-0" />
+                <div className="overflow-hidden">
+                  <p className="text-sm font-semibold text-gray-700 truncate">
+                    {usuarioActual.nombres}
+                  </p>
+                  <p className="text-xs text-gray-500 truncate">
+                    {usuarioActual.apellidos}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <div className="flex-1" />
+
+            <div className="border-t border-gray-100 p-3">
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-3 px-3 py-2.5 w-full rounded-xl text-gray-500 hover:bg-red-50 hover:text-red-600 transition-colors"
+              >
+                <LogOut size={20} className="shrink-0" />
+                <span className="font-medium">Cerrar Sesión</span>
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
