@@ -321,7 +321,7 @@ export default function Actas() {
                       </p>
                     </td>
                     <td className="px-6 py-4 text-gray-600">
-                      {formatCedula(refugiado?.cedula) ?? 'S/C'}
+                      {formatCedula(refugiado?.cedula, refugiado?.nacionalidad) ?? 'S/C'}
                     </td>
                     <td className="px-6 py-4 text-gray-600">
                       {refugiado?.nro_cama || 'N/A'}

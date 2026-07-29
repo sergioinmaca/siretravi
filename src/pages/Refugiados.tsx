@@ -115,7 +115,7 @@ export default function Refugiados() {
       return {
         id: r.id,
         codigo: r.codigo || '-',
-        cedula: formatCedula(r.cedula) ?? 'S/N',
+        cedula: formatCedula(r.cedula, r.nacionalidad) ?? 'S/N',
         genero: r.genero,
         nombres: r.nombres,
         apellidos: r.apellidos,
@@ -179,7 +179,7 @@ export default function Refugiados() {
           }
           return {
             codigo: r.codigo || '-',
-            cedula: formatCedula(r.cedula) ?? 'S/N',
+            cedula: formatCedula(r.cedula, r.nacionalidad) ?? 'S/N',
             nombre: `${r.apellidos} ${r.nombres}`,
             edad: formatAge(r.fecha_nacimiento),
             jerarquia: jerarquiaStr,
@@ -341,7 +341,7 @@ export default function Refugiados() {
             'Jerarquía': jerarquiaStr,
             'Cama': r.nro_cama || '-',
             'Estatus': r.hogar_solidario || 'PRESENTE',
-            'Teléfono': r.telefono?.toString() || '—',
+            'Teléfono': r.telefono || '—',
             'Parentesco': r.parentesco || '—',
             'Observaciones': historiasMap[r.id] || '',
           };

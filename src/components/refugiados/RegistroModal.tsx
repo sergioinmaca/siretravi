@@ -44,6 +44,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
   const [formData, setFormData] = useState({
     nombres: '',
     apellidos: '',
+    nacionalidad: '',
     cedula: '',
     genero: 'M',
     fechaNacimiento: '',
@@ -107,6 +108,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       setFormData({
         nombres: refugiadoToEdit.nombres,
         apellidos: refugiadoToEdit.apellidos,
+        nacionalidad: refugiadoToEdit.nacionalidad || '',
         cedula: refugiadoToEdit.cedula?.toString() || '',
         genero: refugiadoToEdit.genero ? 'M' : 'F',
         fechaNacimiento: toDateInput(birth),
@@ -128,7 +130,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
         mascotaRaza: refugiadoToEdit.mascota_raza || '',
         mascotaNombre: refugiadoToEdit.mascota_nombre || '',
         mascotaEdad: refugiadoToEdit.mascota_edad?.toString() || '',
-        telefono: refugiadoToEdit.telefono?.toString() || '',
+        telefono: refugiadoToEdit.telefono || '',
         profesion: refugiadoToEdit.profesion || '',
         tallaCamisa: refugiadoToEdit.talla_camisa || '',
         tallaPantalon: refugiadoToEdit.talla_pantalon || '',
@@ -155,7 +157,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       setMascotaFotoPreview(null);
       setMascotaFotoFile(null);
       setFormData({
-        nombres: '', apellidos: '', cedula: '', genero: 'M',
+        nombres: '', apellidos: '', nacionalidad: '', cedula: '', genero: 'M',
         fechaNacimiento: '', edad: '', esJefeFamilia: true, familiaId: '',
         nroCama: '', procedencia: '', fechaIngreso: '', direccionExacta: '',
         discapacidad: false,
@@ -366,6 +368,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       codigo: refugiadoToEdit?.codigo || '',
       nombres: formData.nombres,
       apellidos: formData.apellidos,
+      nacionalidad: formData.nacionalidad || undefined,
       cedula: formData.cedula ? parseInt(formData.cedula) : undefined,
       genero: formData.genero === 'M',
       fecha_nacimiento: parseDateSafe(formData.fechaNacimiento),
@@ -383,7 +386,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       mascota_raza: formData.mascotaRaza || undefined,
       mascota_nombre: formData.mascotaNombre || undefined,
       mascota_edad: formData.mascotaEdad ? parseInt(formData.mascotaEdad) : undefined,
-      telefono: formData.telefono ? parseInt(formData.telefono) : undefined,
+      telefono: formData.telefono || undefined,
       profesion: formData.profesion || undefined,
       talla_camisa: formData.tallaCamisa || undefined,
       talla_pantalon: formData.tallaPantalon || undefined,
@@ -510,13 +513,14 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       return formData.nombres !== refugiadoToEdit.nombres ||
         formData.apellidos !== refugiadoToEdit.apellidos ||
         (formData.cedula || '') !== (refugiadoToEdit.cedula?.toString() || '') ||
+        formData.nacionalidad !== (refugiadoToEdit.nacionalidad || '') ||
         formData.genero !== (refugiadoToEdit.genero ? 'M' : 'F') ||
         formData.fechaNacimiento !== toDateInput(new Date(refugiadoToEdit.fecha_nacimiento)) ||
         formData.nroCama !== (refugiadoToEdit.nro_cama || '') ||
         formData.procedencia !== refugiadoToEdit.procedencia ||
         formData.direccionExacta !== (refugiadoToEdit.direccion_exacta || '') ||
         (formData.fechaIngreso || '') !== (refugiadoToEdit.fecha_ingreso ? toDateInput(refugiadoToEdit.fecha_ingreso) : '') ||
-        formData.telefono !== (refugiadoToEdit.telefono?.toString() || '') ||
+        formData.telefono !== (refugiadoToEdit.telefono || '') ||
         formData.profesion !== (refugiadoToEdit.profesion || '') ||
         formData.tallaCamisa !== (refugiadoToEdit.talla_camisa || '') ||
         formData.tallaPantalon !== (refugiadoToEdit.talla_pantalon || '') ||
@@ -744,7 +748,15 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Cédula (Opcional)</label>
-                  <input type="number" name="cedula" value={formData.cedula} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all" placeholder="Ej. 12345678" />
+                  <div className="flex gap-2">
+                    <select name="nacionalidad" value={formData.nacionalidad} onChange={handleChange} className="w-20 px-3 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all">
+                      <option value="">--</option>
+                      <option value="V">V</option>
+                      <option value="E">E</option>
+                      <option value="P">P</option>
+                    </select>
+                    <input type="text" name="cedula" value={formData.cedula} onChange={handleChange} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all" placeholder="Ej. 12345678" />
+                  </div>
                 </div>
                 {isEditing && refugiadoToEdit?.codigo && (
                   <div>
@@ -771,7 +783,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono (Opcional)</label>
-                  <input type="number" name="telefono" value={formData.telefono} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all" placeholder="Ej. 04141234567" />
+                  <input type="text" inputMode="numeric" name="telefono" value={formData.telefono} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all" placeholder="Ej. 04141234567" />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Profesión u Ocupación (Opcional)</label>
@@ -1052,9 +1064,8 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                   </div>
                 )}
 
-                {formData.esJefeFamilia && (
-                  <div className="space-y-3 border-t border-gray-100 pt-4">
-                    <label className="flex items-center gap-3 cursor-pointer">
+                <div className="space-y-3 border-t border-gray-100 pt-4">
+                  <label className="flex items-center gap-3 cursor-pointer">
                       <input
                         type="checkbox"
                         checked={formData.mascotas}
@@ -1193,9 +1204,8 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                           </div>
                         </div>
                       </div>
-                    )}
+                      )}
                   </div>
-                )}
               </div>
             </div>
             

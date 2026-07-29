@@ -244,11 +244,10 @@ export default function Reportes() {
     return refugiadosDelCampamento
       .filter(r => r.mascotas && r.tipo_mascota)
       .map((r, i) => {
-        const jefe = refugiadosDelCampamento.find(j => j.familia_id === r.familia_id && j.es_jefe_familia);
         return {
           ...r,
           index: i + 1,
-          dueno: jefe ? `${jefe.nombres} ${jefe.apellidos}` : (r.nombres + ' ' + r.apellidos),
+          dueno: `${r.nombres} ${r.apellidos}`,
         };
       })
       .sort((a, b) => {
@@ -638,12 +637,12 @@ export default function Reportes() {
             nucleoMiembros: idx === 0 ? cantMiembros : null,
             esJefe: r.es_jefe_familia,
             nombresApellidos: `${r.nombres} ${r.apellidos}`,
-            cedula: formatCedula(r.cedula) ?? 'S/N',
+            cedula: formatCedula(r.cedula, r.nacionalidad) ?? 'S/N',
             fechaNacimiento: `${String(fnDate.getDate()).padStart(2, '0')}/${String(fnDate.getMonth() + 1).padStart(2, '0')}/${fnDate.getFullYear()}`,
             sexo: r.genero ? 'M' : 'F',
             edad,
             parentesco: r.parentesco || '',
-            telefono: r.telefono?.toString() || '',
+              telefono: r.telefono || '',
             procedenciaCaracas: proc === 'CARACAS' ? 'X' : '',
             procedenciaLaGuaira: proc === 'LA GUAIRA' ? 'X' : '',
             observacion: obs.join(' | '),
@@ -1693,7 +1692,7 @@ export default function Reportes() {
                               <tr key={r.id} className={`border-b border-slate-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/[.85]'}`}>
                                 <td className="py-[4.5px] px-0.5 text-base font-mono text-center border-r border-slate-200">{r.codigo || '—'}</td>
                                 <td className="py-[4.5px] px-0.5 text-base border-r border-slate-200">{r.nombres} {r.apellidos}</td>
-                                <td className="py-[4.5px] px-0.5 text-base text-center border-r border-slate-200">{formatCedula(r.cedula) ?? '—'}</td>
+                                <td className="py-[4.5px] px-0.5 text-base text-center border-r border-slate-200">{formatCedula(r.cedula, r.nacionalidad) ?? '—'}</td>
                                 <td className="py-[4.5px] px-0.5 text-lg font-black text-center border-r border-slate-200">{r.edad}</td>
                                 <td className="py-[4.5px] px-0.5 text-base font-mono text-center border-r border-slate-200">{r.nro_cama || '—'}</td>
                                 <td className="py-[4.5px] px-0.5 text-base">{r.tipo_discapacidad}</td>
@@ -1891,7 +1890,7 @@ export default function Reportes() {
                               <th className="py-1.5 px-1 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[40px]">#</th>
                               <th className="py-1.5 px-1 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[90px]">TIPO</th>
                               <th className="py-1.5 px-1 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[130px]">RAZA</th>
-                              <th className="py-1.5 px-1 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300">DUEÑO (JEFE DE FAMILIA)</th>
+                              <th className="py-1.5 px-1 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300">PROPIETARIO</th>
                               <th className="py-1.5 px-1 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[120px]">MASCOTA</th>
                               <th className="py-1.5 px-1 text-xs font-black tracking-wide text-slate-700 border-r border-slate-300 w-[40px]">SX</th>
                               <th className="py-1.5 px-1 text-xs font-black tracking-wide text-slate-700 w-[40px]">ED</th>

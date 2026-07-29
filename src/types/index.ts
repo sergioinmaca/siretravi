@@ -90,6 +90,7 @@ export interface Refugiado {
   codigo: string;
   nombres: string;
   apellidos: string;
+  nacionalidad?: string;
   cedula?: number;
   genero: boolean;
   fecha_nacimiento: Date;
@@ -109,7 +110,7 @@ export interface Refugiado {
   mascota_nombre?: string;
   mascota_edad?: number;
   mascota_foto_url?: string;
-  telefono?: number;
+  telefono?: string;
   profesion?: string;
   talla_camisa?: string;
   talla_pantalon?: string;

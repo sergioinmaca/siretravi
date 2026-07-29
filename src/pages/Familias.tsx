@@ -137,7 +137,7 @@ export default function Familias() {
         const rows = miembros.map(r => ({
           codigo: r.codigo || '-',
           nombre: `${r.nombres} ${r.apellidos}`,
-          cedula: formatCedula(r.cedula) ?? 'S/N',
+          cedula: formatCedula(r.cedula, r.nacionalidad) ?? 'S/N',
           sexo: r.genero ? 'M' : 'F',
           cama: r.nro_cama || '-',
           parentesco: r.es_jefe_familia ? 'Jefe de Familia' : (r.parentesco || '\u2014'),
@@ -242,7 +242,7 @@ export default function Familias() {
           aoa.push([
             r.codigo || '-',
             `${r.nombres} ${r.apellidos}`,
-            formatCedula(r.cedula) ?? 'S/N',
+            formatCedula(r.cedula, r.nacionalidad) ?? 'S/N',
             r.genero ? 'M' : 'F',
             r.nro_cama || '-',
             r.es_jefe_familia ? 'Jefe de Familia' : (r.parentesco || '\u2014'),

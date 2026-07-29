@@ -346,7 +346,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
       drawFieldFull('Nombres y Apellidos:', `${refugiado.nombres} ${refugiado.apellidos}`);
 
       drawFieldRowLR(
-        'C\u00e9dula de Identidad:', formatCedula(refugiado.cedula) ?? 'S/N',
+        'C\u00e9dula de Identidad:', formatCedula(refugiado.cedula, refugiado.nacionalidad) ?? 'S/N',
         'Fecha de Nacimiento:', toDisplayDate(refugiado.fecha_nacimiento),
       );
 
@@ -376,7 +376,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
       y += 6;
 
       drawFieldRowLR(
-        'Tel\u00e9fono:', refugiado.telefono?.toString() || '—',
+        'Tel\u00e9fono:', refugiado.telefono || '—',
         'Profesi\u00f3n / Ocupaci\u00f3n:', refugiado.profesion || '—',
       );
 
@@ -1056,7 +1056,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
                   )}
                 </div>
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FichaField label="Cédula" value={formatCedula(refugiado.cedula) ?? 'S/N'} />
+                  <FichaField label="Cédula" value={formatCedula(refugiado.cedula, refugiado.nacionalidad) ?? 'S/N'} />
                   <FichaField label="Nombres" value={refugiado.nombres} />
                   <FichaField label="Apellidos" value={refugiado.apellidos} />
                 </div>
@@ -1070,7 +1070,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
               <FichaField
                 label="Teléfono"
                 icon={<Phone size={14} />}
-                value={refugiado.telefono?.toString() || '—'}
+                value={refugiado.telefono || '—'}
               />
             </div>
 
