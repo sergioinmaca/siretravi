@@ -186,14 +186,6 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
     return { wx: (x - offsetX) / zoom, wy: (y - offsetY) / zoom };
   }, [portrait, height, offsetX, offsetY, zoom]);
 
-  const worldToScreen = useCallback((wx: number, wy: number) => {
-    const x = wx * zoom + offsetX;
-    const y = wy * zoom + offsetY;
-    if (portrait) {
-      return { sx: width - y, sy: x };
-    }
-    return { sx: x, sy: y };
-  }, [portrait, height, offsetX, offsetY, zoom]);
 
   const handleCanvasMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (isPanningRef.current) {

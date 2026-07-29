@@ -191,19 +191,6 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
         pdf.text(label, x + 4, y + 4);
       };
 
-      const drawCheckboxRow = (items: [boolean, string][]) => {
-        ensureSpace(6);
-        const gap = 8;
-        let cx = margin;
-        items.forEach(([chk, lbl]) => {
-          pdf.setFont('Helvetica', 'normal');
-          pdf.setFontSize(9);
-          const tw = pdf.getTextWidth(lbl) + 7;
-          drawCheckbox(chk, lbl, cx);
-          cx += tw + gap;
-        });
-        y += 6;
-      };
 
       const drawTable = (headers: string[], rows: string[][], colWidths: number[]) => {
         const rowH = 6;
