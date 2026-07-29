@@ -76,6 +76,8 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
   const isPanningRef = useRef(false);
   const panStartRef = useRef({ x: 0, y: 0, offsetX: 0, offsetY: 0 });
   const pinchRef = useRef({ dist: 0, zoom: 1, offsetX: 0, offsetY: 0 });
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isLongPressActiveRef = useRef(false);
 
   const setCanvasRef = useCallback((node: HTMLCanvasElement | null) => {
     internalCanvasRef.current = node;
@@ -137,12 +139,13 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
     const accumulator: BedRenderInfo[] = [];
 
     const finishRender = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#FFFFFF';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
       ctx.setTransform(1, 0, 0, 1, 0, 0);
       if (portrait) { ctx.translate(width, 0); ctx.rotate(Math.PI / 2); }
       ctx.translate(offsetX, offsetY);
       ctx.scale(zoom, zoom);
-      ctx.fillStyle = '#FFFFFF';
-      ctx.fillRect(0, 0, width, Math.max(height, width));
       drawBedsWithNumbers(ctx, beds, elementNumberOffset, tipoContabilizacion, occupiedSet, accumulator, bedColorMap);
       drawRectangles(ctx, rectangles);
       drawTexts(ctx, texts);
@@ -152,6 +155,9 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
     if (drawingBase64) {
       const img = new Image();
       img.onload = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.setTransform(1, 0, 0, 1, 0, 0);
         if (portrait) { ctx.translate(width, 0); ctx.rotate(Math.PI / 2); }
         ctx.translate(offsetX, offsetY);
@@ -277,7 +283,26 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
   };
 
   const handleTouchStart = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (zoom <= 1.0 && e.touches.length < 2) return;
+    if (zoom <= 1.0 && e.touches.length < 2) {
+      if (e.touches.length === 1) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        longPressTimerRef.current = setTimeout(() => {
+          isLongPressActiveRef.current = true;
+          const canvas = internalCanvasRef.current;
+          if (!canvas) return;
+          const rect = canvas.getBoundingClientRect();
+          isPanningRef.current = true;
+          panStartRef.current = {
+            x: touch.clientX * (canvas.width / rect.width),
+            y: touch.clientY * (canvas.height / rect.height),
+            offsetX,
+            offsetY
+          };
+        }, 1500);
+      }
+      return;
+    }
     e.preventDefault();
     const canvas = internalCanvasRef.current;
     if (!canvas) return;
@@ -299,6 +324,11 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
   }, [zoom, offsetX, offsetY]);
 
   const handleTouchMove = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (longPressTimerRef.current && !isLongPressActiveRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+      return;
+    }
     e.preventDefault();
     const canvas = internalCanvasRef.current;
     if (!canvas) return;
@@ -343,6 +373,15 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
   }, []);
 
   const handleTouchEnd = useCallback((e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    if (isLongPressActiveRef.current) {
+      isLongPressActiveRef.current = false;
+      isPanningRef.current = false;
+      return;
+    }
     if (e.touches.length === 0) {
       isPanningRef.current = false;
     } else if (e.touches.length === 1 && zoom > 1.0) {
@@ -387,13 +426,13 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
   }, [zoom, offsetX, offsetY]);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 min-w-0">
       <div className="flex items-center gap-3">
         <div className="h-8 w-1 bg-caracas-red rounded-full" />
         <h4 className="font-semibold text-gray-800">{moduloNombre}</h4>
       </div>
       {literasCount !== undefined && individualesCount !== undefined && duplexCount !== undefined && (
-        <div className="flex items-center gap-4 text-sm text-gray-500 pl-5">
+        <div className="grid grid-cols-2 md:flex md:items-center gap-x-0 gap-y-1 text-sm text-gray-500 md:pl-5 max-md:pl-0 [&>*:nth-child(even)]:-ml-2.5">
           <span className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded bg-[#3B82F6]" />
             <span className="font-medium">{literasCount}</span> Literas
@@ -417,14 +456,14 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
           )}
         </div>
       )}
-      <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
+      <div className="box-border border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white" style={portrait ? { width: '92vw', height: '600px' } : undefined}>
         <div className="relative">
           <canvas
             ref={setCanvasRef}
             width={width}
             height={height}
-            className={`w-full block ${zoom > 1.0 ? 'cursor-grab' : 'cursor-default'}`}
-            style={{ imageRendering: 'auto', touchAction: 'none' }}
+            className={`block ${zoom > 1.0 ? 'cursor-grab' : 'cursor-default'}`}
+            style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', imageRendering: 'auto', touchAction: 'none' }}
             onMouseMove={handleCanvasMouseMove}
             onMouseLeave={handleCanvasMouseLeave}
             onMouseDown={handleMouseDown}

@@ -60,6 +60,9 @@ const PlanoGeneralViewer = forwardRef<HTMLCanvasElement, PlanoGeneralViewerProps
   const isPanningRef = useRef(false);
   const panStartRef = useRef({ x: 0, y: 0, offsetX: 0, offsetY: 0 });
   const pinchRef = useRef({ dist: 0, zoom: 1, offsetX: 0, offsetY: 0 });
+  const renderVersionRef = useRef(0);
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isLongPressActiveRef = useRef(false);
 
   const setCanvasRef = useCallback((node: HTMLCanvasElement | null) => {
     internalCanvasRef.current = node;
@@ -137,6 +140,9 @@ const PlanoGeneralViewer = forwardRef<HTMLCanvasElement, PlanoGeneralViewerProps
 
     const data = parsedDataRef.current;
 
+    renderVersionRef.current += 1;
+    const version = renderVersionRef.current;
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#FFFFFF';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -147,6 +153,7 @@ const PlanoGeneralViewer = forwardRef<HTMLCanvasElement, PlanoGeneralViewerProps
     if (data.drawingBase64) {
       const img = new Image();
       img.onload = () => {
+        if (version !== renderVersionRef.current) return;
         ctx.drawImage(img, 0, 0);
         drawRectangles(ctx, data.rectangles);
         drawLines(ctx, data.lines);
@@ -208,7 +215,28 @@ const PlanoGeneralViewer = forwardRef<HTMLCanvasElement, PlanoGeneralViewerProps
   };
 
   const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (zoom <= 1.0 && e.touches.length < 2) return;
+    if (zoom <= 1.0 && e.touches.length < 2) {
+      if (e.touches.length === 1) {
+        e.preventDefault();
+        const touch = e.touches[0];
+        longPressTimerRef.current = setTimeout(() => {
+          isLongPressActiveRef.current = true;
+          const canvas = internalCanvasRef.current;
+          if (!canvas) return;
+          isPanningRef.current = true;
+          const rect = canvas.getBoundingClientRect();
+          const scaleX = canvas.width / rect.width;
+          const scaleY = canvas.height / rect.height;
+          panStartRef.current = {
+            x: touch.clientX * scaleX,
+            y: touch.clientY * scaleY,
+            offsetX,
+            offsetY
+          };
+        }, 1500);
+      }
+      return;
+    }
     e.preventDefault();
     const canvas = internalCanvasRef.current;
     if (!canvas) return;
@@ -232,6 +260,11 @@ const PlanoGeneralViewer = forwardRef<HTMLCanvasElement, PlanoGeneralViewerProps
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (longPressTimerRef.current && !isLongPressActiveRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+      return;
+    }
     e.preventDefault();
     const canvas = internalCanvasRef.current;
     if (!canvas) return;
@@ -269,6 +302,15 @@ const PlanoGeneralViewer = forwardRef<HTMLCanvasElement, PlanoGeneralViewerProps
   };
 
   const handleTouchEnd = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    if (isLongPressActiveRef.current) {
+      isLongPressActiveRef.current = false;
+      isPanningRef.current = false;
+      return;
+    }
     if (e.touches.length === 0) {
       isPanningRef.current = false;
     } else if (e.touches.length === 1 && zoom > 1.0) {
@@ -348,7 +390,7 @@ const PlanoGeneralViewer = forwardRef<HTMLCanvasElement, PlanoGeneralViewerProps
         <div className="h-8 w-1 bg-caracas-red rounded-full" />
         <h4 className="font-semibold text-gray-800">{planoNombre}</h4>
       </div>
-      <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
+      <div className="w-full box-border overflow-hidden border border-gray-200 rounded-xl shadow-sm bg-white">
         <canvas
           ref={setCanvasRef}
           width={width}
@@ -361,8 +403,8 @@ const PlanoGeneralViewer = forwardRef<HTMLCanvasElement, PlanoGeneralViewerProps
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
           onWheel={handleWheel}
-          className={`w-full block ${zoom > 1.0 ? 'cursor-grab' : 'cursor-default'}`}
-          style={{ imageRendering: 'auto', touchAction: 'none' }}
+          className={`block ${zoom > 1.0 ? 'cursor-grab' : 'cursor-default'}`}
+          style={{ width: '100%', maxWidth: '100%', height: 'auto', imageRendering: 'auto', touchAction: 'none' }}
         />
         <div className="flex items-center gap-2 justify-center py-2 border-t border-gray-100 bg-gray-50">
           <button

@@ -892,7 +892,7 @@ export default function Inicio() {
 
       {/* Planos Generales */}
       {planos.length > 0 && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 max-md:bg-transparent max-md:shadow-none max-md:border-0 max-md:rounded-none max-md:p-0 max-md:-mx-4">
           <h2 className="text-lg font-semibold text-gray-800 mb-2">
             Planos Generales ({campamentoSeleccionado?.nombre || 'Ninguno'})
           </h2>
@@ -927,13 +927,15 @@ export default function Inicio() {
                     <span className="text-xs text-gray-400">{expandido ? '▲' : '▼'}</span>
                   </button>
                   {expandido && (
+                    <div className={isMobile ? (index % 2 === 0 ? 'bg-[#FFF8E7] py-4' : 'bg-transparent py-4') : ''}>
                     <PlanoGeneralViewer
                       ref={(el) => { planosCanvasRefs.current[index] = el; }}
                       croquisData={plano.croquis_data || '{}'}
                       planoNombre={plano.nombre}
-                      width={1500}
+                width={isMobile ? 400 : 1500}
                       height={700}
                     />
+                    </div>
                   )}
                 </div>
               );
@@ -943,8 +945,8 @@ export default function Inicio() {
       )}
 
       {/* Distribucion del Campamento — Croquis por Modulo */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-        <h2 className="text-lg font-semibold text-gray-800 mb-2">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 max-md:bg-transparent max-md:shadow-none max-md:border-0 max-md:rounded-none max-md:px-4 max-md:py-4">
+        <h2 className="text-[16.5px] font-semibold text-gray-800 mb-2 break-words">
           Distribucion del Campamento ({campamentoSeleccionado?.nombre || 'Ninguno'})
         </h2>
         <button
@@ -987,7 +989,9 @@ export default function Inicio() {
             </span>
           </div>
         )}
+      </div>
 
+      <div className="max-md:p-0 max-md:-mx-4">
         {modulosConOffset.length > 0 ? (
           <div className="space-y-8">
             {modulosConOffset.map(({ modulo, offset }, index) => {
@@ -1005,9 +1009,9 @@ export default function Inicio() {
               });
               const disponiblesModulo = Math.max(0, totalCamasModulo - ocupadasModulo);
               return (
+              <div key={modulo.id} className={isMobile ? (index % 2 === 0 ? 'bg-[#FFF8E7] px-4 py-4' : 'bg-transparent px-4 py-4') : ''}>
               <CroquisViewer
                 ref={(el) => { croquisCanvasRefs.current[index] = el; }}
-                key={modulo.id}
                 croquisData={modulo.croquis_data || '{}'}
                 moduloNombre={modulo.nombre}
                 elementNumberOffset={offset}
@@ -1022,6 +1026,7 @@ export default function Inicio() {
                 duplexCount={tiposModulo.duplex}
                 disponiblesModulo={disponiblesModulo}
               />
+              </div>
               );
             })}
           </div>

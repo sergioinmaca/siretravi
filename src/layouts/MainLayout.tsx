@@ -349,7 +349,7 @@ export default function MainLayout() {
         </header>
 
         {/* Content */}
-        <div className={`flex-1 min-h-0 overflow-y-auto bg-caracas-light z-0 ${isMobile ? 'p-4 pt-14 pb-[72px]' : 'p-8'}`}>
+        <div className={`flex-1 min-h-0 overflow-x-clip overflow-y-auto bg-caracas-light z-0 ${isMobile ? 'p-4 pt-14 pb-[72px]' : 'p-8'}`}>
           <div className={location.pathname === '/agenda' ? 'flex-1 min-h-0 flex flex-col overflow-hidden' : 'max-w-7xl mx-auto'}>
             <Outlet />
           </div>
