@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Home,
@@ -61,11 +61,14 @@ export default function MainLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { campamentos, campamentoSeleccionado, seleccionarCampamento, loading, errorCarga } = useCampamento();
-  const { usuarioActual, permisos, tienePermiso, obtenerCampamentosPermitidos, logout } = useAuth();
+  const { usuarioActual, tienePermiso, obtenerCampamentosPermitidos, logout } = useAuth();
   const isMobile = useIsMobile();
   const prevMobile = useRef(isMobile);
+<<<<<<< HEAD
   const touchStartX = useRef(0);
   const campamentoDropdownRef = useRef<HTMLDivElement>(null);
+=======
+>>>>>>> main
 
   const menuItemsFiltrados = useMemo(() =>
     usuarioActual?.es_master
@@ -152,18 +155,6 @@ export default function MainLayout() {
       });
     }
   }, [location.pathname, isMobile, menuItemsFiltrados]);
-
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
-  }, []);
-
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    const diff = touchStartX.current - e.changedTouches[0].clientX;
-    if (Math.abs(diff) > 50) {
-      if (diff > 0) handleCarouselNext();
-      else handleCarouselPrev();
-    }
-  }, [handleCarouselNext, handleCarouselPrev]);
 
   const abreviarNombreCampamento = (nombre: string) =>
     nombre.replace(/Campamento Transitorio\s*/gi, 'C.T. ').trim();
