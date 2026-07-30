@@ -1381,10 +1381,59 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
             </div>
           )}
 
+          {/* Paginación — Mobile */}
+          <div className="bg-white rounded-2xl shadow-sm md:hidden">
+            <div className="p-4 flex flex-col gap-2">
+              <button
+                onClick={() => setPagina(1)}
+                disabled={pagina === 1}
+                className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium ${pagina === 1 ? 'bg-gray-200 text-gray-400' : 'bg-white text-gray-700 border border-gray-200'}`}
+              >
+                <ChevronLeft size={16} />
+                Información del Integrante
+              </button>
+              <button
+                onClick={() => setPagina(2)}
+                disabled={pagina === 2}
+                className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium ${pagina === 2 ? 'bg-gray-200 text-gray-400' : 'bg-white text-gray-700 border border-gray-200'}`}
+              >
+                Atenciones y Registros
+                <ChevronRight size={16} />
+              </button>
+            </div>
+          </div>
+
+          {/* Acciones — Mobile */}
+          <div className="bg-white rounded-2xl shadow-sm md:hidden">
+            <div className="p-4 flex items-center justify-end gap-3">
+              {esMaster && pagina === 1 && (
+                <button
+                  onClick={handleGuardar}
+                  disabled={!canSave || isSaving}
+                  className="flex items-center gap-2 bg-caracas-blue text-white px-4 py-2.5 rounded-xl text-sm font-medium disabled:opacity-50"
+                >
+                  {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
+                  {isSaving ? 'Guardando...' : 'Guardar'}
+                </button>
+              )}
+              <button
+                onClick={handleExportPDF}
+                disabled={isExporting}
+                className="flex items-center gap-2 bg-caracas-red text-white px-4 py-2.5 rounded-xl text-sm font-medium disabled:opacity-50"
+              >
+                {isExporting ? <Loader2 className="animate-spin" size={16} /> : <FileText size={16} />}
+                {isExporting ? 'Exportando...' : 'Exportar PDF'}
+              </button>
+              <button onClick={handleClose} className="px-4 py-2.5 rounded-xl text-gray-600 text-sm font-medium hover:bg-gray-200">
+                Cerrar
+              </button>
+            </div>
+          </div>
+
         </div>
 
-        {/* Footer */}
-        <div className="px-8 py-5 border-t border-gray-100 bg-gray-50 shrink-0">
+        {/* Footer — Desktop */}
+        <div className="hidden md:flex px-8 py-5 border-t border-gray-100 bg-gray-50 shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex gap-2">
               <button

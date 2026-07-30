@@ -486,10 +486,10 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
-        {/* Header */}
-        <div className="px-8 py-5 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white">
+    <div className="fixed inset-0 z-[60] flex flex-col md:items-center md:justify-center md:p-4 md:bg-gray-900/40 md:backdrop-blur-sm">
+      <div className="bg-white w-full h-full pt-4 md:pt-0 md:h-auto md:max-h-[90vh] md:max-w-4xl md:rounded-3xl md:shadow-2xl flex flex-col overflow-hidden animate-slide-up relative">
+        {/* Header — Desktop */}
+        <div className="hidden md:flex px-8 py-5 border-b border-gray-100 items-center justify-between shrink-0 bg-white">
           <div className="flex-1 text-center ml-8">
             <h2 className="text-xl font-bold text-gray-800">Ficha Familiar</h2>
             <p className="text-sm text-gray-500 mt-0.5">
@@ -501,8 +501,21 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
           </button>
         </div>
 
+        {/* Close — Mobile */}
+        <button onClick={onClose} className="absolute top-10 right-4 z-20 md:hidden p-2 bg-caracas-red hover:bg-red-800 rounded-full text-white transition-colors">
+          <X size={24} />
+        </button>
+
         {/* Body */}
-        <div className="p-8 overflow-y-auto flex-1 bg-gray-50/30 space-y-6">
+        <div className="px-2 py-4 pb-[72px] md:p-8 overflow-y-auto flex-1 bg-gray-50/30 space-y-6">
+
+          {/* Título — Mobile */}
+          <div className="md:hidden">
+            <h2 className="text-[21px] font-semibold text-gray-800">Ficha Familiar</h2>
+            <p className="text-sm text-gray-500 mt-0.5">
+              {familia.nombre} — {integrantes.length} integrante{integrantes.length !== 1 ? 's' : ''}
+            </p>
+          </div>
 
           {/* Ficha del Jefe de Familia */}
           {jefe && (
@@ -630,10 +643,27 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
               </div>
             </div>
           )}
+        {/* Acciones — Mobile */}
+        <div className="bg-white rounded-2xl shadow-sm md:hidden">
+          <div className="p-4 flex items-center justify-end gap-3">
+            <button
+              onClick={handleExportPDF}
+              disabled={isExporting}
+              className="flex items-center gap-2 bg-caracas-red text-white px-4 py-2.5 rounded-xl text-sm font-medium disabled:opacity-50"
+            >
+              {isExporting ? <Loader2 className="animate-spin" size={16} /> : <FileText size={16} />}
+              {isExporting ? 'Exportando...' : 'Exportar PDF'}
+            </button>
+            <button onClick={onClose} className="px-4 py-2.5 rounded-xl text-gray-600 text-sm font-medium hover:bg-gray-200">
+              Cerrar
+            </button>
+          </div>
         </div>
 
-        {/* Footer */}
-        <div className="px-8 py-5 border-t border-gray-100 bg-gray-50 flex justify-end gap-3 shrink-0">
+        </div>
+
+        {/* Footer — Desktop */}
+        <div className="hidden md:flex px-8 py-5 border-t border-gray-100 bg-gray-50 justify-end gap-3 shrink-0">
           <button
             onClick={handleExportPDF}
             disabled={isExporting}
