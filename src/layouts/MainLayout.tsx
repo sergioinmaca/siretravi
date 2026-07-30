@@ -64,11 +64,7 @@ export default function MainLayout() {
   const { usuarioActual, tienePermiso, obtenerCampamentosPermitidos, logout } = useAuth();
   const isMobile = useIsMobile();
   const prevMobile = useRef(isMobile);
-<<<<<<< HEAD
-  const touchStartX = useRef(0);
   const campamentoDropdownRef = useRef<HTMLDivElement>(null);
-=======
->>>>>>> main
 
   const menuItemsFiltrados = useMemo(() =>
     usuarioActual?.es_master
