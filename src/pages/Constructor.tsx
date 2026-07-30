@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import type { Campamento } from '../types';
 import CrearRefugioModal from '../components/constructor/CrearRefugioModal';
 import { buscarFotosHuerfanas, eliminarFotosHuerfanas } from '../hooks/useFotoUpload';
-import type { FotoHuerfana } from '../hooks/useFotoUpload';
+import type { FotoHuerfana, MotivoHuerfana } from '../hooks/useFotoUpload';
 
 export default function Constructor() {
   const { campamentos } = useCampamento();
@@ -29,6 +29,13 @@ export default function Constructor() {
   } | null>(null);
 
   const esMaster = usuarioActual?.es_master === true;
+
+  const MOTIVO_LABELS: Record<MotivoHuerfana, { text: string; color: string }> = {
+    integrante_eliminado: { text: 'Integrante eliminado sin limpiar fotos', color: 'bg-red-50 text-red-600' },
+    foto_removida: { text: 'Foto removida del registro pero no borrada del storage', color: 'bg-amber-50 text-amber-700' },
+    foto_reemplazada: { text: 'Foto reemplazada, archivo anterior no eliminado', color: 'bg-blue-50 text-blue-700' },
+    desconocido: { text: 'Origen desconocido', color: 'bg-gray-100 text-gray-500' },
+  };
 
   const calcularTotalCamas = (campamento: typeof campamentos[0]) => {
     return campamento.modulos.reduce((total, c) => {
@@ -260,17 +267,15 @@ export default function Constructor() {
                             )}
                           </td>
                           <td className="py-2 px-3">
-                            {h.refugiado_nombre ? (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-gray-100 text-gray-500">
-                                <AlertCircle size={10} />
-                                Foto sobrante
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium bg-red-50 text-red-600">
-                                <AlertCircle size={10} />
-                                Integrante eliminado
-                              </span>
-                            )}
+                            {(() => {
+                              const { text, color } = MOTIVO_LABELS[h.motivo];
+                              return (
+                                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-medium ${color}`}>
+                                  <AlertCircle size={10} />
+                                  {text}
+                                </span>
+                              );
+                            })()}
                           </td>
                           <td className="py-2 px-3 text-gray-600">
                             {nombreCampamento(h.campamento_id)}

@@ -444,14 +444,15 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     }
 
     if (isEditing) {
+      let deleteOldFotoUrl: string | null = null;
+      let deleteOldMascotaFotoUrl: string | null = null;
+
       if (fotoFile && refugiadoId) {
         const foto_url = await uploadFotoHook(fotoFile, campamentoId, refugiadoId);
         if (foto_url) {
           finalFotoUrl = foto_url;
           fotoChanged = true;
-          if (refugiadoToEdit?.foto_url) {
-            await deleteStorageFile(refugiadoToEdit.foto_url);
-          }
+          deleteOldFotoUrl = refugiadoToEdit?.foto_url || null;
         } else {
           fotoUploadFailed = true;
         }
@@ -462,9 +463,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
         if (mascota_foto_url) {
           finalMascotaFotoUrl = mascota_foto_url;
           mascotaFotoChanged = true;
-          if (refugiadoToEdit?.mascota_foto_url) {
-            await deleteStorageFile(refugiadoToEdit.mascota_foto_url);
-          }
+          deleteOldMascotaFotoUrl = refugiadoToEdit?.mascota_foto_url || null;
         } else {
           fotoUploadFailed = true;
         }
@@ -473,13 +472,13 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       if (!fotoFile && !fotoPreview && refugiadoToEdit?.foto_url) {
         finalFotoUrl = null;
         fotoChanged = true;
-        await deleteStorageFile(refugiadoToEdit.foto_url);
+        deleteOldFotoUrl = refugiadoToEdit.foto_url;
       }
 
       if (!mascotaFotoFile && !mascotaFotoPreview && refugiadoToEdit?.mascota_foto_url) {
         finalMascotaFotoUrl = null;
         mascotaFotoChanged = true;
-        await deleteStorageFile(refugiadoToEdit.mascota_foto_url);
+        deleteOldMascotaFotoUrl = refugiadoToEdit.mascota_foto_url;
       }
 
       if (fotoChanged || mascotaFotoChanged) {
@@ -490,6 +489,11 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
         const ok = await actualizarFotoRefugiado(refugiadoId, fotoUpdate);
         if (!ok) {
           fotoUploadFailed = true;
+          if (finalFotoUrl) await deleteStorageFile(finalFotoUrl);
+          if (finalMascotaFotoUrl) await deleteStorageFile(finalMascotaFotoUrl);
+        } else {
+          if (deleteOldFotoUrl) await deleteStorageFile(deleteOldFotoUrl);
+          if (deleteOldMascotaFotoUrl) await deleteStorageFile(deleteOldMascotaFotoUrl);
         }
       }
     }

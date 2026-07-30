@@ -710,13 +710,13 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
       let newMascotaFotoUrl: string | null | undefined = undefined;
       let fotoChanged = false;
       let mascotaChanged = false;
+      let deleteOldFotoUrl: string | null = null;
+      let deleteOldMascotaFotoUrl: string | null = null;
 
       if (fotoFile) {
         const url = await uploadFotoHook(fotoFile, refugiado.campamento_id, refugiado.id);
         if (url) {
-          if (refugiado.foto_url) {
-            await deleteStorageFile(refugiado.foto_url);
-          }
+          deleteOldFotoUrl = refugiado.foto_url || null;
           newFotoUrl = url;
           fotoChanged = true;
         } else {
@@ -728,9 +728,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
       if (mascotaFotoFile) {
         const url = await uploadFotoHook(mascotaFotoFile, refugiado.campamento_id, refugiado.id, 'mascota');
         if (url) {
-          if (refugiado.mascota_foto_url) {
-            await deleteStorageFile(refugiado.mascota_foto_url);
-          }
+          deleteOldMascotaFotoUrl = refugiado.mascota_foto_url || null;
           newMascotaFotoUrl = url;
           mascotaChanged = true;
         } else {
@@ -746,9 +744,14 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
         const ok = await actualizarFotoRefugiado(refugiado.id, updateData);
         if (!ok) {
           setUploadError('No se pudo guardar la foto en la ficha del integrante.');
+          if (newFotoUrl) await deleteStorageFile(newFotoUrl);
+          if (newMascotaFotoUrl) await deleteStorageFile(newMascotaFotoUrl);
           setIsSaving(false);
           return;
         }
+
+        if (deleteOldFotoUrl) await deleteStorageFile(deleteOldFotoUrl);
+        if (deleteOldMascotaFotoUrl) await deleteStorageFile(deleteOldMascotaFotoUrl);
 
         if (fotoChanged) {
           onActualizarFoto(newFotoUrl ?? null);
@@ -775,13 +778,13 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
     if (!window.confirm('¿Estás seguro de que deseas eliminar la foto?')) return;
 
     try {
-      const urlToDelete = refugiado?.foto_url;
-      if (urlToDelete && refugiado) {
-        await deleteStorageFile(urlToDelete);
-      }
-
       if (refugiado) {
         await actualizarFotoRefugiado(refugiado.id, { foto_url: null });
+      }
+
+      const urlToDelete = refugiado?.foto_url;
+      if (urlToDelete) {
+        await deleteStorageFile(urlToDelete);
       }
 
       onActualizarFoto(null);
@@ -798,13 +801,13 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
     if (!window.confirm('¿Estás seguro de que deseas eliminar la foto de la mascota?')) return;
 
     try {
-      const urlToDelete = refugiado?.mascota_foto_url;
-      if (urlToDelete && refugiado) {
-        await deleteStorageFile(urlToDelete);
-      }
-
       if (refugiado) {
         await actualizarFotoRefugiado(refugiado.id, { mascota_foto_url: null });
+      }
+
+      const urlToDelete = refugiado?.mascota_foto_url;
+      if (urlToDelete) {
+        await deleteStorageFile(urlToDelete);
       }
 
       onActualizarMascotaFoto(null);

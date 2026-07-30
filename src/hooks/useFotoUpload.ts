@@ -134,6 +134,12 @@ export function useFotoUpload() {
   };
 }
 
+export type MotivoHuerfana =
+  | 'integrante_eliminado'
+  | 'foto_removida'
+  | 'foto_reemplazada'
+  | 'desconocido';
+
 export interface FotoHuerfana {
   storage_path: string;
   campamento_id: string;
@@ -141,6 +147,7 @@ export interface FotoHuerfana {
   tipo: 'persona' | 'mascota';
   preview_url: string;
   refugiado_nombre: string | null;
+  motivo: MotivoHuerfana;
 }
 
 export async function buscarFotosHuerfanas(): Promise<FotoHuerfana[]> {
@@ -158,7 +165,9 @@ export async function buscarFotosHuerfanas(): Promise<FotoHuerfana[]> {
     .select('id, foto_url, mascota_foto_url');
 
   const pathsValidos = new Set<string>();
+  const refPorId = new Map<string, { foto_url: string | null; mascota_foto_url: string | null }>();
   for (const r of (todosRefugiados || [])) {
+    refPorId.set(r.id, { foto_url: r.foto_url ?? null, mascota_foto_url: r.mascota_foto_url ?? null });
     for (const url of [r.foto_url, r.mascota_foto_url]) {
       if (!url) continue;
       const match = (url as string).match(/\/fotos-integrantes\/([^?#]+)/);
@@ -184,14 +193,31 @@ export async function buscarFotosHuerfanas(): Promise<FotoHuerfana[]> {
     nombrePorId[r.id] = `${r.nombres} ${r.apellidos}`.trim();
   }
 
-  return huerfanasReales.map(h => ({
-    storage_path: h.storage_path,
-    campamento_id: h.campamento_id,
-    refugiado_id: h.refugiado_id,
-    tipo: h.tipo as 'persona' | 'mascota',
-    preview_url: supabase.storage.from('fotos-integrantes').getPublicUrl(h.storage_path).data.publicUrl,
-    refugiado_nombre: nombrePorId[h.refugiado_id] || null,
-  }));
+  return huerfanasReales.map(h => {
+    const ref = refPorId.get(h.refugiado_id);
+    let motivo: MotivoHuerfana;
+
+    if (!ref) {
+      motivo = 'integrante_eliminado';
+    } else {
+      const currentUrl = h.tipo === 'persona' ? ref.foto_url : ref.mascota_foto_url;
+      if (!currentUrl) {
+        motivo = 'foto_removida';
+      } else {
+        motivo = 'foto_reemplazada';
+      }
+    }
+
+    return {
+      storage_path: h.storage_path,
+      campamento_id: h.campamento_id,
+      refugiado_id: h.refugiado_id,
+      tipo: h.tipo as 'persona' | 'mascota',
+      preview_url: supabase.storage.from('fotos-integrantes').getPublicUrl(h.storage_path).data.publicUrl,
+      refugiado_nombre: nombrePorId[h.refugiado_id] || null,
+      motivo,
+    };
+  });
 }
 
 export async function eliminarFotosHuerfanas(paths: string[]): Promise<{ eliminadas: number; fallidas: string[] }> {

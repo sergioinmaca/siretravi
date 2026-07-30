@@ -599,16 +599,16 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
   const eliminarRefugiado = async (id: string) => {
     const refugiado = refugiados.find(r => r.id === id);
 
-    if (refugiado) {
-      await vaciarCarpetaRefugiado(refugiado.campamento_id, refugiado.id);
-    }
-
     const { error } = await supabase.from('refugiados').delete().eq('id', id);
     if (error) {
       console.error('Error al eliminar refugiado:', error);
       return;
     }
     setRefugiados(prev => prev.filter(r => r.id !== id));
+
+    if (refugiado) {
+      await vaciarCarpetaRefugiado(refugiado.campamento_id, refugiado.id);
+    }
   };
 
   // ── Actualizar Refugiado ───────────────────────────────────────────────
