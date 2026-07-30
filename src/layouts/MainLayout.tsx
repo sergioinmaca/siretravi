@@ -53,6 +53,7 @@ const pathToModulo: Record<string, string> = {
 export default function MainLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isCampamentoDropdownOpen, setIsCampamentoDropdownOpen] = useState(false);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const [showTransition, setShowTransition] = useState(false);
   const [showGreeting, setShowGreeting] = useState(true);
@@ -64,6 +65,7 @@ export default function MainLayout() {
   const isMobile = useIsMobile();
   const prevMobile = useRef(isMobile);
   const touchStartX = useRef(0);
+  const campamentoDropdownRef = useRef<HTMLDivElement>(null);
 
   const menuItemsFiltrados = useMemo(() =>
     usuarioActual?.es_master
@@ -122,6 +124,16 @@ export default function MainLayout() {
   useEffect(() => {
     const timer = setTimeout(() => setShowGreeting(false), 10000);
     return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (campamentoDropdownRef.current && !campamentoDropdownRef.current.contains(e.target as Node)) {
+        setIsCampamentoDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -296,39 +308,47 @@ export default function MainLayout() {
         <header className="relative hidden md:flex h-16 bg-white border-b border-gray-200 items-center justify-between px-8 shadow-sm shrink-0 ml-20">
           <h1 className="text-xl font-semibold text-gray-800">Panel de Control</h1>
 
-          <div className="relative group">
-            <div className="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+          <div className="relative" ref={campamentoDropdownRef}>
+            <div
+              className="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
+              onClick={() => setIsCampamentoDropdownOpen(!isCampamentoDropdownOpen)}
+            >
               <MapPin size={18} className="text-caracas-red" />
               <span className="font-medium text-gray-700">
                 {campamentoSeleccionado?.nombre || 'Seleccione Campamento'}
               </span>
-              <ChevronDown size={16} className="text-gray-400 ml-2" />
+              <ChevronDown size={16} className={`text-gray-400 ml-2 transition-transform ${isCampamentoDropdownOpen ? 'rotate-180' : ''}`} />
             </div>
 
-            <div className="absolute right-0 mt-2 min-w-[498px] bg-white border border-gray-100 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 overflow-hidden">
-              <div className="p-2">
-                <p className="text-xs font-semibold text-caracas-red uppercase px-3 mb-2 mt-1 text-right">Sedes Activas</p>
-                  {campamentosPermitidos.length > 0 ? (
-                    campamentosPermitidos.map((camp, idx) => (
-                      <button
-                        key={camp.id}
-                        onClick={() => seleccionarCampamento(camp.id)}
-                        className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors flex items-center justify-end gap-2 ${camp.id === campamentoSeleccionado?.id
-                          ? 'bg-caracas-red/10 text-caracas-red font-medium'
-                          : `text-gray-600 hover:bg-gray-200 ${idx % 2 === 0 ? 'bg-gray-100' : ''}`
-                          }`}
-                      >
-                      <MapPin size={16} className={camp.id === campamentoSeleccionado?.id ? 'text-caracas-red' : 'text-gray-400'} />
-                      <span className="truncate">{camp.nombre}</span>
-                    </button>
-                  ))
-                ) : (
-                  <div className="px-3 py-4 text-center text-sm text-gray-400">
-                    No tienes acceso a ningún campamento
-                  </div>
-                )}
+            {isCampamentoDropdownOpen && (
+              <div className="absolute right-0 mt-2 min-w-[498px] bg-white border border-gray-100 rounded-xl shadow-lg transition-all duration-200 overflow-hidden z-50">
+                <div className="p-2">
+                  <p className="text-xs font-semibold text-caracas-red uppercase px-3 mb-2 mt-1 text-right">Sedes Activas</p>
+                    {campamentosPermitidos.length > 0 ? (
+                      campamentosPermitidos.map((camp, idx) => (
+                        <button
+                          key={camp.id}
+                          onClick={() => {
+                            seleccionarCampamento(camp.id);
+                            setIsCampamentoDropdownOpen(false);
+                          }}
+                          className={`w-full text-left px-3 py-2.5 rounded-lg transition-colors flex items-center justify-end gap-2 ${camp.id === campamentoSeleccionado?.id
+                            ? 'bg-caracas-red/10 text-caracas-red font-medium'
+                            : `text-gray-600 hover:bg-gray-200 ${idx % 2 === 0 ? 'bg-gray-100' : ''}`
+                            }`}
+                        >
+                        <MapPin size={16} className={camp.id === campamentoSeleccionado?.id ? 'text-caracas-red' : 'text-gray-400'} />
+                        <span className="truncate">{camp.nombre}</span>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-3 py-4 text-center text-sm text-gray-400">
+                      No tienes acceso a ningún campamento
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </header>
 
