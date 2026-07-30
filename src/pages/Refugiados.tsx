@@ -60,9 +60,27 @@ export default function Refugiados() {
 
   // Fetch paginado
   const currentPageRef = useRef(currentPage);
+  const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     currentPageRef.current = currentPage;
   }, [currentPage]);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const log = () => {
+      console.log('[ScrollSpy]', {
+        clientWidth: el.clientWidth,
+        scrollWidth: el.scrollWidth,
+        canScroll: el.scrollWidth > el.clientWidth,
+        overflowX: getComputedStyle(el).overflowX,
+      });
+    };
+    log();
+    const observer = new ResizeObserver(log);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   const refetch = useCallback(async () => {
     if (!campamentoSeleccionado) return;
@@ -431,7 +449,7 @@ export default function Refugiados() {
       </div>
 
       {/* Tarjeta Principal */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col min-h-[500px]">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col min-h-[500px]">
 
         {/* Barra de Herramientas (Búsqueda) */}
         <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between gap-4">
@@ -467,7 +485,18 @@ export default function Refugiados() {
 
         {/* Vista Desktop: Tabla */}
         {!isMobile && (
-          <div className="overflow-x-auto">
+          <div
+            ref={scrollRef}
+            className="overflow-x-auto w-full min-w-0"
+            style={{
+              background: `
+                linear-gradient(to right, white 30%, transparent) left / 40px 100% no-repeat,
+                linear-gradient(to left, white 30%, transparent) right / 40px 100% no-repeat,
+                linear-gradient(to right, white, white) center / 100% 100% no-repeat
+              `,
+              backgroundAttachment: 'scroll, scroll, scroll',
+            }}
+          >
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-white border-b border-gray-100">

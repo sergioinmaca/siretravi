@@ -212,7 +212,7 @@ export default function MainLayout() {
       {/* Sidebar — Desktop */}
       <aside
         className={`${isSidebarOpen ? 'w-64' : 'w-20'
-          } hidden md:flex bg-white border-r border-gray-200 transition-[width] duration-300 ease-in-out flex-col relative shadow-sm z-30 overflow-hidden`}
+          } hidden md:flex fixed left-0 top-0 h-full bg-white border-r border-gray-200 transition-[width] duration-300 ease-in-out flex-col shadow-sm z-40 overflow-hidden`}
       >
         <div className="h-16 flex items-center justify-between px-4 border-b border-gray-100 shrink-0">
           <span className="text-caracas-red font-bold text-md truncate ml-2 transition-opacity duration-150" style={{ opacity: showSidebarText ? 1 : 0 }}>
@@ -291,9 +291,9 @@ export default function MainLayout() {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 flex flex-col min-h-0 relative">
+      <main className="flex-1 flex flex-col min-h-0 min-w-0 relative">
         {/* Desktop Header */}
-        <header className="relative hidden md:flex h-16 bg-white border-b border-gray-200 items-center justify-between px-8 shadow-sm shrink-0 z-20">
+        <header className="relative hidden md:flex h-16 bg-white border-b border-gray-200 items-center justify-between px-8 shadow-sm shrink-0 z-20 ml-20">
           <h1 className="text-xl font-semibold text-gray-800">Panel de Control</h1>
 
           <div className="relative group">
@@ -349,7 +349,7 @@ export default function MainLayout() {
         </header>
 
         {/* Content */}
-        <div className={`flex-1 min-h-0 overflow-x-clip overflow-y-auto bg-caracas-light z-0 ${isMobile ? 'p-4 pt-14 pb-[72px]' : 'p-8'}`}>
+        <div className={`flex-1 min-h-0 min-w-0 overflow-y-auto bg-caracas-light z-0 ${isMobile ? 'p-4 pt-14 pb-[72px]' : 'p-8 md:ml-20'}`}>
           <div className={location.pathname === '/agenda' ? 'flex-1 min-h-0 flex flex-col overflow-hidden' : 'max-w-7xl mx-auto'}>
             <Outlet />
           </div>
