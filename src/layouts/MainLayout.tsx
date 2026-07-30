@@ -65,9 +65,12 @@ export default function MainLayout() {
   const prevMobile = useRef(isMobile);
   const touchStartX = useRef(0);
 
-  const menuItemsFiltrados = usuarioActual?.es_master
-    ? menuItems
-    : menuItems.filter(item => tienePermiso(item.label, 'Ver'));
+  const menuItemsFiltrados = useMemo(() =>
+    usuarioActual?.es_master
+      ? menuItems
+      : menuItems.filter(item => tienePermiso(item.label, 'Ver')),
+    [usuarioActual?.es_master, tienePermiso]
+  );
 
   const moduloActual = pathToModulo[location.pathname]
     || (location.pathname.startsWith('/salud') ? 'Salud' : 'Inicio');
@@ -81,14 +84,10 @@ export default function MainLayout() {
 
   const todosLosCampamentosPermitidos = useMemo(() => {
     if (!usuarioActual || usuarioActual.es_master) return campamentos;
-    const tieneAccesoTotal = permisos.some(p => p.campamentos === null);
-    if (tieneAccesoTotal) return campamentos;
-    const idsUnicos = new Set<string>();
-    permisos.forEach(p => {
-      if (p.campamentos) p.campamentos.forEach(id => idsUnicos.add(id));
-    });
-    return campamentos.filter(c => idsUnicos.has(c.id));
-  }, [usuarioActual, permisos, campamentos]);
+    const permitidos = obtenerCampamentosPermitidos(moduloActual);
+    if (permitidos === null) return campamentos;
+    return campamentos.filter(c => permitidos.includes(c.id));
+  }, [usuarioActual, obtenerCampamentosPermitidos, moduloActual, campamentos]);
 
   useEffect(() => {
     if (campamentoSeleccionado && campamentosPermitidos.length > 0) {
@@ -102,13 +101,14 @@ export default function MainLayout() {
   const maxCarouselIndex = Math.max(0, menuItemsFiltrados.length - 3);
   const showCarouselArrows = menuItemsFiltrados.length > 3;
 
-  const handleCarouselPrev = useCallback(() => {
+  const handleCarouselPrev = () => {
     setCarouselIndex(prev => Math.max(0, prev - 1));
-  }, []);
+  };
 
-  const handleCarouselNext = useCallback(() => {
-    setCarouselIndex(prev => Math.min(maxCarouselIndex, prev + 1));
-  }, [maxCarouselIndex]);
+  const handleCarouselNext = () => {
+    const maxIdx = Math.max(0, menuItemsFiltrados.length - 3);
+    setCarouselIndex(prev => Math.min(maxIdx, prev + 1));
+  };
 
   useEffect(() => {
     if (prevMobile.current !== isMobile) {
@@ -357,11 +357,9 @@ export default function MainLayout() {
       </main>
 
       {/* Mobile Tab Bar */}
-      <div className="flex md:hidden fixed bottom-0 left-0 right-0 h-[72px] bg-[#ffb41d] border-t border-[#e6a61a] z-40 flex-col" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+      <div className="flex md:hidden fixed bottom-0 left-0 right-0 h-[72px] bg-[#ffb41d] border-t border-[#e6a61a] z-40 flex-col px-2" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
         <div
           className="flex-1 flex items-center"
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
         >
           {showCarouselArrows && (
             <button
@@ -369,7 +367,7 @@ export default function MainLayout() {
               disabled={carouselIndex === 0}
               className={`p-3 h-full flex items-center justify-center shrink-0 ${carouselIndex === 0 ? 'opacity-30' : 'text-[#28307d] hover:opacity-70'}`}
             >
-              <ChevronLeft size={16} strokeWidth={3} />
+              <ChevronLeft size={18} strokeWidth={3} />
             </button>
           )}
 
@@ -407,7 +405,7 @@ export default function MainLayout() {
               disabled={carouselIndex >= maxCarouselIndex}
               className={`p-3 h-full flex items-center justify-center shrink-0 ${carouselIndex >= maxCarouselIndex ? 'opacity-30' : 'text-[#28307d] hover:opacity-70'}`}
             >
-              <ChevronRight size={16} strokeWidth={3} />
+              <ChevronRight size={18} strokeWidth={3} />
             </button>
           )}
         </div>
@@ -424,7 +422,7 @@ export default function MainLayout() {
             className="fixed inset-0 bg-black/30 z-40 md:hidden"
             onClick={() => setIsDrawerOpen(false)}
           />
-          <div className="fixed top-0 right-0 h-full w-96 bg-white shadow-xl z-50 md:hidden flex flex-col animate-slide-in">
+          <div className="fixed top-0 right-0 h-full w-80 bg-white shadow-xl z-50 md:hidden flex flex-col animate-slide-in">
             <div className="h-14 flex items-center justify-between px-4 border-b border-gray-100 shrink-0">
               <span className="font-semibold text-gray-700">Menú</span>
               <button

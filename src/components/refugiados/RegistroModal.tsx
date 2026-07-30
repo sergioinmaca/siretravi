@@ -906,7 +906,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
 
                 <div className="border-t border-gray-100 pt-4">
                   <label className="block text-sm font-medium text-gray-700 mb-3">Tenencia de la Vivienda</label>
-                  <div className="flex gap-8">
+                  <div className="flex flex-col gap-2 md:flex-row md:gap-8">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input type="radio" name="tenenciaVivienda" checked={formData.tenenciaVivienda === 'Propia'} onChange={() => setFormData(prev => ({ ...prev, tenenciaVivienda: 'Propia' }))} className="w-5 h-5 text-caracas-red focus:ring-caracas-red" />
                       <span className="text-gray-700">Propia</span>
@@ -928,7 +928,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
 
                 <div className="border-t border-gray-100 pt-4">
                   <label className="block text-sm font-medium text-gray-700 mb-3">Ingreso Familiar Principal antes de la Emergencia</label>
-                  <div className="flex flex-wrap gap-1">
+                  <div className="flex flex-col gap-2 md:flex-row md:flex-wrap md:gap-1">
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input type="radio" name="ingresoFamiliar" checked={formData.ingresoFamiliar === 'Trabajo formal'} onChange={() => setFormData(prev => ({ ...prev, ingresoFamiliar: 'Trabajo formal' }))} className="w-5 h-5 text-caracas-red focus:ring-caracas-red" />
                       <span className="text-gray-700">Trabajo formal</span>

@@ -448,14 +448,14 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
           )}
         </div>
       )}
-      <div className="box-border border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white" style={portrait ? { width: '92vw', height: '600px' } : undefined}>
+      <div className="box-border border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white" style={portrait ? { width: '92vw', height: '550px' } : undefined}>
         <div className="relative">
           <canvas
             ref={setCanvasRef}
             width={width}
             height={height}
             className={`block ${zoom > 1.0 ? 'cursor-grab' : 'cursor-default'}`}
-            style={{ width: '100%', maxWidth: '100%', boxSizing: 'border-box', imageRendering: 'auto', touchAction: 'none' }}
+            style={{ width: '100%', height: '100%', maxWidth: '100%', boxSizing: 'border-box', imageRendering: 'auto', touchAction: 'none' }}
             onMouseMove={handleCanvasMouseMove}
             onMouseLeave={handleCanvasMouseLeave}
             onMouseDown={handleMouseDown}
@@ -467,7 +467,12 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
           {hoveredBed && (
             <div
               className="absolute z-50 bg-gray-900 text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-lg pointer-events-none whitespace-nowrap"
-              style={{
+              style={portrait ? {
+                left: hoveredBed.y,
+                top: hoveredBed.x + 12,
+                transform: 'rotate(90deg)',
+                transformOrigin: '0 0',
+              } : {
                 left: hoveredBed.x + 12,
                 top: hoveredBed.y,
                 transform: 'translateX(-50%) translateY(calc(-100% - 5px))',
@@ -488,24 +493,24 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
               })}
             </div>
           )}
+          {zoom !== 1.0 && (
+            <div className="absolute bottom-0 left-0 right-0 flex items-center gap-2 justify-center py-2 bg-gray-50/90 z-10">
+              <button
+                type="button"
+                onClick={zoomOut}
+                disabled={zoom <= ZOOM_MIN}
+                className="px-2 py-0.5 border rounded text-xs disabled:opacity-30 hover:bg-gray-200 transition-colors"
+              >−</button>
+              <span className="text-xs w-10 text-center text-gray-500">{Math.round(zoom * 100)}%</span>
+              <button
+                type="button"
+                onClick={zoomIn}
+                disabled={zoom >= ZOOM_MAX}
+                className="px-2 py-0.5 border rounded text-xs disabled:opacity-30 hover:bg-gray-200 transition-colors"
+              >+</button>
+            </div>
+          )}
         </div>
-        {zoom !== 1.0 && (
-          <div className="flex items-center gap-2 justify-center py-2 border-t border-gray-100 bg-gray-50">
-            <button
-              type="button"
-              onClick={zoomOut}
-              disabled={zoom <= ZOOM_MIN}
-              className="px-2 py-0.5 border rounded text-xs disabled:opacity-30 hover:bg-gray-200 transition-colors"
-            >−</button>
-            <span className="text-xs w-10 text-center text-gray-500">{Math.round(zoom * 100)}%</span>
-            <button
-              type="button"
-              onClick={zoomIn}
-              disabled={zoom >= ZOOM_MAX}
-              className="px-2 py-0.5 border rounded text-xs disabled:opacity-30 hover:bg-gray-200 transition-colors"
-            >+</button>
-          </div>
-        )}
       </div>
     </div>
   );
