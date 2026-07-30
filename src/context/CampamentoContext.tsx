@@ -424,7 +424,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
   const agregarFamilia = async (nueva: Familia): Promise<Familia | null> => {
     const { data, error } = await supabase
       .from('familias')
-      .insert({ campamento_id: nueva.campamento_id, nombre: nueva.nombre })
+      .upsert({ campamento_id: nueva.campamento_id, nombre: nueva.nombre }, { onConflict: 'campamento_id, nombre' })
       .select()
       .single();
 
@@ -465,54 +465,12 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
 
   // ── Agregar Refugiado ──────────────────────────────────────────────────────
   const agregarRefugiado = async (nuevo: Refugiado) => {
-    const campPref = campamentos
-      .find(c => c.id === nuevo.campamento_id)
-      ?.nombre
-      .split(/\s+/)
-      .map(w => w[0])
-      .join('')
-      .toUpperCase()
-      .slice(0, 3) || 'CAM';
+    const { data: codigo } = await supabase.rpc('obtener_siguiente_codigo', { p_campamento_id: nuevo.campamento_id });
 
-    let secuencia = 1;
-    const { data: actual } = await supabase
-      .from('campamento_contadores')
-      .select('ultimo_secuencia')
-      .eq('campamento_id', nuevo.campamento_id)
-      .single();
-
-    if (actual) {
-      secuencia = (actual.ultimo_secuencia as number) + 1;
-      const { error: updErr } = await supabase
-        .from('campamento_contadores')
-        .update({ ultimo_secuencia: secuencia } as Record<string, unknown>)
-        .eq('campamento_id', nuevo.campamento_id);
-
-      if (updErr) {
-        console.error('Error incrementando contador:', updErr);
-      }
-    } else {
-      const { error: insErr } = await supabase
-        .from('campamento_contadores')
-        .insert({ campamento_id: nuevo.campamento_id, ultimo_secuencia: 1 });
-
-      if (insErr) {
-        const { data: retryActual } = await supabase
-          .from('campamento_contadores')
-          .select('ultimo_secuencia')
-          .eq('campamento_id', nuevo.campamento_id)
-          .single();
-        if (retryActual) {
-          secuencia = (retryActual.ultimo_secuencia as number) + 1;
-          await supabase
-            .from('campamento_contadores')
-            .update({ ultimo_secuencia: secuencia } as Record<string, unknown>)
-            .eq('campamento_id', nuevo.campamento_id);
-        }
-      }
+    if (!codigo) {
+      console.error('Error al obtener código secuencial para el refugiado');
+      return null;
     }
-
-    const codigo = `${campPref}-${String(secuencia).padStart(4, '0')}`;
 
     console.log('[DEBUG-FAMILIA] agregarRefugiado — INSERT con familia_id:', nuevo.familia_id, '| es_jefe_familia:', nuevo.es_jefe_familia);
 
