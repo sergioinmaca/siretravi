@@ -220,7 +220,7 @@ export default function CrearRefugioModal({ isOpen, onClose, campamentoToEdit }:
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-8 bg-gray-900/50 backdrop-blur-sm overflow-y-auto">
+    <div className="fixed inset-0 z-[60] flex items-start justify-center p-4 pt-8 bg-gray-900/50 backdrop-blur-sm overflow-y-auto">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-7xl flex flex-col overflow-hidden my-4">
 
         {/* Header del Modal */}

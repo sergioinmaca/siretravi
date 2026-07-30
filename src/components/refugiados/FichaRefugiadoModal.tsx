@@ -841,7 +841,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
   });
 
   return (<>
-    <div className="fixed inset-0 z-50 flex flex-col md:items-center md:justify-center md:p-4 md:bg-gray-900/40 md:backdrop-blur-sm">
+    <div className="fixed inset-0 z-[60] flex flex-col md:items-center md:justify-center md:p-4 md:bg-gray-900/40 md:backdrop-blur-sm">
       <div className="bg-white w-full h-full pt-4 md:pt-0 md:h-auto md:max-h-[90vh] md:max-w-4xl md:rounded-3xl md:shadow-2xl flex flex-col overflow-hidden animate-slide-up relative">
         {/* Hidden file inputs for photo upload */}
         <input

@@ -293,7 +293,7 @@ export default function MainLayout() {
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-h-0 min-w-0 relative">
         {/* Desktop Header */}
-        <header className="relative hidden md:flex h-16 bg-white border-b border-gray-200 items-center justify-between px-8 shadow-sm shrink-0 z-20 ml-20">
+        <header className="relative hidden md:flex h-16 bg-white border-b border-gray-200 items-center justify-between px-8 shadow-sm shrink-0 ml-20">
           <h1 className="text-xl font-semibold text-gray-800">Panel de Control</h1>
 
           <div className="relative group">

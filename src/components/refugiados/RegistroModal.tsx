@@ -605,7 +605,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
   if (!isOpen) return null;
 
   return (<>
-    <div className="fixed inset-0 z-50 flex flex-col md:items-center md:justify-center md:p-4 md:bg-gray-900/40 md:backdrop-blur-sm">
+    <div className="fixed inset-0 z-[60] flex flex-col md:items-center md:justify-center md:p-4 md:bg-gray-900/40 md:backdrop-blur-sm">
       <div className="bg-white w-full h-full pt-4 md:pt-0 md:h-auto md:max-h-[90vh] md:max-w-4xl md:rounded-3xl md:shadow-2xl flex flex-col overflow-hidden animate-slide-up relative">
         
         {/* Cabecera del Modal — Desktop */}
@@ -1273,8 +1273,8 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
               </div>
             </div>
 
-            {/* Botones de acción */}
-            <div className="bg-white rounded-2xl shadow-sm overflow-hidden md:border md:border-gray-200">
+            {/* Botones de acción — solo móvil */}
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden md:border md:border-gray-200 md:hidden">
               <div className="p-6 flex items-center justify-end gap-3">
                 <button onClick={handleClose} type="button" className="px-6 py-2.5 rounded-xl text-gray-600 font-medium hover:bg-gray-200 transition-colors">
                   Cancelar
@@ -1291,6 +1291,21 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
             </div>
 
           </form>
+        </div>
+
+        {/* Footer — Desktop */}
+        <div className="hidden md:flex px-8 py-5 border-t border-gray-100 bg-gray-50 shrink-0 items-center justify-end gap-3">
+          <button onClick={handleClose} type="button" className="px-6 py-2.5 rounded-xl text-gray-600 font-medium hover:bg-gray-200 transition-colors">
+            Cancelar
+          </button>
+          <button type="submit" form="registro-form" disabled={!campamentoSeleccionado || isSubmitting} className="flex items-center bg-caracas-red hover:bg-red-800 text-white px-5 py-2 rounded-xl font-medium transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px] justify-center">
+            {isSubmitting ? (
+              <Loader2 size={18} className="animate-spin" />
+            ) : (
+              <Save size={18} />
+            )}
+            {isSubmitting ? 'Guardando...' : isEditing ? 'Guardar Cambios' : 'Guardar Registro'}
+          </button>
         </div>
 
       </div>

@@ -60,7 +60,7 @@ export default function DetalleAtencionModal({ isOpen, onClose, atencion }: Deta
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in-up">
         <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-3">
