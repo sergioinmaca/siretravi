@@ -30,6 +30,12 @@ export default function Inicio() {
     ? refugiados.filter(r => r.campamento_id === campamentoSeleccionado.id)
     : [];
 
+  const refugiadosActivos = refugiadosDelCampamento.filter(
+    r => (r.hogar_solidario || '').toUpperCase() !== 'RETIRADO'
+  );
+
+  const jefesActivos = refugiadosActivos.filter(r => r.es_jefe_familia === true);
+
   const occupiedBeds = useMemo(() => {
     return refugiadosDelCampamento
       .map(r => r.nro_cama)
@@ -49,18 +55,18 @@ export default function Inicio() {
 
   const uniqueOccupiedBedsSet = useMemo(() => new Set(occupiedBeds), [occupiedBeds]);
 
-  const totalRefugiados = refugiadosDelCampamento.length;
-  const totalHombres = refugiadosDelCampamento.filter(r => r.genero === true).length;
-  const totalMujeres = refugiadosDelCampamento.filter(r => r.genero === false).length;
+  const totalRefugiados = refugiadosActivos.length;
+  const totalHombres = refugiadosActivos.filter(r => r.genero === true).length;
+  const totalMujeres = refugiadosActivos.filter(r => r.genero === false).length;
 
   const totalFamilias = campamentoSeleccionado
-    ? new Set(refugiados.filter(r => r.campamento_id === campamentoSeleccionado.id && r.familia_id).map(r => r.familia_id)).size
+    ? new Set(jefesActivos.filter(r => r.familia_id).map(r => r.familia_id)).size
     : 0;
 
   // Optimización: calcular las edades de los refugiados una sola vez usando useMemo
   const refugiadosConEdad = useMemo(() => {
     const hoy = new Date();
-    return refugiadosDelCampamento.map(r => {
+    return refugiadosActivos.map(r => {
       const nacimiento = new Date(r.fecha_nacimiento);
       let edad = hoy.getFullYear() - nacimiento.getFullYear();
       const mes = hoy.getMonth() - nacimiento.getMonth();
@@ -69,7 +75,7 @@ export default function Inicio() {
       }
       return { ...r, edad };
     });
-  }, [refugiadosDelCampamento]);
+  }, [refugiadosActivos]);
 
   // ── Nuevos indicadores demográficos ─────────────────────────────────────
   const ninos = refugiadosConEdad.filter(r => r.edad <= 11);
@@ -100,16 +106,12 @@ export default function Inicio() {
   const adultosM = adultos.filter(r => r.genero === false).length;
 
   // Filtrar solo jefes de familia para calculos basados en familias
-  const jefesFamilia = useMemo(() => {
-    return refugiadosDelCampamento.filter(r => r.es_jefe_familia === true);
-  }, [refugiadosDelCampamento]);
-
-  const totalJefes = jefesFamilia.length;
+  const totalJefes = jefesActivos.length;
 
   // Datos para grafico de dona – Tenencia de Vivienda (solo jefes)
   const tenenciaData = useMemo(() => {
     const map = new Map<string, number>();
-    jefesFamilia.forEach(j => {
+    jefesActivos.forEach(j => {
       const t = j.tenencia_vivienda?.trim() || 'Sin especificar';
       map.set(t, (map.get(t) || 0) + 1);
     });
@@ -120,7 +122,7 @@ export default function Inicio() {
         cantidad: map.get(nombre) || 0,
       }))
       .filter(c => c.cantidad > 0);
-  }, [jefesFamilia]);
+  }, [jefesActivos]);
 
   // Colores para la dona de tenencia
   const tenenciaColores: Record<string, string> = {
@@ -180,7 +182,7 @@ export default function Inicio() {
 
   // Calcular ranking de procedencias (solo jefes de familia)
   const procedenciasMap = new Map<string, number>();
-  jefesFamilia.forEach(r => {
+  jefesActivos.forEach(r => {
     const proc = r.procedencia?.trim() || 'SIN ESPECIFICAR';
     procedenciasMap.set(proc, (procedenciasMap.get(proc) || 0) + 1);
   });
