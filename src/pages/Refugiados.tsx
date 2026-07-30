@@ -60,27 +60,9 @@ export default function Refugiados() {
 
   // Fetch paginado
   const currentPageRef = useRef(currentPage);
-  const scrollRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     currentPageRef.current = currentPage;
   }, [currentPage]);
-
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    const log = () => {
-      console.log('[ScrollSpy]', {
-        clientWidth: el.clientWidth,
-        scrollWidth: el.scrollWidth,
-        canScroll: el.scrollWidth > el.clientWidth,
-        overflowX: getComputedStyle(el).overflowX,
-      });
-    };
-    log();
-    const observer = new ResizeObserver(log);
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, []);
 
   const refetch = useCallback(async () => {
     if (!campamentoSeleccionado) return;
@@ -486,7 +468,6 @@ export default function Refugiados() {
         {/* Vista Desktop: Tabla */}
         {!isMobile && (
           <div
-            ref={scrollRef}
             className="overflow-x-auto w-full min-w-0"
             style={{
               background: `
@@ -502,7 +483,7 @@ export default function Refugiados() {
                 <tr className="bg-white border-b border-gray-100">
                   <SortableHeader column="codigo" label="Código" sortColumn={sortColumn} sortDirection={sortDirection} onClick={handleSort} />
                   <SortableHeader column="cedula" label="Cédula" sortColumn={sortColumn} sortDirection={sortDirection} onClick={handleSort} />
-                  <SortableHeader column="genero" label="Género" sortColumn={sortColumn} sortDirection={sortDirection} onClick={handleSort} />
+                  <SortableHeader column="genero" label="Género" sortColumn={sortColumn} sortDirection={sortDirection} onClick={handleSort} className="px-2 text-center" />
                   <SortableHeader column="apellidos" label="Apellidos y Nombres" sortColumn={sortColumn} sortDirection={sortDirection} onClick={handleSort} />
                   <SortableHeader column="edad" label="Edad" sortColumn={sortColumn} sortDirection={sortDirection} onClick={handleSort} />
                   <SortableHeader column="jerarquia" label="Jerarquía" sortColumn={sortColumn} sortDirection={sortDirection} onClick={handleSort} />
@@ -525,7 +506,7 @@ export default function Refugiados() {
                     <tr key={refugiado.id} className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors group">
                       <td className="py-3 px-6 text-sm font-medium text-caracas-blue">{refugiado.codigo || '-'}</td>
                       <td className="py-3 px-6 text-sm font-medium text-gray-700">{refugiado.cedula}</td>
-                      <td className="py-3 px-6 text-sm text-gray-600">{refugiado.genero ? 'M' : 'F'}</td>
+                      <td className="py-3 px-2 text-sm text-gray-600 text-center">{refugiado.genero ? 'M' : 'F'}</td>
                       <td className="py-3 px-6">
                         <div className="text-sm font-bold text-gray-800">{refugiado.apellidos}</div>
                         <div className="text-xs text-gray-500">{refugiado.nombres}</div>
@@ -821,18 +802,20 @@ function SortableHeader({
   sortColumn,
   sortDirection,
   onClick,
+  className = '',
 }: {
   column: string;
   label: string;
   sortColumn: string | null;
   sortDirection: 'asc' | 'desc';
   onClick: (column: string) => void;
+  className?: string;
 }) {
   const isActive = sortColumn === column;
 
   return (
     <th
-      className="py-4 px-6 font-semibold text-sm text-gray-500 cursor-pointer select-none hover:bg-gray-50 transition-colors"
+      className={`py-4 px-6 font-semibold text-sm text-gray-500 cursor-pointer select-none hover:bg-gray-50 transition-colors ${className}`}
       onClick={() => onClick(column)}
     >
       <span className="inline-flex items-center gap-1">
