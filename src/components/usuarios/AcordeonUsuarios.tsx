@@ -53,9 +53,12 @@ export default function AcordeonUsuarios({
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-      <button
+      <div
+        role="button"
+        tabIndex={0}
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-6 py-4 bg-caracas-red hover:bg-red-800 transition-colors text-left"
+        onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onToggle(); } }}
+        className="w-full flex items-center justify-between px-6 py-4 bg-caracas-red hover:bg-red-800 transition-colors text-left cursor-pointer"
       >
         <div className="flex items-center gap-3">
           {expandido ? (
@@ -78,7 +81,7 @@ export default function AcordeonUsuarios({
           <UserPlus size={14} />
           Nuevo Usuario{esMaster ? ' Master' : ''}
         </button>
-      </button>
+      </div>
 
       {expandido && (
         <div className="border-t border-gray-100">

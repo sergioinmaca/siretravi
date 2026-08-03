@@ -12,6 +12,7 @@ interface AuthContextType {
   tienePermiso: (nombreModulo: string, accion?: string) => boolean;
   tienePermisoPorCampamento: (nombreModulo: string, campamentoId: string, accion?: string) => boolean;
   obtenerCampamentosPermitidos: (nombreModulo: string) => string[] | null;
+  tienePermisoReporte: (reporteClave: string, campamentoId: string) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -220,6 +221,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return permiso.campamentos;
   }, [usuarioActual, permisos]);
 
+  const tienePermisoReporte = useCallback((reporteClave: string, campamentoId: string): boolean => {
+    if (!usuarioActual) return false;
+    if (usuarioActual.es_master) return true;
+
+    const moduloEntry = Object.entries(modulosCache || {}).find(
+      ([, nombre]) => nombre === 'Reportes'
+    );
+    if (!moduloEntry) return false;
+
+    const permiso = permisos.find(p => p.modulo_id === moduloEntry[0]);
+    if (!permiso) return false;
+
+    if (!permiso.acciones.includes('Ver')) return false;
+
+    if (permiso.campamentos !== null && !permiso.campamentos.includes(campamentoId)) return false;
+
+    if (permiso.reportes === null) return true;
+    return permiso.reportes.includes(reporteClave);
+  }, [usuarioActual, permisos]);
+
   // Precargar cache de módulos al montar
   useEffect(() => { cargarModulosCache(); }, []);
 
@@ -229,6 +250,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login, logout, tienePermiso,
       tienePermisoPorCampamento,
       obtenerCampamentosPermitidos,
+      tienePermisoReporte,
     }}>
       {children}
     </AuthContext.Provider>

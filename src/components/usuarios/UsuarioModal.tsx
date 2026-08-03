@@ -3,10 +3,12 @@ import { X, Save, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useCampamento } from '../../context/CampamentoContext';
 import type { Usuario, ModuloSistema, Accion } from '../../types';
+import { REPORTES_DISPONIBLES } from '../../types';
 
 interface PermisoConfig {
   acciones: string[];
   campamentos: string[] | null;
+  reportes: string[] | null;
 }
 
 interface UsuarioModalProps {
@@ -27,8 +29,7 @@ export default function UsuarioModal({ isOpen, onClose, usuarioToEdit, onSaved, 
   const [apellidos, setApellidos] = useState('');
   const [clave, setClave] = useState('');
   const [showClave, setShowClave] = useState(false);
-  const [esGlobal, setEsGlobal] = useState(false);
-  const [campamentoHogar, setCampamentoHogar] = useState<string | null>(null);
+  const [campamentoValor, setCampamentoValor] = useState('');
   const [modulos, setModulos] = useState<ModuloSistema[]>([]);
   const [acciones, setAcciones] = useState<Accion[]>([]);
   const [selectedModulos, setSelectedModulos] = useState<Record<string, PermisoConfig>>({});
@@ -37,6 +38,9 @@ export default function UsuarioModal({ isOpen, onClose, usuarioToEdit, onSaved, 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const esMaster = isEditing ? (usuarioToEdit?.es_master ?? false) : esMasterInicial;
+
+  const esGlobal = !esMaster && campamentoValor === '__global__';
+  const campamentoHogar = (!esMaster && campamentoValor && campamentoValor !== '__global__') ? campamentoValor : null;
 
   useEffect(() => {
     if (!isOpen) return;
@@ -54,12 +58,17 @@ export default function UsuarioModal({ isOpen, onClose, usuarioToEdit, onSaved, 
         setNombres(usuarioToEdit.nombres);
         setApellidos(usuarioToEdit.apellidos);
         setClave('');
-        setEsGlobal(usuarioToEdit.es_global ?? false);
-        setCampamentoHogar(usuarioToEdit.campamento_hogar || null);
+        if (usuarioToEdit.es_global) {
+          setCampamentoValor('__global__');
+        } else if (usuarioToEdit.campamento_hogar) {
+          setCampamentoValor(usuarioToEdit.campamento_hogar);
+        } else {
+          setCampamentoValor('');
+        }
 
-        const { data: permData } = await supabase
+          const { data: permData } = await supabase
           .from('permisos')
-          .select('modulo_id, acciones, campamentos')
+          .select('modulo_id, acciones, campamentos, reportes')
           .eq('usuario_id', usuarioToEdit.id);
 
         if (permData) {
@@ -68,6 +77,7 @@ export default function UsuarioModal({ isOpen, onClose, usuarioToEdit, onSaved, 
             selected[p.modulo_id as string] = {
               acciones: p.acciones as string[],
               campamentos: p.campamentos as string[] | null,
+              reportes: p.reportes as string[] | null,
             };
           });
           setSelectedModulos(selected);
@@ -77,8 +87,15 @@ export default function UsuarioModal({ isOpen, onClose, usuarioToEdit, onSaved, 
         setNombres('');
         setApellidos('');
         setClave('');
-        setEsGlobal(esGlobalInicial);
-        setCampamentoHogar(esMasterInicial ? null : campamentoInicial);
+        if (esMasterInicial) {
+          setCampamentoValor('');
+        } else if (esGlobalInicial) {
+          setCampamentoValor('__global__');
+        } else if (campamentoInicial) {
+          setCampamentoValor(campamentoInicial);
+        } else {
+          setCampamentoValor('');
+        }
         setSelectedModulos({});
       }
     };
@@ -94,7 +111,7 @@ export default function UsuarioModal({ isOpen, onClose, usuarioToEdit, onSaved, 
       }
       const accionesDelModulo = acciones.filter(a => a.modulo_id === moduloId);
       const tieneVer = accionesDelModulo.some(a => a.nombre === 'Ver');
-      return { ...prev, [moduloId]: { acciones: tieneVer ? ['Ver'] : [], campamentos: null } };
+      return { ...prev, [moduloId]: { acciones: tieneVer ? ['Ver'] : [], campamentos: null, reportes: null } };
     });
   };
 
@@ -134,13 +151,50 @@ export default function UsuarioModal({ isOpen, onClose, usuarioToEdit, onSaved, 
     });
   };
 
+  const toggleReporte = (moduloId: string, clave: string) => {
+    setSelectedModulos(prev => {
+      const current = prev[moduloId];
+      if (!current) return prev;
+      const currentReportes = current.reportes ?? REPORTES_DISPONIBLES.map(r => r.clave);
+      const nextReportes = currentReportes.includes(clave)
+        ? currentReportes.filter(r => r !== clave)
+        : [...currentReportes, clave];
+      const allSelected = REPORTES_DISPONIBLES.every(r => nextReportes.includes(r.clave));
+      return {
+        ...prev,
+        [moduloId]: { ...current, reportes: allSelected ? null : nextReportes },
+      };
+    });
+  };
+
+  const toggleTodosReportes = (moduloId: string) => {
+    setSelectedModulos(prev => {
+      const current = prev[moduloId];
+      if (!current) return prev;
+      const allSelected = current.reportes === null;
+      return {
+        ...prev,
+        [moduloId]: { ...current, reportes: allSelected ? [] : null },
+      };
+    });
+  };
+
+  const getReportesSeleccionados = (moduloId: string): string[] => {
+    const config = selectedModulos[moduloId];
+    if (!config) return [];
+    return config.reportes ?? REPORTES_DISPONIBLES.map(r => r.clave);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
 
     if (!nickname.trim() || !nombres.trim() || !apellidos.trim()) return;
     if (!isEditing && !clave.trim()) return;
-    if (!esMaster && !campamentoHogar) return;
+    if (!esMaster && !campamentoValor) {
+      setErrorMsg('Debes seleccionar un campamento hogar');
+      return;
+    }
     if (clave.trim() && clave.trim().length < 6) {
       setErrorMsg('La contraseña debe tener al menos 6 caracteres');
       return;
@@ -200,7 +254,11 @@ export default function UsuarioModal({ isOpen, onClose, usuarioToEdit, onSaved, 
               serviceKey,
               { auth: { persistSession: false, autoRefreshToken: false } }
             );
-            const { error: pwdError } = await adminClient.auth.admin.updateUserById(authId, { password: clave });
+            const { error: pwdError } = await adminClient.auth.admin.updateUserById(authId, {
+              email: `${nickname.trim().toLowerCase()}@siretravi.local`,
+              password: clave,
+              email_confirm: true,
+            });
             console.log('[DEBUG] admin.updateUserById - error:', pwdError);
           } else {
             console.warn('[DEBUG] No se cambió contraseña — falta authId o serviceKey');
@@ -265,6 +323,7 @@ export default function UsuarioModal({ isOpen, onClose, usuarioToEdit, onSaved, 
             modulo_id: moduloId,
             acciones: config.acciones,
             campamentos: config.campamentos,
+            reportes: config.reportes,
           }));
 
         if (permisosToInsert.length > 0) {
@@ -361,31 +420,20 @@ export default function UsuarioModal({ isOpen, onClose, usuarioToEdit, onSaved, 
                 </div>
               </div>
 
-              <div className="px-6 pb-4 space-y-4">
-                {!esMaster && (
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={esGlobal}
-                      onChange={e => setEsGlobal(e.target.checked)}
-                      className="w-5 h-5 text-caracas-red focus:ring-caracas-red rounded"
-                    />
-                    <span className="font-medium text-gray-700">Usuario Global (acceso a todos los campamentos)</span>
-                  </label>
-                )}
-
+              <div className="px-6 pb-4">
                 {!esMaster && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Campamento Hogar <span className="text-caracas-red">*</span>
                     </label>
                     <select
-                      value={campamentoHogar || ''}
-                      onChange={e => setCampamentoHogar(e.target.value || null)}
+                      value={campamentoValor}
+                      onChange={e => setCampamentoValor(e.target.value)}
                       required={!esMaster}
                       className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all bg-white text-gray-700"
                     >
                       <option value="">Seleccionar campamento...</option>
+                      <option value="__global__">Todos los campamentos (Global)</option>
                       {campamentos.filter(c => c.estado === 'activo').map(camp => (
                         <option key={camp.id} value={camp.id}>{camp.nombre}</option>
                       ))}
@@ -429,6 +477,36 @@ export default function UsuarioModal({ isOpen, onClose, usuarioToEdit, onSaved, 
                               <span className="text-sm text-gray-600">{accion.nombre}</span>
                             </label>
                           ))}
+                        </div>
+                      )}
+                      {isChecked && mod.nombre === 'Reportes' && (
+                        <div className="px-4 py-3 pl-12 border-t border-gray-50 bg-white">
+                          <p className="text-xs font-medium text-gray-500 mb-2">Reportes permitidos:</p>
+                          <label className="flex items-center gap-2 cursor-pointer mb-2 pb-2 border-b border-gray-100">
+                            <input
+                              type="checkbox"
+                              checked={modConfig?.reportes === null}
+                              onChange={() => toggleTodosReportes(mod.id)}
+                              className="w-4 h-4 text-caracas-red focus:ring-caracas-red rounded"
+                            />
+                            <span className="text-sm font-medium text-gray-700">Seleccionar todos</span>
+                          </label>
+                          <div className="grid grid-cols-1 gap-1.5">
+                            {REPORTES_DISPONIBLES.map(reporte => {
+                              const seleccionados = getReportesSeleccionados(mod.id);
+                              return (
+                                <label key={reporte.clave} className="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={seleccionados.includes(reporte.clave)}
+                                    onChange={() => toggleReporte(mod.id, reporte.clave)}
+                                    className="w-4 h-4 text-caracas-red focus:ring-caracas-red rounded"
+                                  />
+                                  <span className="text-sm text-gray-600">{reporte.nombre}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
                         </div>
                       )}
                       {isChecked && mod.nombre !== 'Usuarios' && (
