@@ -920,6 +920,12 @@ export default function Reportes() {
   const sanitizarNombreCarpeta = (s: string): string =>
     s.replace(/[\\/:*?"<>|]+/g, '').trim() || 'Sin nombre';
 
+  const conTimeout = <T,>(prom: Promise<T>, ms: number, label: string): Promise<T> =>
+    Promise.race([
+      prom,
+      new Promise<T>((_, rej) => setTimeout(() => rej(new Error(`Timeout (${ms}ms): ${label}`)), ms)),
+    ]);
+
   const descargarFoto = async (url: string): Promise<{ blob: Blob; nombre: string } | null> => {
     const matchUrl = url.match(/\/fotos-integrantes\/([^?#]+)/);
     let path: string | null = null;
@@ -929,13 +935,29 @@ export default function Reportes() {
       : (decodeURIComponent(url.split('/').pop()?.split('?')[0] || 'foto.jpg'));
     try {
       if (path) {
-        const { data, error } = await supabase.storage.from('fotos-integrantes').download(path);
-        if (!error && data) return { blob: data, nombre };
+        console.log('[ZIP FOTOS] storage.download →', path);
+        const { data, error } = await conTimeout(
+          supabase.storage.from('fotos-integrantes').download(path),
+          20000,
+          `storage.download ${path}`
+        );
+        if (!error && data) {
+          console.log('[ZIP FOTOS] storage.download OK →', data.size, 'bytes');
+          return { blob: data, nombre };
+        }
+        console.error('[ZIP FOTOS] storage.download error →', error);
       }
-      const res = await fetch(url);
-      if (!res.ok) return null;
-      return { blob: await res.blob(), nombre };
-    } catch {
+      console.log('[ZIP FOTOS] fallback fetch →', url);
+      const res = await conTimeout(fetch(url), 20000, `fetch ${url}`);
+      if (!res.ok) {
+        console.error('[ZIP FOTOS] fetch status →', res.status, url);
+        return null;
+      }
+      const blob = await res.blob();
+      console.log('[ZIP FOTOS] fetch OK →', blob.size, 'bytes');
+      return { blob, nombre };
+    } catch (err) {
+      console.error('[ZIP FOTOS] excepción en descarga →', err);
       return null;
     }
   };
@@ -946,45 +968,65 @@ export default function Reportes() {
     setIsGenerating(true);
     try {
       const conFoto = refugiadosDelCampamento.filter(r => r.foto_url);
+      console.log('[ZIP FOTOS] Integrantes con foto:', conFoto.length);
       if (conFoto.length === 0) {
         alert('No hay integrantes con foto en este campamento.');
         return;
       }
 
+      console.log('[ZIP FOTOS] Cargando jszip...');
       const JSZip = (await import('jszip')).default;
       const zip = new JSZip();
       const carpetaCamp = sanitizarNombreCarpeta(camp.nombre);
       const raiz = zip.folder(carpetaCamp)!;
+      console.log('[ZIP FOTOS] Carpeta raíz:', carpetaCamp);
 
       const usos = new Map<string, number>();
       let descargadas = 0;
+      let fallidas = 0;
 
-      for (const r of conFoto) {
+      for (let i = 0; i < conFoto.length; i++) {
+        const r = conFoto[i];
+        console.log(`[ZIP FOTOS] [${i + 1}/${conFoto.length}] ${r.nombres} ${r.apellidos} — url:`, r.foto_url);
         const base = sanitizarNombreCarpeta(`${r.nombres} ${r.apellidos}`);
         const n = usos.get(base) || 0;
         usos.set(base, n + 1);
         const nombreCarpeta = n === 0 ? base : `${base} (${n})`;
 
-        const foto = await descargarFoto(r.foto_url!);
-        if (!foto) continue;
-        raiz.folder(nombreCarpeta)!.file(foto.nombre, foto.blob);
-        descargadas++;
+        try {
+          const foto = await descargarFoto(r.foto_url!);
+          if (!foto) {
+            fallidas++;
+            console.warn(`[ZIP FOTOS] descarga fallida → ${r.nombres} ${r.apellidos}`);
+            continue;
+          }
+          raiz.folder(nombreCarpeta)!.file(foto.nombre, foto.blob);
+          descargadas++;
+          console.log(`[ZIP FOTOS] OK → ${nombreCarpeta}/${foto.nombre} (${foto.blob.size} bytes)`);
+        } catch (err) {
+          fallidas++;
+          console.error(`[ZIP FOTOS] error en integrante ${r.nombres} ${r.apellidos} →`, err);
+        }
       }
 
+      console.log(`[ZIP FOTOS] Resumen → descargadas: ${descargadas}, fallidas: ${fallidas}`);
       if (descargadas === 0) {
         alert('No se pudo descargar ninguna foto.');
         return;
       }
 
+      console.log('[ZIP FOTOS] Generando blob ZIP...');
       const blob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
+      console.log('[ZIP FOTOS] Blob ZIP generado →', blob.size, 'bytes');
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
       a.download = `${carpetaCamp}.zip`;
       a.click();
       URL.revokeObjectURL(url);
+      console.log('[ZIP FOTOS] Descarga iniciada');
     } catch (err) {
-      console.error('Error generando ZIP de fotos:', err);
+      console.error('[ZIP FOTOS] ERROR GENERAL →', err);
       alert('Ocurrió un error al generar el ZIP.');
     } finally {
       setIsGenerating(false);
