@@ -106,12 +106,22 @@ export default function Usuarios() {
   };
 
   const handleEliminar = async (id: string) => {
+    console.log('[DEBUG] handleEliminar - id:', id, 'usuarioActual.id:', usuarioActual?.id);
     if (id === usuarioActual?.id) {
       alert('No puedes eliminar tu propio usuario');
       return;
     }
     if (!window.confirm('¿Estás seguro de que deseas eliminar este usuario?')) return;
-    await supabase.from('usuarios').delete().eq('id', id);
+
+    const { error } = await supabase.from('usuarios').delete().eq('id', id);
+    console.log('[DEBUG] delete usuario - error:', error);
+
+    if (error) {
+      console.error('[DEBUG] Error al eliminar:', error.message, 'details:', error.details, 'hint:', error.hint);
+      alert('Error al eliminar: ' + error.message);
+      return;
+    }
+    console.log('[DEBUG] Usuario eliminado exitosamente');
     cargarDatos();
   };
 

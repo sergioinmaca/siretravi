@@ -178,14 +178,21 @@ export default function UsuarioModal({ isOpen, onClose, usuarioToEdit, onSaved, 
         }
 
         if (clave.trim()) {
-          const { data: userData } = await supabase
+          console.log('[DEBUG] Cambiando contraseña - usuarioId:', usuarioId);
+
+          const { data: userData, error: userError } = await supabase
             .from('usuarios')
             .select('auth_id')
             .eq('id', usuarioId)
             .single();
+
+          console.log('[DEBUG] userData:', userData, 'userError:', userError);
           authId = (userData as Record<string, unknown>)?.auth_id as string | undefined;
+          console.log('[DEBUG] auth_id obtenido:', authId);
 
           const serviceKey = import.meta.env.VITE_SUPABASE_SERVICE_KEY as string | undefined;
+          console.log('[DEBUG] serviceKey disponible:', !!serviceKey, 'longitud:', serviceKey?.length);
+
           if (authId && serviceKey) {
             const { createClient } = await import('@supabase/supabase-js');
             const adminClient = createClient(
@@ -194,9 +201,9 @@ export default function UsuarioModal({ isOpen, onClose, usuarioToEdit, onSaved, 
               { auth: { persistSession: false, autoRefreshToken: false } }
             );
             const { error: pwdError } = await adminClient.auth.admin.updateUserById(authId, { password: clave });
-            if (pwdError) {
-              console.error('Error al cambiar contraseña:', pwdError);
-            }
+            console.log('[DEBUG] admin.updateUserById - error:', pwdError);
+          } else {
+            console.warn('[DEBUG] No se cambió contraseña — falta authId o serviceKey');
           }
         }
       } else {
