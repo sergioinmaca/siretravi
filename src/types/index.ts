@@ -51,6 +51,8 @@ export const REPORTES_DISPONIBLES = [
   { clave: 'tenencia', nombre: 'Tenencia de Vivienda' },
   { clave: 'estatus', nombre: 'Situación de Estatus' },
   { clave: 'data_unica', nombre: 'Data Única de Campamento' },
+  { clave: 'data_unica_ubicacion', nombre: 'Data Única con Ubicación' },
+  { clave: 'fotos_integrantes', nombre: 'Exportar Fotos de Integrantes' },
 ] as const;
 
 export interface ModuloSistema {

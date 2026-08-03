@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { FileText, Presentation, ShieldOff, Loader2, FileDown } from 'lucide-react';
+import { FileText, Presentation, ShieldOff, Loader2, FileDown, FolderArchive } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
 import { supabase } from '../lib/supabase';
@@ -13,6 +13,7 @@ import { formatAgeParts } from '../lib/formatAge';
 import { formatCedula } from '../lib/formatCedula';
 import { obtenerHistoriasClinicas } from '../lib/salud';
 import { countElements } from '../components/constructor/CroquisViewer2';
+import { REPORTES_DISPONIBLES } from '../types';
 import type { HistoriaClinica } from '../types';
 
 export default function Reportes() {
@@ -915,6 +916,81 @@ export default function Reportes() {
     await buildDataUnicaXLSX({ incluirUbicacion: true });
   };
 
+  // ── Exportar Fotos de Integrantes (ZIP) ────────────────────────────────────
+  const sanitizarNombreCarpeta = (s: string): string =>
+    s.replace(/[\\/:*?"<>|]+/g, '').trim() || 'Sin nombre';
+
+  const descargarFoto = async (url: string): Promise<{ blob: Blob; nombre: string } | null> => {
+    const matchUrl = url.match(/\/fotos-integrantes\/([^?#]+)/);
+    let path: string | null = null;
+    if (matchUrl) path = decodeURIComponent(matchUrl[1]);
+    const nombre = path
+      ? (path.split('/').pop() || 'foto.jpg')
+      : (decodeURIComponent(url.split('/').pop()?.split('?')[0] || 'foto.jpg'));
+    try {
+      if (path) {
+        const { data, error } = await supabase.storage.from('fotos-integrantes').download(path);
+        if (!error && data) return { blob: data, nombre };
+      }
+      const res = await fetch(url);
+      if (!res.ok) return null;
+      return { blob: await res.blob(), nombre };
+    } catch {
+      return null;
+    }
+  };
+
+  const handleExportFotosIntegrantesZip = async () => {
+    const camp = campamentoSeleccionado;
+    if (!camp) return;
+    setIsGenerating(true);
+    try {
+      const conFoto = refugiadosDelCampamento.filter(r => r.foto_url);
+      if (conFoto.length === 0) {
+        alert('No hay integrantes con foto en este campamento.');
+        return;
+      }
+
+      const JSZip = (await import('jszip')).default;
+      const zip = new JSZip();
+      const carpetaCamp = sanitizarNombreCarpeta(camp.nombre);
+      const raiz = zip.folder(carpetaCamp)!;
+
+      const usos = new Map<string, number>();
+      let descargadas = 0;
+
+      for (const r of conFoto) {
+        const base = sanitizarNombreCarpeta(`${r.nombres} ${r.apellidos}`);
+        const n = usos.get(base) || 0;
+        usos.set(base, n + 1);
+        const nombreCarpeta = n === 0 ? base : `${base} (${n})`;
+
+        const foto = await descargarFoto(r.foto_url!);
+        if (!foto) continue;
+        raiz.folder(nombreCarpeta)!.file(foto.nombre, foto.blob);
+        descargadas++;
+      }
+
+      if (descargadas === 0) {
+        alert('No se pudo descargar ninguna foto.');
+        return;
+      }
+
+      const blob = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${carpetaCamp}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Error generando ZIP de fotos:', err);
+      alert('Ocurrió un error al generar el ZIP.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   // Gráficos dinámicos SVG para inyectar en los reportes
   const renderPieChart = () => {
     const total = datosReporte.masculinos + datosReporte.femeninos;
@@ -1292,6 +1368,7 @@ export default function Reportes() {
         )}
 
         {/* Card 10: Reporte Data Única con Ubicación */}
+        {tieneAcceso && tienePermisoReporte('data_unica_ubicacion', campamentoSeleccionado?.id || '') && (
         <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
           <div>
             <h3 className="text-lg font-bold text-slate-800 mb-2">Data Única con Ubicación</h3>
@@ -1310,8 +1387,39 @@ export default function Reportes() {
             </button>
           </div>
         </div>
+        )}
+
+        {/* Card 11: Exportar Fotos de Integrantes */}
+        {tieneAcceso && tienePermisoReporte('fotos_integrantes', campamentoSeleccionado?.id || '') && (
+        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
+          <div>
+            <h3 className="text-lg font-bold text-slate-800 mb-2">Exportar Fotos de Integrantes</h3>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Descarga un archivo ZIP con una carpeta principal por campamento y, dentro de ella, una carpeta por cada integrante que tenga foto registrada. Cada carpeta contiene una copia de la foto original almacenada en Supabase.
+            </p>
+          </div>
+          <div className="flex gap-4 mt-6 pt-4 border-t border-slate-50">
+            <button
+              onClick={handleExportFotosIntegrantesZip}
+              disabled={!campamentoSeleccionado || isGenerating}
+              className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50"
+            >
+              <FolderArchive size={18} />
+              Exportar ZIP
+            </button>
+          </div>
+        </div>
+        )}
 
       </div>
+
+      {/* Mensaje cuando el usuario no tiene ningún reporte asignado */}
+      {!REPORTES_DISPONIBLES.some(r => tienePermisoReporte(r.clave, campamentoSeleccionado?.id || '')) && (
+        <div className="bg-white rounded-3xl border border-dashed border-gray-200 p-12 text-center text-gray-400">
+          <ShieldOff size={48} className="mx-auto mb-4 opacity-40" />
+          <p className="font-medium text-gray-500">No tienes acceso a ningún reporte en este campamento</p>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* ÁREA DE RENDERIZADO OCULTA - MANTIENE FORMATO 1120x790 (APROX 4:3) PARA LA EXPORTACIÓN */}
