@@ -41,6 +41,18 @@ export interface Usuario {
   es_global?: boolean;
 }
 
+export const REPORTES_DISPONIBLES = [
+  { clave: 'demografico', nombre: 'Reporte General Demográfico' },
+  { clave: 'nna', nombre: 'Niños, Niñas y Adolescentes' },
+  { clave: 'discapacitados', nombre: 'Discapacitados' },
+  { clave: 'mascotas', nombre: 'Mascotas' },
+  { clave: 'historias_clinicas', nombre: 'Historias Clínicas' },
+  { clave: 'integrantes', nombre: 'Exportar Integrantes' },
+  { clave: 'tenencia', nombre: 'Tenencia de Vivienda' },
+  { clave: 'estatus', nombre: 'Situación de Estatus' },
+  { clave: 'data_unica', nombre: 'Data Única de Campamento' },
+] as const;
+
 export interface ModuloSistema {
   id: string;
   nombre: string;
@@ -58,6 +70,7 @@ export interface Permiso {
   modulo_id: string;
   acciones: string[];
   campamentos: string[] | null;
+  reportes: string[] | null;
 }
 
 export interface Evento {

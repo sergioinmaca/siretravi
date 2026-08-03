@@ -17,7 +17,7 @@ import type { HistoriaClinica } from '../types';
 
 export default function Reportes() {
   const { campamentoSeleccionado, refugiados = [], familias = [] } = useCampamento();
-  const { tienePermisoPorCampamento } = useAuth();
+  const { tienePermisoPorCampamento, tienePermisoReporte } = useAuth();
   const [isGenerating, setIsGenerating] = useState(false);
   const [logoKidsError, setLogoKidsError] = useState(false);
   const [historias, setHistorias] = useState<HistoriaClinica[]>([]);
@@ -1046,6 +1046,7 @@ export default function Reportes() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
 
         {/* Card 1: Reporte General Demográfico */}
+        {tieneAcceso && tienePermisoReporte('demografico', campamentoSeleccionado?.id || '') && (
         <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
           <div>
             <h3 className="text-lg font-bold text-slate-800 mb-2">Reporte General Demográfico</h3>
@@ -1072,8 +1073,10 @@ export default function Reportes() {
             </button>
           </div>
         </div>
+        )}
 
         {/* Card 2: Reporte Niños, Niñas y Adolescentes */}
+        {tieneAcceso && tienePermisoReporte('nna', campamentoSeleccionado?.id || '') && (
         <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
           <div>
             <h3 className="text-lg font-bold text-slate-800 mb-2">Reporte de Niños, Niñas y Adolescentes</h3>
@@ -1100,8 +1103,10 @@ export default function Reportes() {
             </button>
           </div>
         </div>
+        )}
 
         {/* Card 3: Reporte de Discapacitados */}
+        {tieneAcceso && tienePermisoReporte('discapacitados', campamentoSeleccionado?.id || '') && (
         <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
           <div>
             <h3 className="text-lg font-bold text-slate-800 mb-2">Reporte de Discapacitados</h3>
@@ -1128,8 +1133,10 @@ export default function Reportes() {
             </button>
           </div>
         </div>
+        )}
 
         {/* Card 4: Reporte de Mascotas */}
+        {tieneAcceso && tienePermisoReporte('mascotas', campamentoSeleccionado?.id || '') && (
         <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
           <div>
             <h3 className="text-lg font-bold text-slate-800 mb-2">Reporte de Mascotas</h3>
@@ -1156,8 +1163,10 @@ export default function Reportes() {
             </button>
           </div>
         </div>
+        )}
 
         {/* Card 5: Reporte de Historias Clínicas */}
+        {tieneAcceso && tienePermisoReporte('historias_clinicas', campamentoSeleccionado?.id || '') && (
         <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
           <div>
             <h3 className="text-lg font-bold text-slate-800 mb-2">Reporte de Historias Clínicas</h3>
@@ -1176,9 +1185,10 @@ export default function Reportes() {
             </button>
           </div>
         </div>
+        )}
 
         {/* Card 6: Exportar Integrantes */}
-        {puedeExportarIntegrantes && (
+        {puedeExportarIntegrantes && tienePermisoReporte('integrantes', campamentoSeleccionado?.id || '') && (
           <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
             <div>
               <h3 className="text-lg font-bold text-slate-800 mb-2">Exportar Integrantes</h3>
@@ -1200,6 +1210,7 @@ export default function Reportes() {
         )}
 
         {/* Card 7: Reporte de Tenencia de Vivienda */}
+        {tieneAcceso && tienePermisoReporte('tenencia', campamentoSeleccionado?.id || '') && (
         <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
           <div>
             <h3 className="text-lg font-bold text-slate-800 mb-2">Reporte de Tenencia de Vivienda</h3>
@@ -1226,8 +1237,10 @@ export default function Reportes() {
             </button>
           </div>
         </div>
+        )}
 
         {/* Card 8: Reporte de Situación de Estatus */}
+        {tieneAcceso && tienePermisoReporte('estatus', campamentoSeleccionado?.id || '') && (
         <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
           <div>
             <h3 className="text-lg font-bold text-slate-800 mb-2">Reporte de Situación de Estatus</h3>
@@ -1254,8 +1267,10 @@ export default function Reportes() {
             </button>
           </div>
         </div>
+        )}
 
         {/* Card 9: Reporte Data Única de Campamento */}
+        {tieneAcceso && tienePermisoReporte('data_unica', campamentoSeleccionado?.id || '') && (
         <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
           <div>
             <h3 className="text-lg font-bold text-slate-800 mb-2">Reporte Data Única de Campamento</h3>
@@ -1274,6 +1289,7 @@ export default function Reportes() {
             </button>
           </div>
         </div>
+        )}
 
         {/* Card 10: Reporte Data Única con Ubicación */}
         <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
