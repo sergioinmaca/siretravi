@@ -124,36 +124,15 @@ export async function obtenerActas(campamentoId: string): Promise<Acta[]> {
 }
 
 export async function crearActa(acta: Omit<Acta, 'id' | 'codigo' | 'created_at'>): Promise<Acta> {
-  let secuencia = 1;
-  const { data: actual, error: errContador } = await supabase
-    .from('contadores_actas')
-    .select('ultimo_secuencia')
-    .eq('campamento_id', acta.campamento_id)
-    .maybeSingle();
+  const { data: codigo, error: errCodigo } = await supabase.rpc(
+    'obtener_siguiente_codigo_acta',
+    { p_campamento_id: acta.campamento_id }
+  );
 
-  if (errContador) {
-    throw new Error(`Error al leer contador de actas: ${errContador.message}`);
+  if (errCodigo || !codigo) {
+    console.error('Error al generar el código del acta:', errCodigo);
+    throw new Error(errCodigo?.message || 'Error al generar el código del acta.');
   }
-
-  if (actual) {
-    secuencia = (actual.ultimo_secuencia as number) + 1;
-    const { error: errUpdate } = await supabase
-      .from('contadores_actas')
-      .update({ ultimo_secuencia: secuencia } as Record<string, unknown>)
-      .eq('campamento_id', acta.campamento_id);
-    if (errUpdate) {
-      throw new Error(`Error al actualizar contador de actas: ${errUpdate.message}`);
-    }
-  } else {
-    const { error: errInsert } = await supabase
-      .from('contadores_actas')
-      .insert({ campamento_id: acta.campamento_id, ultimo_secuencia: 1 });
-    if (errInsert) {
-      throw new Error(`Error al insertar contador de actas: ${errInsert.message}`);
-    }
-  }
-
-  const codigo = `ACT-${String(secuencia).padStart(4, '0')}`;
 
   const { data, error } = await supabase
     .from('actas')
