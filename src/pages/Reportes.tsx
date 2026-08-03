@@ -12,6 +12,7 @@ import XLSXStyle from 'xlsx-js-style';
 import { formatAgeParts } from '../lib/formatAge';
 import { formatCedula } from '../lib/formatCedula';
 import { obtenerHistoriasClinicas } from '../lib/salud';
+import { countElements } from '../components/constructor/CroquisViewer2';
 import type { HistoriaClinica } from '../types';
 
 export default function Reportes() {
@@ -559,8 +560,28 @@ export default function Reportes() {
     }
   };
 
+  // ── Resolver el módulo al que pertenece una cama ───────────────────────────
+  // La numeración de camas es secuencial por módulo: cada módulo consume
+  // countElements(croquis_data, tipo_contabilizacion) números, acumulando offset.
+  const moduloDeCama = (nroCama?: string): string => {
+    if (!nroCama || !campamentoSeleccionado) return '';
+    const num = parseInt(nroCama, 10);
+    if (isNaN(num)) return '';
+    const modo = campamentoSeleccionado.tipo_contabilizacion || 'elemento';
+    let offset = 0;
+    for (const mod of campamentoSeleccionado.modulos || []) {
+      const total = countElements(mod.croquis_data || '', modo);
+      if (total <= 0) continue;
+      const min = offset + 1;
+      const max = offset + total;
+      if (num >= min && num <= max) return mod.nombre;
+      offset += total;
+    }
+    return '';
+  };
+
   // ── Exportar XLSX Data Única de Campamento ─────────────────────────────────
-  const handleExportDataUnicaXLSX = async () => {
+  const buildDataUnicaXLSX = async ({ incluirUbicacion }: { incluirUbicacion: boolean }) => {
     setIsGenerating(true);
     try {
       const nombreCamp = campamentoSeleccionado?.nombre || 'Campamento';
@@ -595,6 +616,8 @@ export default function Reportes() {
         procedenciaCaracas: string;
         procedenciaLaGuaira: string;
         observacion: string;
+        cama?: string;
+        modulo?: string;
         separador?: boolean;
       };
 
@@ -642,10 +665,12 @@ export default function Reportes() {
             sexo: r.genero ? 'M' : 'F',
             edad,
             parentesco: r.parentesco || '',
-              telefono: r.telefono || '',
+            telefono: r.telefono || '',
             procedenciaCaracas: proc === 'CARACAS' ? 'X' : '',
             procedenciaLaGuaira: proc === 'LA GUAIRA' ? 'X' : '',
             observacion: obs.join(' | '),
+            cama: incluirUbicacion ? (r.nro_cama || '') : undefined,
+            modulo: incluirUbicacion ? moduloDeCama(r.nro_cama) : undefined,
           });
         });
         rows.push({ separador: true } as any);
@@ -681,6 +706,8 @@ export default function Reportes() {
           procedenciaCaracas: proc === 'CARACAS' ? 'X' : '',
           procedenciaLaGuaira: proc === 'LA GUAIRA' ? 'X' : '',
           observacion: obs.join(' | '),
+          cama: incluirUbicacion ? (r.nro_cama || '') : undefined,
+          modulo: incluirUbicacion ? moduloDeCama(r.nro_cama) : undefined,
         });
         rows.push({ separador: true } as any);
       });
@@ -702,6 +729,17 @@ export default function Reportes() {
         ws[addr] = { v, t: typeof v === 'number' ? 'n' : 's', s };
       };
 
+      // Índices de columna según la variante (con o sin ubicación)
+      const C = incluirUbicacion
+        ? {
+            num: 0, nucleo: 1, nombre: 2, cedula: 3, fecha: 4, sexo: 5, edad: 6,
+            cama: 7, modulo: 8, parentesco: 9, telefono: 10, caracas: 11, guaira: 12, obs: 13,
+          }
+        : {
+            num: 0, nucleo: 1, nombre: 2, cedula: 3, fecha: 4, sexo: 5, edad: 6,
+            cama: -1, modulo: -1, parentesco: 7, telefono: 8, caracas: 9, guaira: 10, obs: 11,
+          };
+
       // ─── FILAS DE ENCABEZADO SUPERIOR (0-3) ───
       setCell(0, 4, 'NOMBRE DEL CAMPAMENTO:', { font: { bold: true } });
       setCell(0, 5, nombreCamp, {});
@@ -722,17 +760,25 @@ export default function Reportes() {
 
       // Fila 5 & 6:
       const mainHeaders: { col: number; text: string }[] = [
-        { col: 0, text: 'N°' },
-        { col: 1, text: 'NUCLEO\nFAMILIAR' },
-        { col: 2, text: 'NOMBRES Y APELLIDOS' },
-        { col: 3, text: 'CÉDULA' },
-        { col: 4, text: 'FECHA\nNACIMIENTO' },
-        { col: 5, text: 'SEXO' },
-        { col: 6, text: 'EDAD' },
-        { col: 7, text: 'PARENTESCO' },
-        { col: 8, text: 'TELÉFONO' },
-        { col: 11, text: 'OBSERVACIÓN\n(Patología, Mujeres Embarazadas, Personas con Condición)' },
+        { col: C.num, text: 'N°' },
+        { col: C.nucleo, text: 'NUCLEO\nFAMILIAR' },
+        { col: C.nombre, text: 'NOMBRES Y APELLIDOS' },
+        { col: C.cedula, text: 'CÉDULA' },
+        { col: C.fecha, text: 'FECHA\nNACIMIENTO' },
+        { col: C.sexo, text: 'SEXO' },
+        { col: C.edad, text: 'EDAD' },
       ];
+      if (incluirUbicacion) {
+        mainHeaders.push(
+          { col: C.cama, text: 'CAMA' },
+          { col: C.modulo, text: 'MÓDULO' },
+        );
+      }
+      mainHeaders.push(
+        { col: C.parentesco, text: 'PARENTESCO' },
+        { col: C.telefono, text: 'TELÉFONO' },
+        { col: C.obs, text: 'OBSERVACIÓN\n(Patología, Mujeres Embarazadas, Personas con Condición)' },
+      );
 
       mainHeaders.forEach(({ col, text }) => {
         setCell(5, col, text, headerStyle);
@@ -740,13 +786,13 @@ export default function Reportes() {
         merges.push({ s: { r: 5, c: col }, e: { r: 6, c: col } });
       });
 
-      // Procedencia (Cols 9 y 10):
-      setCell(5, 9, 'PROCEDENCIA', headerStyle);
-      setCell(5, 10, '', headerStyle);
-      merges.push({ s: { r: 5, c: 9 }, e: { r: 5, c: 10 } });
+      // Procedencia (cols C.caracas y C.guaira):
+      setCell(5, C.caracas, 'PROCEDENCIA', headerStyle);
+      setCell(5, C.guaira, '', headerStyle);
+      merges.push({ s: { r: 5, c: C.caracas }, e: { r: 5, c: C.guaira } });
 
-      setCell(6, 9, 'CARACAS', headerStyle);
-      setCell(6, 10, 'LA GUAIRA', headerStyle);
+      setCell(6, C.caracas, 'CARACAS', headerStyle);
+      setCell(6, C.guaira, 'LA GUAIRA', headerStyle);
 
       // ─── FILAS DE DATOS (Empiezan en fila 7 base-0 = fila 8 en Excel) ───
       let dataRow = 7;
@@ -775,18 +821,22 @@ export default function Reportes() {
           }
         }
 
-        setCell(dataRow, 0,  row.nucleoNum    !== null ? row.nucleoNum    : '', cellStyle({ horizontal: 'center' }));
-        setCell(dataRow, 1,  row.nucleoMiembros !== null ? row.nucleoMiembros : '', cellStyle({ horizontal: 'center' }));
-        setCell(dataRow, 2,  row.nombresApellidos,  cellStyle());
-        setCell(dataRow, 3,  row.cedula,             cellStyle({ horizontal: 'center' }));
-        setCell(dataRow, 4,  row.fechaNacimiento,    cellStyle({ horizontal: 'center' }));
-        setCell(dataRow, 5,  row.sexo,               cellStyle({ horizontal: 'center' }));
-        setCell(dataRow, 6,  row.edad,               cellStyle({ horizontal: 'center' }));
-        setCell(dataRow, 7,  row.parentesco,         cellStyle());
-        setCell(dataRow, 8,  row.telefono,           cellStyle({ horizontal: 'center' }));
-        setCell(dataRow, 9,  row.procedenciaCaracas,  cellStyle({ horizontal: 'center' }));
-        setCell(dataRow, 10, row.procedenciaLaGuaira, cellStyle({ horizontal: 'center' }));
-        setCell(dataRow, 11, row.observacion,         cellStyle());
+        setCell(dataRow, C.num,      row.nucleoNum       !== null ? row.nucleoNum       : '', cellStyle({ horizontal: 'center' }));
+        setCell(dataRow, C.nucleo,   row.nucleoMiembros  !== null ? row.nucleoMiembros  : '', cellStyle({ horizontal: 'center' }));
+        setCell(dataRow, C.nombre,   row.nombresApellidos,  cellStyle());
+        setCell(dataRow, C.cedula,   row.cedula,             cellStyle({ horizontal: 'center' }));
+        setCell(dataRow, C.fecha,    row.fechaNacimiento,    cellStyle({ horizontal: 'center' }));
+        setCell(dataRow, C.sexo,     row.sexo,               cellStyle({ horizontal: 'center' }));
+        setCell(dataRow, C.edad,     row.edad,               cellStyle({ horizontal: 'center' }));
+        if (incluirUbicacion) {
+          setCell(dataRow, C.cama,   row.cama || '',         cellStyle({ horizontal: 'center' }));
+          setCell(dataRow, C.modulo, row.modulo || '',       cellStyle());
+        }
+        setCell(dataRow, C.parentesco, row.parentesco,         cellStyle());
+        setCell(dataRow, C.telefono,   row.telefono,           cellStyle({ horizontal: 'center' }));
+        setCell(dataRow, C.caracas,    row.procedenciaCaracas,  cellStyle({ horizontal: 'center' }));
+        setCell(dataRow, C.guaira,     row.procedenciaLaGuaira, cellStyle({ horizontal: 'center' }));
+        setCell(dataRow, C.obs,        row.observacion,         cellStyle());
 
         dataRow++;
       });
@@ -820,10 +870,10 @@ export default function Reportes() {
 
       // ─── Metadata de la hoja ───
       const lastRow = totalsRow + 1;
-      const lastCol = 11;
+      const lastCol = C.obs;
       ws['!ref'] = XLSXStyle.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: lastRow, c: lastCol } });
       ws['!merges'] = merges;
-      ws['!cols'] = [
+      const colsBase = [
         { wch: 5 },   // A: N°
         { wch: 8 },   // B: NUCLEO FAMILIAR
         { wch: 30 },  // C: NOMBRES Y APELLIDOS
@@ -831,20 +881,38 @@ export default function Reportes() {
         { wch: 13 },  // E: FECHA NACIMIENTO
         { wch: 6 },   // F: SEXO
         { wch: 12 },  // G: EDAD
-        { wch: 16 },  // H: PARENTESCO
-        { wch: 14 },  // I: TELÉFONO
-        { wch: 10 },  // J: CARACAS
-        { wch: 10 },  // K: LA GUAIRA
-        { wch: 50 },  // L: OBSERVACIÓN
       ];
+      const colsUbicacion = [
+        { wch: 10 },  // H: CAMA
+        { wch: 20 },  // I: MÓDULO
+      ];
+      const colsFin = [
+        { wch: 16 },  // PARENTESCO
+        { wch: 14 },  // TELÉFONO
+        { wch: 10 },  // CARACAS
+        { wch: 10 },  // LA GUAIRA
+        { wch: 50 },  // OBSERVACIÓN
+      ];
+      ws['!cols'] = incluirUbicacion ? [...colsBase, ...colsUbicacion, ...colsFin] : [...colsBase, ...colsFin];
 
-      XLSXStyle.utils.book_append_sheet(wb, ws, 'Data Única');
-      XLSXStyle.writeFile(wb, `data-unica-campamento-${nombreCamp.replace(/\s+/g, '-')}-${fecha}.xlsx`);
+      XLSXStyle.utils.book_append_sheet(wb, ws, incluirUbicacion ? 'Data Única (Ubicación)' : 'Data Única');
+      const filename = incluirUbicacion
+        ? `data-unica-campamento-ubicacion-${nombreCamp.replace(/\s+/g, '-')}-${fecha}.xlsx`
+        : `data-unica-campamento-${nombreCamp.replace(/\s+/g, '-')}-${fecha}.xlsx`;
+      XLSXStyle.writeFile(wb, filename);
     } catch (err) {
       console.error('Error generando Data Única XLSX:', err);
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleExportDataUnicaXLSX = async () => {
+    await buildDataUnicaXLSX({ incluirUbicacion: false });
+  };
+
+  const handleExportDataUnicaUbicacionXLSX = async () => {
+    await buildDataUnicaXLSX({ incluirUbicacion: true });
   };
 
   // Gráficos dinámicos SVG para inyectar en los reportes
@@ -1198,6 +1266,26 @@ export default function Reportes() {
           <div className="flex gap-4 mt-6 pt-4 border-t border-slate-50">
             <button
               onClick={handleExportDataUnicaXLSX}
+              disabled={!campamentoSeleccionado || isGenerating}
+              className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50"
+            >
+              <FileDown size={18} />
+              Exportar XLSX
+            </button>
+          </div>
+        </div>
+
+        {/* Card 10: Reporte Data Única con Ubicación */}
+        <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
+          <div>
+            <h3 className="text-lg font-bold text-slate-800 mb-2">Data Única con Ubicación</h3>
+            <p className="text-sm text-slate-500 leading-relaxed">
+              Padrón nominal completo de integrantes agrupados por núcleo familiar, con cama asignada y módulo de ubicación, además de procedencia (Caracas / La Guaira) y observaciones de salud. Formato institucional oficial en Excel.
+            </p>
+          </div>
+          <div className="flex gap-4 mt-6 pt-4 border-t border-slate-50">
+            <button
+              onClick={handleExportDataUnicaUbicacionXLSX}
               disabled={!campamentoSeleccionado || isGenerating}
               className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50"
             >
