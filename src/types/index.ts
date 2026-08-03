@@ -37,6 +37,8 @@ export interface Usuario {
   clave: string;
   es_master: boolean;
   activo: boolean;
+  campamento_hogar?: string | null;
+  es_global?: boolean;
 }
 
 export interface ModuloSistema {

@@ -1,59 +1,113 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { UserPlus, MoreHorizontal, Pencil, Trash2, Search, ShieldCheck } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { ShieldCheck, UserPlus } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import type { Usuario, Permiso, ModuloSistema } from '../types';
+import type { Usuario } from '../types';
 import UsuarioModal from '../components/usuarios/UsuarioModal';
+import BuscadorUsuarios from '../components/usuarios/BuscadorUsuarios';
+import AcordeonUsuarios from '../components/usuarios/AcordeonUsuarios';
 import { useAuth } from '../context/AuthContext';
+import { useCampamento } from '../context/CampamentoContext';
+
+interface CampamentoInfo {
+  id: string;
+  nombre: string;
+}
 
 export default function Usuarios() {
   const { usuarioActual } = useAuth();
+  const { campamentos: campamentosContext } = useCampamento();
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
-  const [modulos, setModulos] = useState<ModuloSistema[]>([]);
-  const [permisos, setPermisos] = useState<Permiso[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editandoUsuario, setEditandoUsuario] = useState<Usuario | null>(null);
-  const [menuAbiertoId, setMenuAbiertoId] = useState<string | null>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const [campamentoInicial, setCampamentoInicial] = useState<string | null>(null);
+  const [esMasterInicial, setEsMasterInicial] = useState(false);
+  const [esGlobalInicial, setEsGlobalInicial] = useState(false);
+  const [terminoBusqueda, setTerminoBusqueda] = useState('');
+  const [acordeonesExpandidos, setAcordeonesExpandidos] = useState<Set<string>>(new Set(['master']));
+  const [loading, setLoading] = useState(true);
+  const [errorCarga, setErrorCarga] = useState<string | null>(null);
 
   const cargarDatos = useCallback(async () => {
-    const [{ data: users }, { data: mods }, { data: perms }] = await Promise.all([
-      supabase.from('usuarios').select('*').order('created_at'),
-      supabase.from('modulos').select('*').order('created_at'),
-      supabase.from('permisos').select('*'),
-    ]);
-    setUsuarios((users || []) as Usuario[]);
-    setModulos((mods || []) as ModuloSistema[]);
-    setPermisos((perms || []) as Permiso[]);
+    setLoading(true);
+    setErrorCarga(null);
+    try {
+      const [{ data: users }] = await Promise.all([
+        supabase.from('usuarios').select('*').order('created_at'),
+      ]);
+      setUsuarios((users || []) as Usuario[]);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Error desconocido';
+      setErrorCarga(message);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => { cargarDatos(); }, [cargarDatos]);
 
-  // Cerrar menú al hacer click fuera
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setMenuAbiertoId(null);
-      }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
+  const usuariosMaster = usuarios.filter(u => u.es_master);
 
-  // Generar resumen de permisos para mostrar en tabla
-  const resumenPermisos = (usuario: Usuario): string => {
-    if (usuario.es_master) return 'Acceso total (MASTER)';
-    const usuarioPermisos = permisos.filter(p => p.usuario_id === usuario.id);
-    return usuarioPermisos.map(p => {
-      const modName = modulos.find(m => m.id === p.modulo_id)?.nombre || p.modulo_id;
-      return `${modName} (${p.acciones.join(', ')})`;
-    }).join(' · ') || 'Sin permisos';
+  const usuariosGlobales = usuarios.filter(
+    u => !u.es_master && u.es_global
+  );
+
+  const usuariosSinCampamento = usuarios.filter(
+    u => !u.es_master && !u.es_global && !u.campamento_hogar
+  );
+
+  const campamentosOrdenados: CampamentoInfo[] = campamentosContext
+    .filter(c => c.estado === 'activo')
+    .sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+  const usuariosPorCampamento: Record<string, Usuario[]> = {};
+  campamentosOrdenados.forEach(camp => {
+    usuariosPorCampamento[camp.id] = usuarios.filter(
+      u => !u.es_master && !u.es_global && u.campamento_hogar === camp.id
+    );
+  });
+
+  const handleNuevoMaster = () => {
+    setEditandoUsuario(null);
+    setCampamentoInicial(null);
+    setEsMasterInicial(true);
+    setEsGlobalInicial(false);
+    setIsModalOpen(true);
+  };
+
+  const handleNuevoGlobal = () => {
+    setEditandoUsuario(null);
+    setCampamentoInicial(null);
+    setEsMasterInicial(false);
+    setEsGlobalInicial(true);
+    setIsModalOpen(true);
+  };
+
+  const handleNuevoCamp = (campId: string) => {
+    setEditandoUsuario(null);
+    setCampamentoInicial(campId);
+    setEsMasterInicial(false);
+    setEsGlobalInicial(false);
+    setIsModalOpen(true);
+  };
+
+  const handleNuevoIndefinido = () => {
+    setEditandoUsuario(null);
+    setCampamentoInicial(null);
+    setEsMasterInicial(false);
+    setEsGlobalInicial(false);
+    setIsModalOpen(true);
+  };
+
+  const handleModificar = (usuario: Usuario) => {
+    setCampamentoInicial(null);
+    setEsMasterInicial(false);
+    setEditandoUsuario(usuario);
+    setIsModalOpen(true);
   };
 
   const handleEliminar = async (id: string) => {
-    setMenuAbiertoId(null);
-    const usuario = usuarios.find(u => u.id === id);
-    if (usuario?.es_master) {
-      alert('No se puede eliminar al usuario MASTER');
+    if (id === usuarioActual?.id) {
+      alert('No puedes eliminar tu propio usuario');
       return;
     }
     if (!window.confirm('¿Estás seguro de que deseas eliminar este usuario?')) return;
@@ -61,10 +115,16 @@ export default function Usuarios() {
     cargarDatos();
   };
 
-  const handleModificar = (usuario: Usuario) => {
-    setMenuAbiertoId(null);
-    setEditandoUsuario(usuario);
-    setIsModalOpen(true);
+  const toggleAcordeon = (key: string) => {
+    setAcordeonesExpandidos(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
   };
 
   if (!usuarioActual?.es_master) {
@@ -79,108 +139,135 @@ export default function Usuarios() {
     );
   }
 
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="h-8 w-48 bg-gray-200 rounded animate-pulse" />
+            <div className="h-5 w-64 bg-gray-100 rounded mt-2 animate-pulse" />
+          </div>
+        </div>
+        <div className="h-12 bg-gray-100 rounded-xl animate-pulse" />
+        {[1, 2, 3].map(i => (
+          <div key={i} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="px-6 py-4 flex items-center gap-3">
+              <div className="h-5 w-5 bg-gray-200 rounded animate-pulse" />
+              <div className="h-5 w-48 bg-gray-200 rounded animate-pulse" />
+              <div className="h-5 w-8 bg-gray-100 rounded-full animate-pulse" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (errorCarga) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] text-center">
+        <ShieldCheck size={64} className="text-red-500 mb-4 opacity-50" />
+        <h2 className="text-2xl font-bold text-gray-800">Error al cargar usuarios</h2>
+        <p className="text-gray-500 mt-2 max-w-md mb-6">{errorCarga}</p>
+        <button
+          onClick={cargarDatos}
+          className="bg-caracas-red hover:bg-red-800 text-white px-6 py-2.5 rounded-xl font-medium transition-colors"
+        >
+          Reintentar
+        </button>
+      </div>
+    );
+  }
+
+  const totalUsuarios = usuarios.length;
+
   return (
-    <div className="space-y-6">
-      {/* Cabecera */}
+    <div className="space-y-4">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">Gestión de Usuarios</h2>
           <p className="text-gray-500">Administra los operadores del sistema y sus permisos</p>
         </div>
-        <button
-          onClick={() => { setEditandoUsuario(null); setIsModalOpen(true); }}
-          className="flex items-center justify-center gap-2 bg-caracas-red hover:bg-red-800 text-white px-6 py-3 rounded-xl font-medium transition-all shadow-lg shadow-caracas-red/20 transform hover:-translate-y-0.5"
-        >
-          <UserPlus size={20} />
-          Nuevo Usuario
-        </button>
       </div>
 
-      {/* Tabla */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col min-h-[400px]">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-white border-b border-gray-100">
-                <th className="py-4 px-6 font-semibold text-sm text-gray-500">Nickname</th>
-                <th className="py-4 px-6 font-semibold text-sm text-gray-500">Nombres</th>
-                <th className="py-4 px-6 font-semibold text-sm text-gray-500">Apellidos</th>
-                <th className="py-4 px-6 font-semibold text-sm text-gray-500">Permisos</th>
-                <th className="py-4 px-6 font-semibold text-sm text-gray-500 text-right">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {usuarios.length > 0 ? (
-                usuarios.map((usuario) => (
-                  <tr key={usuario.id} className="border-b border-gray-50 hover:bg-gray-50/80 transition-colors group">
-                    <td className="py-3 px-6">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-mono font-medium text-gray-700">{usuario.nickname}</span>
-                        {usuario.es_master && (
-                          <span title="MASTER"><ShieldCheck size={16} className="text-caracas-red" /></span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="py-3 px-6 text-sm text-gray-700">{usuario.nombres}</td>
-                    <td className="py-3 px-6 text-sm text-gray-700">{usuario.apellidos}</td>
-                    <td className="py-3 px-6 max-w-xs">
-                      <span className="text-xs text-gray-500 line-clamp-2" title={resumenPermisos(usuario)}>
-                        {resumenPermisos(usuario)}
-                      </span>
-                    </td>
-                    <td className="py-3 px-6 text-right relative">
-                      {!usuario.es_master && (
-                        <button
-                          onClick={() => setMenuAbiertoId(menuAbiertoId === usuario.id ? null : usuario.id)}
-                          className="p-2 text-gray-400 hover:text-caracas-red hover:bg-red-50 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
-                        >
-                          <MoreHorizontal size={18} />
-                        </button>
-                      )}
+      <BuscadorUsuarios onChange={setTerminoBusqueda} />
 
-                      {menuAbiertoId === usuario.id && (
-                        <div ref={menuRef} className="absolute right-4 top-12 z-50 bg-white border border-gray-100 rounded-xl shadow-xl overflow-hidden w-44">
-                          <button
-                            onClick={() => handleModificar(usuario)}
-                            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-caracas-blue/5 hover:text-caracas-blue transition-colors text-left"
-                          >
-                            <Pencil size={16} />
-                            Modificar
-                          </button>
-                          <button
-                            onClick={() => handleEliminar(usuario.id)}
-                            className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors text-left border-t border-gray-100"
-                          >
-                            <Trash2 size={16} />
-                            Eliminar
-                          </button>
-                        </div>
-                      )}
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={5} className="py-12 text-center text-gray-500">
-                    <div className="flex flex-col items-center justify-center">
-                      <Search size={48} className="text-gray-300 mb-4" />
-                      <p className="text-lg font-medium text-gray-600">No hay usuarios registrados</p>
-                      <p className="text-sm text-gray-400">Crea el primer usuario con el botón "Nuevo Usuario"</p>
-                    </div>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+      <AcordeonUsuarios
+        titulo="Usuarios Master"
+        usuarios={usuariosMaster}
+        esMaster={true}
+        campamentoId={null}
+        onNuevoUsuario={() => handleNuevoMaster()}
+        onModificar={handleModificar}
+        onEliminar={handleEliminar}
+        terminoBusqueda={terminoBusqueda}
+        expandido={acordeonesExpandidos.has('master')}
+        onToggle={() => toggleAcordeon('master')}
+        usuarioActualId={usuarioActual?.id || ''}
+      />
+
+      <AcordeonUsuarios
+        titulo="Usuarios Globales"
+        usuarios={usuariosGlobales}
+        esMaster={false}
+        campamentoId={null}
+        onNuevoUsuario={() => handleNuevoGlobal()}
+        onModificar={handleModificar}
+        onEliminar={handleEliminar}
+        terminoBusqueda={terminoBusqueda}
+        expandido={acordeonesExpandidos.has('globales')}
+        onToggle={() => toggleAcordeon('globales')}
+        usuarioActualId={usuarioActual?.id || ''}
+      />
+
+      {usuariosSinCampamento.length > 0 && (
+        <AcordeonUsuarios
+          titulo="Sin Campamento Asignado"
+          usuarios={usuariosSinCampamento}
+          esMaster={false}
+          campamentoId={null}
+          onNuevoUsuario={() => handleNuevoIndefinido()}
+          onModificar={handleModificar}
+          onEliminar={handleEliminar}
+          terminoBusqueda={terminoBusqueda}
+          expandido={acordeonesExpandidos.has('indefinido')}
+          onToggle={() => toggleAcordeon('indefinido')}
+          usuarioActualId={usuarioActual?.id || ''}
+        />
+      )}
+
+      {campamentosOrdenados.map(camp => (
+        <AcordeonUsuarios
+          key={camp.id}
+          titulo={camp.nombre}
+          usuarios={usuariosPorCampamento[camp.id] || []}
+          esMaster={false}
+          campamentoId={camp.id}
+          onNuevoUsuario={() => handleNuevoCamp(camp.id)}
+          onModificar={handleModificar}
+          onEliminar={handleEliminar}
+          terminoBusqueda={terminoBusqueda}
+          expandido={acordeonesExpandidos.has(camp.id)}
+          onToggle={() => toggleAcordeon(camp.id)}
+          usuarioActualId={usuarioActual?.id || ''}
+        />
+      ))}
+
+      {totalUsuarios === 0 && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-12 text-center">
+          <UserPlus size={48} className="text-gray-300 mx-auto mb-4" />
+          <p className="text-lg font-medium text-gray-600">No hay usuarios registrados</p>
+          <p className="text-sm text-gray-400 mt-1">Expande un campamento y crea el primero</p>
         </div>
-      </div>
+      )}
 
-      {/* Modal */}
       <UsuarioModal
         isOpen={isModalOpen}
         onClose={() => { setIsModalOpen(false); setEditandoUsuario(null); }}
         usuarioToEdit={editandoUsuario}
         onSaved={cargarDatos}
+        campamentoInicial={campamentoInicial}
+        esMasterInicial={esMasterInicial}
+        esGlobalInicial={esGlobalInicial}
       />
     </div>
   );
