@@ -30,6 +30,16 @@ interface PlacedText {
   id: string;
 }
 
+interface PlacedLine {
+  x: number;
+  y: number;
+  dx: number;
+  dy: number;
+  rotation: number;
+  color: string;
+  id: string;
+}
+
 interface BedRenderInfo {
   numbers: string[];
   occupiedNumbers: string[];
@@ -93,6 +103,22 @@ function drawTexts(ctx: CanvasRenderingContext2D, texts: PlacedText[]) {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(t.text, 0, 0);
+    ctx.restore();
+  });
+}
+
+function drawLines(ctx: CanvasRenderingContext2D, lines: PlacedLine[]) {
+  lines.forEach(l => {
+    ctx.save();
+    ctx.translate(l.x, l.y);
+    ctx.rotate((l.rotation * Math.PI) / 180);
+    ctx.beginPath();
+    ctx.moveTo(-l.dx, -l.dy);
+    ctx.lineTo(l.dx, l.dy);
+    ctx.strokeStyle = l.color;
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.stroke();
     ctx.restore();
   });
 }
@@ -359,6 +385,7 @@ const CroquisViewer2 = forwardRef<HTMLCanvasElement, CroquisViewer2Props>(functi
     let beds: PlacedBed[] = [];
     let rectangles: PlacedRectangle[] = [];
     let texts: PlacedText[] = [];
+    let lines: PlacedLine[] = [];
 
     try {
       const parsed = JSON.parse(croquisData);
@@ -394,6 +421,17 @@ const CroquisViewer2 = forwardRef<HTMLCanvasElement, CroquisViewer2Props>(functi
           color: o.color as string,
           id: o.id as string,
         }));
+      lines = rawObjects
+        .filter(o => o.kind === 'line')
+        .map(o => ({
+          x: o.x as number,
+          y: o.y as number,
+          dx: o.dx as number,
+          dy: o.dy as number,
+          rotation: o.rotation as number,
+          color: o.color as string,
+          id: o.id as string,
+        }));
 
       const occupiedSet = new Set(occupiedBeds);
       const accumulator: BedRenderInfo[] = [];
@@ -404,6 +442,7 @@ const CroquisViewer2 = forwardRef<HTMLCanvasElement, CroquisViewer2Props>(functi
           ctx.drawImage(img, 0, 0);
           drawRectangles(ctx, rectangles);
           drawTexts(ctx, texts);
+          drawLines(ctx, lines);
           drawBedsWithNumbers(ctx, beds, elementNumberOffset, tipoContabilizacion, occupiedSet, accumulator, bedColorMap);
           bedsRenderRef.current = accumulator;
         };
@@ -418,6 +457,7 @@ const CroquisViewer2 = forwardRef<HTMLCanvasElement, CroquisViewer2Props>(functi
     const accumulator: BedRenderInfo[] = [];
     drawRectangles(ctx, rectangles);
     drawTexts(ctx, texts);
+    drawLines(ctx, lines);
     drawBedsWithNumbers(ctx, beds, elementNumberOffset, tipoContabilizacion, occupiedSet, accumulator, bedColorMap);
     bedsRenderRef.current = accumulator;
   }, [croquisData, elementNumberOffset, tipoContabilizacion, occupiedBeds, bedColorMap]);

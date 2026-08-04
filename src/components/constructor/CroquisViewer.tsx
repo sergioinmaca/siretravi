@@ -28,6 +28,16 @@ interface PlacedText {
   id: string;
 }
 
+interface PlacedLine {
+  x: number;
+  y: number;
+  dx: number;
+  dy: number;
+  rotation: number;
+  color: string;
+  id: string;
+}
+
 interface BedRenderInfo {
   numbers: string[];
   occupiedNumbers: string[];
@@ -94,6 +104,7 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
     let beds: PlacedBed[] = [];
     let rectangles: PlacedRectangle[] = [];
     let texts: PlacedText[] = [];
+    let lines: PlacedLine[] = [];
     let drawingBase64: string | null = null;
 
     try {
@@ -131,6 +142,17 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
           color: o.color as string,
           id: o.id as string,
         }));
+      lines = rawObjects
+        .filter(o => o.kind === 'line')
+        .map(o => ({
+          x: o.x as number,
+          y: o.y as number,
+          dx: o.dx as number,
+          dy: o.dy as number,
+          rotation: o.rotation as number,
+          color: o.color as string,
+          id: o.id as string,
+        }));
     } catch {
       // blank
     }
@@ -149,6 +171,7 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
       drawBedsWithNumbers(ctx, beds, elementNumberOffset, tipoContabilizacion, occupiedSet, accumulator, bedColorMap);
       drawRectangles(ctx, rectangles);
       drawTexts(ctx, texts);
+      drawLines(ctx, lines);
       bedsRenderRef.current = accumulator;
     };
 
@@ -166,6 +189,7 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
         drawBedsWithNumbers(ctx, beds, elementNumberOffset, tipoContabilizacion, occupiedSet, accumulator, bedColorMap);
         drawRectangles(ctx, rectangles);
         drawTexts(ctx, texts);
+        drawLines(ctx, lines);
         bedsRenderRef.current = accumulator;
       };
       img.src = drawingBase64;
@@ -547,6 +571,22 @@ function drawTexts(ctx: CanvasRenderingContext2D, texts: PlacedText[]) {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(t.text, 0, 0);
+    ctx.restore();
+  });
+}
+
+function drawLines(ctx: CanvasRenderingContext2D, lines: PlacedLine[]) {
+  lines.forEach(l => {
+    ctx.save();
+    ctx.translate(l.x, l.y);
+    ctx.rotate((l.rotation * Math.PI) / 180);
+    ctx.beginPath();
+    ctx.moveTo(-l.dx, -l.dy);
+    ctx.lineTo(l.dx, l.dy);
+    ctx.strokeStyle = l.color;
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    ctx.stroke();
     ctx.restore();
   });
 }
