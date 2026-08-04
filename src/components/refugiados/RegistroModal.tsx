@@ -7,6 +7,7 @@ import { formatAge } from '../../lib/formatAge';
 import { toDateInput, parseDateSafe } from '../../lib/formatDate';
 import DateInput from '../ui/DateInput';
 import CameraCapture from '../ui/CameraCapture';
+import { useVerificarCedula } from '../../hooks/useVerificarCedula';
 
 interface RegistroModalProps {
   isOpen: boolean;
@@ -40,6 +41,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     convertirAJPEG,
   } = useFotoUpload();
   const isEditing = !!refugiadoToEdit;
+  const { estado: cedulaEstado, nombreCampamento: cedulaCampamento, verificar: verificarCedula, reset: resetCedula } = useVerificarCedula(isEditing);
 
   const [formData, setFormData] = useState({
     nombres: '',
@@ -760,8 +762,19 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                       <option value="E">E</option>
                       <option value="P">P</option>
                     </select>
-                    <input type="text" name="cedula" value={formData.cedula} onChange={handleChange} className="flex-1 px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all" placeholder="Ej. 12345678" />
+                    <div className="flex-1 relative">
+                      <input type="text" name="cedula" value={formData.cedula} onChange={(e) => { handleChange(e); resetCedula(); }} onBlur={(e) => verificarCedula(e.target.value)} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all" placeholder="Ej. 12345678" />
+                      {cedulaEstado === 'verificando' && <Loader2 size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 animate-spin" />}
+                      {cedulaEstado === 'valido' && <CheckCircle2 size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500" />}
+                      {cedulaEstado === 'duplicado' && <X size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500" />}
+                    </div>
                   </div>
+                  {cedulaEstado === 'duplicado' && (
+                    <p className="text-red-600 text-sm mt-1.5 flex items-center gap-1">
+                      <AlertCircle size={14} />
+                      Esta cédula ya está registrada en "{cedulaCampamento}"
+                    </p>
+                  )}
                 </div>
                 {isEditing && refugiadoToEdit?.codigo && (
                   <div>
@@ -1283,7 +1296,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                 <button onClick={handleClose} type="button" className="px-6 py-2.5 rounded-xl text-gray-600 font-medium hover:bg-gray-200 transition-colors">
                   Cancelar
                 </button>
-                <button type="submit" disabled={!campamentoSeleccionado || isSubmitting} className="flex items-center bg-caracas-red hover:bg-red-800 text-white px-5 py-2 rounded-xl font-medium transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px] justify-center">
+                <button type="submit" disabled={!campamentoSeleccionado || isSubmitting || cedulaEstado === 'verificando' || cedulaEstado === 'duplicado'} className="flex items-center bg-caracas-red hover:bg-red-800 text-white px-5 py-2 rounded-xl font-medium transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px] justify-center">
                   {isSubmitting ? (
                     <Loader2 size={18} className="animate-spin" />
                   ) : (
@@ -1302,7 +1315,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
           <button onClick={handleClose} type="button" className="px-6 py-2.5 rounded-xl text-gray-600 font-medium hover:bg-gray-200 transition-colors">
             Cancelar
           </button>
-          <button type="submit" form="registro-form" disabled={!campamentoSeleccionado || isSubmitting} className="flex items-center bg-caracas-red hover:bg-red-800 text-white px-5 py-2 rounded-xl font-medium transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px] justify-center">
+          <button type="submit" form="registro-form" disabled={!campamentoSeleccionado || isSubmitting || cedulaEstado === 'verificando' || cedulaEstado === 'duplicado'} className="flex items-center bg-caracas-red hover:bg-red-800 text-white px-5 py-2 rounded-xl font-medium transition-colors shadow-md disabled:opacity-50 disabled:cursor-not-allowed min-w-[140px] justify-center">
             {isSubmitting ? (
               <Loader2 size={18} className="animate-spin" />
             ) : (
