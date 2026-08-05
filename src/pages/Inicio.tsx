@@ -1,5 +1,5 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
-import { Users, BedDouble, Tent, Home, Baby, Heart, Sparkles, ShieldOff, FileDown, Loader2, Milk, UserCheck } from 'lucide-react';
+import { Users, BedDouble, Tent, Home, Baby, Heart, Sparkles, ShieldOff, FileDown, Loader2, Milk, UserCheck, HeartPulse, Accessibility } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
 import { useIsMobile } from '../hooks/useIsMobile';
@@ -34,6 +34,10 @@ export default function Inicio() {
     r => (r.hogar_solidario || '').toUpperCase() !== 'RETIRADO'
   );
 
+  const refugiadosPresentes = refugiadosDelCampamento.filter(
+    r => ((r.hogar_solidario || '').trim().toUpperCase() || 'PRESENTE') === 'PRESENTE'
+  );
+
   const jefesActivos = refugiadosActivos.filter(r => r.es_jefe_familia === true);
 
   const occupiedBeds = useMemo(() => {
@@ -55,9 +59,9 @@ export default function Inicio() {
 
   const uniqueOccupiedBedsSet = useMemo(() => new Set(occupiedBeds), [occupiedBeds]);
 
-  const totalRefugiados = refugiadosActivos.length;
-  const totalHombres = refugiadosActivos.filter(r => r.genero === true).length;
-  const totalMujeres = refugiadosActivos.filter(r => r.genero === false).length;
+  const totalRefugiados = refugiadosPresentes.length;
+  const totalHombres = refugiadosPresentes.filter(r => r.genero === true).length;
+  const totalMujeres = refugiadosPresentes.filter(r => r.genero === false).length;
 
   const totalFamilias = campamentoSeleccionado
     ? new Set(jefesActivos.filter(r => r.familia_id).map(r => r.familia_id)).size
@@ -97,6 +101,9 @@ export default function Inicio() {
   const noLactantes = refugiadosConEdad.filter(r => r.edad >= 3 && r.edad <= 11);
   const noLactantesH = noLactantes.filter(r => r.genero === true).length;
   const noLactantesM = noLactantes.filter(r => r.genero === false).length;
+
+  const embarazadas = refugiadosActivos.filter(r => r.genero === false && r.embarazo === true).length;
+  const discapacitados = refugiadosActivos.filter(r => r.discapacidad === true).length;
 
   const adultos = refugiadosConEdad.filter(r =>
     (r.genero === true && r.edad >= 18 && r.edad < 60) ||
@@ -560,7 +567,7 @@ export default function Inicio() {
             <Tent size={32} />
           </div>
           <div className="overflow-hidden">
-            <p className="text-sm font-medium text-gray-500 truncate max-md:text-white">Modulos Activos</p>
+            <p className="text-sm font-medium text-black truncate max-md:text-white">Modulos Activos</p>
             <p className="text-3xl font-bold text-gray-900 max-md:text-white max-md:text-xl">{campamentoSeleccionado?.modulos?.length || 0}</p>
             <p className="text-xs text-gray-400 mt-1 truncate max-md:text-base max-md:text-yellow-300">
               Instalados
@@ -575,7 +582,7 @@ export default function Inicio() {
             <BedDouble size={32} />
           </div>
           <div className="overflow-hidden">
-            <p className="text-sm font-medium text-gray-500 truncate max-md:text-white">Camas Disponibles</p>
+            <p className="text-sm font-medium text-black truncate max-md:text-white">Camas Disponibles</p>
             <p className="text-3xl font-bold text-gray-900 max-md:text-white max-md:text-xl">{disponiblesCroquis}</p>
             <p className="text-xs text-gray-400 mt-1 max-md:text-base max-md:text-yellow-300">
               <span className="text-caracas-red font-medium max-md:text-yellow-300">{uniqueOccupiedBedsSet.size}</span> Ocupadas / {totalCamasCroquis} Totales
@@ -592,7 +599,7 @@ export default function Inicio() {
             <Users size={32} />
           </div>
           <div className="overflow-hidden">
-            <p className="text-sm font-medium text-gray-500 truncate max-md:text-white">Total de Personas</p>
+            <p className="text-sm font-medium text-black truncate max-md:text-white">Total de Personas Presentes</p>
             <p className="text-3xl font-bold text-gray-900 max-md:text-white max-md:text-xl">{totalRefugiados}</p>
             <p className="text-xs text-gray-400 mt-1 max-md:text-base max-md:text-yellow-300">
               <span className="text-blue-600 font-medium max-md:text-blue-300">{totalHombres}</span> H · <span className="text-pink-600 font-medium max-md:text-pink-300">{totalMujeres}</span> M
@@ -607,10 +614,43 @@ export default function Inicio() {
             <Home size={32} />
           </div>
           <div className="overflow-hidden">
-            <p className="text-sm font-medium text-gray-500 truncate max-md:text-white">Total de Familias</p>
+            <p className="text-sm font-medium text-black truncate max-md:text-white">Total de Familias</p>
             <p className="text-3xl font-bold text-gray-900 max-md:text-white max-md:text-xl">{totalFamilias}</p>
             <p className="text-xs text-gray-400 mt-1 truncate max-md:text-base max-md:text-yellow-300">
               Grupos familiares
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Embarazadas y Discapacitados */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 md:gap-6 max-md:-mx-4">
+        {/* Embarazadas */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-pink-500 flex items-center gap-4 hover:shadow-md transition-shadow max-md:bg-pink-500 max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:border-l-0 max-md:px-4 max-md:py-3 max-md:gap-2">
+          <HeartPulse size={isMobile ? 18 : 32} className="max-md:text-white shrink-0 md:hidden" />
+          <div className="max-md:hidden p-4 bg-pink-500/10 rounded-xl text-pink-500 shrink-0">
+            <HeartPulse size={32} />
+          </div>
+          <div className="overflow-hidden">
+            <p className="text-sm font-medium text-black truncate max-md:text-white">Embarazadas</p>
+            <p className="text-3xl font-bold text-gray-900 max-md:text-white max-md:text-xl">{embarazadas}</p>
+            <p className="text-xs text-gray-400 mt-1 truncate max-md:text-base max-md:text-yellow-300">
+              Mujeres en estado de gestación
+            </p>
+          </div>
+        </div>
+
+        {/* Discapacitados */}
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-purple-500 flex items-center gap-4 hover:shadow-md transition-shadow max-md:bg-purple-500 max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:border-l-0 max-md:px-4 max-md:py-3 max-md:gap-2">
+          <Accessibility size={isMobile ? 18 : 32} className="max-md:text-white shrink-0 md:hidden" />
+          <div className="max-md:hidden p-4 bg-purple-500/10 rounded-xl text-purple-500 shrink-0">
+            <Accessibility size={32} />
+          </div>
+          <div className="overflow-hidden">
+            <p className="text-sm font-medium text-black truncate max-md:text-white">Discapacitados</p>
+            <p className="text-3xl font-bold text-gray-900 max-md:text-white max-md:text-xl">{discapacitados}</p>
+            <p className="text-xs text-gray-400 mt-1 truncate max-md:text-base max-md:text-yellow-300">
+              Personas con condición especial
             </p>
           </div>
         </div>
@@ -628,7 +668,7 @@ export default function Inicio() {
                 <Baby size={28} />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500 max-md:text-white">Niños</p>
+                <p className="text-sm font-medium text-black max-md:text-white">Niños</p>
                 <p className="text-2xl font-bold text-gray-900 max-md:text-white max-md:text-lg">{ninos.length}</p>
               </div>
             </div>
@@ -645,7 +685,7 @@ export default function Inicio() {
                 <Milk size={28} />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500 max-md:text-white">Niños Lactantes</p>
+                <p className="text-sm font-medium text-black max-md:text-white">Niños Lactantes</p>
                 <p className="text-2xl font-bold text-gray-900 max-md:text-white max-md:text-lg">{lactantes.length}</p>
               </div>
             </div>
@@ -662,7 +702,7 @@ export default function Inicio() {
                 <Baby size={28} />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500 max-md:text-white">No Lactantes</p>
+                <p className="text-sm font-medium text-black max-md:text-white">No Lactantes</p>
                 <p className="text-2xl font-bold text-gray-900 max-md:text-white max-md:text-lg">{noLactantes.length}</p>
               </div>
             </div>
@@ -682,7 +722,7 @@ export default function Inicio() {
                 <Sparkles size={28} />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500 max-md:text-white">Adolescentes</p>
+                <p className="text-sm font-medium text-black max-md:text-white">Adolescentes</p>
                 <p className="text-2xl font-bold text-gray-900 max-md:text-white max-md:text-lg">{adolescentes.length}</p>
               </div>
             </div>
@@ -699,7 +739,7 @@ export default function Inicio() {
                 <UserCheck size={28} />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500 max-md:text-white">Adultos</p>
+                <p className="text-sm font-medium text-black max-md:text-white">Adultos</p>
                 <p className="text-2xl font-bold text-gray-900 max-md:text-white max-md:text-lg">{adultos.length}</p>
               </div>
             </div>
@@ -716,7 +756,7 @@ export default function Inicio() {
                 <Heart size={28} />
               </div>
               <div>
-                <p className="text-sm font-medium text-gray-500 max-md:text-white">Adulto Mayor</p>
+                <p className="text-sm font-medium text-black max-md:text-white">Adulto Mayor</p>
                 <p className="text-2xl font-bold text-gray-900 max-md:text-white max-md:text-lg">{adultoMayor.length}</p>
               </div>
             </div>
@@ -737,7 +777,7 @@ export default function Inicio() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 max-md:bg-transparent max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3 max-md:-mx-4">
             <div className="flex items-center gap-2 mb-6">
               <div className="w-1 h-6 bg-caracas-red rounded-full"></div>
-              <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wider">Tenencia de Vivienda</h2>
+              <h2 className="text-sm font-bold text-black uppercase tracking-wider">Tenencia de Vivienda</h2>
             </div>
 
             {tenenciaData.length > 0 ? (
@@ -760,7 +800,7 @@ export default function Inicio() {
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <span className="text-2xl font-bold text-gray-800">{totalJefes}</span>
-                    <span className="text-xs text-gray-400">familias</span>
+                    <span className="text-xs text-black">Familias</span>
                   </div>
                 </div>
                 <div className="flex-1 space-y-2.5 min-w-0">
@@ -788,7 +828,7 @@ export default function Inicio() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 max-md:bg-transparent max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3 max-md:-mx-4">
             <div className="flex items-center gap-2 mb-6">
               <div className="w-1 h-6 bg-amber-500 rounded-full"></div>
-              <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wider">Situación de Estatus</h2>
+              <h2 className="text-sm font-bold text-black uppercase tracking-wider">Situación de Estatus</h2>
             </div>
 
             {estatusData.length > 0 ? (
@@ -811,7 +851,7 @@ export default function Inicio() {
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
                     <span className="text-2xl font-bold text-gray-800">{totalIntegrantes}</span>
-                    <span className="text-xs text-gray-400">integrantes</span>
+                    <span className="text-[11px] text-black text-center leading-tight -mt-1">Integrantes<br/>Registrados</span>
                   </div>
                 </div>
                 <div className="flex-1 space-y-2.5 min-w-0">
