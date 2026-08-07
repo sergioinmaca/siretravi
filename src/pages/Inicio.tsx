@@ -1195,7 +1195,6 @@ export default function Inicio() {
       </div>
 
       <ListaIntegrantesModal
-        key={listaTitulo}
         isOpen={listaModalOpen}
         onClose={() => setListaModalOpen(false)}
         titulo={listaTitulo}
