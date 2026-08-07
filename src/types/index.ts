@@ -48,6 +48,7 @@ export const REPORTES_DISPONIBLES = [
   { clave: 'mascotas', nombre: 'Mascotas' },
   { clave: 'historias_clinicas', nombre: 'Historias Clínicas' },
   { clave: 'integrantes', nombre: 'Exportar Integrantes' },
+  { clave: 'retirados', nombre: 'Reporte de Retirados' },
   { clave: 'tenencia', nombre: 'Tenencia de Vivienda' },
   { clave: 'estatus', nombre: 'Situación de Estatus' },
   { clave: 'data_unica', nombre: 'Data Única de Campamento' },
