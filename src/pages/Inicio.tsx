@@ -252,16 +252,16 @@ export default function Inicio() {
     return map;
   }, [jefesActivos]);
 
-  // Calcular ranking de procedencias (solo jefes de familia)
-  const procedenciasMap = new Map<string, number>();
+  // Calcular ranking de parroquias (solo jefes de familia)
+  const parroquiasMap = new Map<string, number>();
   jefesActivos.forEach(r => {
-    const proc = r.procedencia?.trim() || 'SIN ESPECIFICAR';
-    procedenciasMap.set(proc, (procedenciasMap.get(proc) || 0) + 1);
+    const proc = r.parroquia?.trim() || 'SIN ESPECIFICAR';
+    parroquiasMap.set(proc, (parroquiasMap.get(proc) || 0) + 1);
   });
-  const procedenciasRanking = Array.from(procedenciasMap.entries())
+  const parroquiasRanking = Array.from(parroquiasMap.entries())
     .map(([nombre, cantidad]) => ({ nombre, cantidad }))
     .sort((a, b) => b.cantidad - a.cantidad);
-  const maxProcedencia = procedenciasRanking.length > 0 ? procedenciasRanking[0].cantidad : 1;
+  const maxParroquia = parroquiasRanking.length > 0 ? parroquiasRanking[0].cantidad : 1;
 
   // Colores vibrantes para las barras
   const barColors = [
@@ -867,7 +867,7 @@ export default function Inicio() {
         </div>
       </div>
 
-      {/* Dashboard: Tenencia de Vivienda + Estatus | Ranking de Procedencias */}
+      {/* Dashboard: Tenencia de Vivienda + Estatus | Ranking de Parroquias */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* COLUMNA IZQUIERDA: Tenencia de Vivienda + Situación de Estatus apilados */}
@@ -957,25 +957,25 @@ export default function Inicio() {
                   </svg>
                   <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ pointerEvents: 'none' }}>
                     <span className="text-2xl font-bold text-gray-800">{totalIntegrantes}</span>
-                    <span className="text-[11px] text-black text-center leading-tight -mt-1">Integrantes<br/>Registrados</span>
+                    <span className="text-[11px] text-black text-center leading-tight -mt-1">Integrantes<br />Registrados</span>
                   </div>
                 </div>
                 <div className="flex-1 space-y-2.5 min-w-0">
                   {estatusData.map(c => {
                     const esClickleable = c.nombre === 'HOGAR SOLIDARIO' || c.nombre === 'RETIRADO';
                     return (
-                    <div key={c.nombre} className="flex items-center justify-between text-sm">
-                      <div
-                        className={`flex items-center gap-2 min-w-0 ${esClickleable ? 'cursor-pointer hover:opacity-70 transition-opacity' : ''}`}
-                        onClick={esClickleable ? () => abrirLista(`Estatus: ${c.nombre.charAt(0) + c.nombre.slice(1).toLowerCase()}`, refugiadosPorEstatus.get(c.nombre) || []) : undefined}
-                      >
-                        <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: estatusColores[c.nombre] || '#9CA3AF' }} />
-                        <span className="text-gray-600 truncate capitalize">{c.nombre.charAt(0) + c.nombre.slice(1).toLowerCase()}</span>
+                      <div key={c.nombre} className="flex items-center justify-between text-sm">
+                        <div
+                          className={`flex items-center gap-2 min-w-0 ${esClickleable ? 'cursor-pointer hover:opacity-70 transition-opacity' : ''}`}
+                          onClick={esClickleable ? () => abrirLista(`Estatus: ${c.nombre.charAt(0) + c.nombre.slice(1).toLowerCase()}`, refugiadosPorEstatus.get(c.nombre) || []) : undefined}
+                        >
+                          <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: estatusColores[c.nombre] || '#9CA3AF' }} />
+                          <span className="text-gray-600 truncate capitalize">{c.nombre.charAt(0) + c.nombre.slice(1).toLowerCase()}</span>
+                        </div>
+                        <span className="font-semibold text-gray-800 tabular-nums shrink-0 ml-2">
+                          {c.cantidad} <span className="text-gray-400 font-normal">({((c.cantidad / totalIntegrantes) * 100).toFixed(1)}%)</span>
+                        </span>
                       </div>
-                      <span className="font-semibold text-gray-800 tabular-nums shrink-0 ml-2">
-                        {c.cantidad} <span className="text-gray-400 font-normal">({((c.cantidad / totalIntegrantes) * 100).toFixed(1)}%)</span>
-                      </span>
-                    </div>
                     );
                   })}
                 </div>
@@ -989,17 +989,17 @@ export default function Inicio() {
 
         </div>
 
-        {/* COLUMNA DERECHA: Ranking de Procedencias */}
+        {/* COLUMNA DERECHA: Ranking de Parroquias */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 max-md:bg-transparent max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3 max-md:max-w-[calc(100vw-1rem)] max-md:-ml-4 max-md:mr-0">
           <div className="flex items-center gap-2 mb-6">
             <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
-            <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wider">Ranking de Procedencias</h2>
+            <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wider">Ranking de Parroquias</h2>
           </div>
 
-          {procedenciasRanking.length > 0 ? (
+          {parroquiasRanking.length > 0 ? (
             <div className="space-y-3">
-              {procedenciasRanking.map((proc, index) => {
-                const pct = (proc.cantidad / maxProcedencia) * 100;
+              {parroquiasRanking.map((proc, index) => {
+                const pct = (proc.cantidad / maxParroquia) * 100;
                 const color = barColors[index % barColors.length];
                 return (
                   <div
@@ -1038,7 +1038,7 @@ export default function Inicio() {
             </div>
           ) : (
             <div className="text-center py-10 text-gray-400">
-              <p className="font-medium">No hay jefes de familia registrados para mostrar procedencias.</p>
+              <p className="font-medium">No hay jefes de familia registrados para mostrar parroquias.</p>
             </div>
           )}
         </div>
@@ -1083,13 +1083,13 @@ export default function Inicio() {
                   </button>
                   {expandido && (
                     <div className={isMobile ? (index % 2 === 0 ? 'bg-[#FFF8E7] py-4' : 'bg-transparent py-4') : ''}>
-                    <PlanoGeneralViewer
-                      ref={(el) => { planosCanvasRefs.current[index] = el; }}
-                      croquisData={plano.croquis_data || '{}'}
-                      planoNombre={plano.nombre}
-                width={isMobile ? 400 : 1500}
-                      height={700}
-                    />
+                      <PlanoGeneralViewer
+                        ref={(el) => { planosCanvasRefs.current[index] = el; }}
+                        croquisData={plano.croquis_data || '{}'}
+                        planoNombre={plano.nombre}
+                        width={isMobile ? 400 : 1500}
+                        height={700}
+                      />
                     </div>
                   )}
                 </div>
@@ -1164,24 +1164,24 @@ export default function Inicio() {
               });
               const disponiblesModulo = Math.max(0, totalCamasModulo - ocupadasModulo);
               return (
-              <div key={modulo.id} className={isMobile ? (index % 2 === 0 ? 'bg-[#FFF8E7] px-4 py-4' : 'bg-transparent px-4 py-4') : ''}>
-              <CroquisViewer
-                ref={(el) => { croquisCanvasRefs.current[index] = el; }}
-                croquisData={modulo.croquis_data || '{}'}
-                moduloNombre={modulo.nombre}
-                elementNumberOffset={offset}
-                width={1500}
-                height={isMobile ? 1500 : 800}
-                portrait={isMobile}
-                tipoContabilizacion={tipoContabilizacion}
-                occupiedBeds={occupiedBeds}
-                bedOccupants={bedOccupants}
-                literasCount={tiposModulo.literas}
-                individualesCount={tiposModulo.individuales}
-                duplexCount={tiposModulo.duplex}
-                disponiblesModulo={disponiblesModulo}
-              />
-              </div>
+                <div key={modulo.id} className={isMobile ? (index % 2 === 0 ? 'bg-[#FFF8E7] px-4 py-4' : 'bg-transparent px-4 py-4') : ''}>
+                  <CroquisViewer
+                    ref={(el) => { croquisCanvasRefs.current[index] = el; }}
+                    croquisData={modulo.croquis_data || '{}'}
+                    moduloNombre={modulo.nombre}
+                    elementNumberOffset={offset}
+                    width={1500}
+                    height={isMobile ? 1500 : 800}
+                    portrait={isMobile}
+                    tipoContabilizacion={tipoContabilizacion}
+                    occupiedBeds={occupiedBeds}
+                    bedOccupants={bedOccupants}
+                    literasCount={tiposModulo.literas}
+                    individualesCount={tiposModulo.individuales}
+                    duplexCount={tiposModulo.duplex}
+                    disponiblesModulo={disponiblesModulo}
+                  />
+                </div>
               );
             })}
           </div>
@@ -1207,8 +1207,8 @@ export default function Inicio() {
         isOpen={fichaModalOpen}
         onClose={() => { setFichaModalOpen(false); setFichaDesdeDashboard(null); }}
         refugiado={fichaDesdeDashboard}
-        onActualizarFoto={() => {}}
-        onActualizarMascotaFoto={() => {}}
+        onActualizarFoto={() => { }}
+        onActualizarMascotaFoto={() => { }}
         showNavButton
         onNavigateToModule={navigateToRefugiados}
       />

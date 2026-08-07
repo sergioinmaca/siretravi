@@ -118,7 +118,9 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
           fecha_nacimiento: parseDateSafe(r.fecha_nacimiento as string),
           es_jefe_familia: r.es_jefe_familia as boolean,
           nro_cama: (r.nro_cama as string) || '',
-          procedencia: (r.procedencia as string) || '',
+          estado: (r.estado as string) || undefined,
+          municipio: (r.municipio as string) || undefined,
+          parroquia: (r.parroquia as string) || '',
           fecha_ingreso: r.fecha_ingreso ? parseDateSafe(r.fecha_ingreso as string) : undefined,
           direccion_exacta: (r.direccion_exacta as string) || undefined,
           discapacidad: r.discapacidad as boolean,
@@ -190,7 +192,9 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         fecha_nacimiento: parseDateSafe(r.fecha_nacimiento),
         es_jefe_familia: r.es_jefe_familia,
         nro_cama: r.nro_cama || '',
-        procedencia: r.procedencia || '',
+        estado: (r.estado as string) || undefined,
+        municipio: (r.municipio as string) || undefined,
+        parroquia: r.parroquia || '',
         fecha_ingreso: r.fecha_ingreso ? parseDateSafe(r.fecha_ingreso) : undefined,
         direccion_exacta: r.direccion_exacta || undefined,
         discapacidad: r.discapacidad,
@@ -491,7 +495,9 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
           : nuevo.fecha_nacimiento,
         es_jefe_familia: nuevo.es_jefe_familia,
         nro_cama: nuevo.nro_cama || null,
-        procedencia: nuevo.procedencia || null,
+        estado: nuevo.estado || null,
+        municipio: nuevo.municipio || null,
+        parroquia: nuevo.parroquia || null,
         fecha_ingreso: nuevo.fecha_ingreso instanceof Date
           ? toDateInput(nuevo.fecha_ingreso)
           : (nuevo.fecha_ingreso || null),
@@ -552,7 +558,9 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       fecha_nacimiento: parseDateSafe(data.fecha_nacimiento),
       es_jefe_familia: data.es_jefe_familia,
       nro_cama: data.nro_cama || '',
-      procedencia: data.procedencia || '',
+      estado: data.estado || undefined,
+      municipio: data.municipio || undefined,
+      parroquia: data.parroquia || '',
       fecha_ingreso: data.fecha_ingreso ? parseDateSafe(data.fecha_ingreso) : undefined,
       direccion_exacta: data.direccion_exacta || undefined,
       discapacidad: data.discapacidad,
@@ -629,7 +637,9 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
           : actualizado.fecha_nacimiento,
         es_jefe_familia: actualizado.es_jefe_familia,
         nro_cama: actualizado.nro_cama || null,
-        procedencia: actualizado.procedencia || null,
+        estado: actualizado.estado || null,
+        municipio: actualizado.municipio || null,
+        parroquia: actualizado.parroquia || null,
         fecha_ingreso: actualizado.fecha_ingreso instanceof Date
           ? toDateInput(actualizado.fecha_ingreso)
           : (actualizado.fecha_ingreso || null),
@@ -722,7 +732,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
 
     if (searchTerm?.trim()) {
       const term = searchTerm.trim();
-      const textFields = `nombres.ilike.*${term}*,apellidos.ilike.*${term}*,codigo.ilike.*${term}*,nro_cama.ilike.*${term}*,procedencia.ilike.*${term}*`;
+      const textFields = `nombres.ilike.*${term}*,apellidos.ilike.*${term}*,codigo.ilike.*${term}*,nro_cama.ilike.*${term}*,parroquia.ilike.*${term}*`;
       const numTerm = parseInt(term);
       if (!isNaN(numTerm) && String(numTerm) === term) {
         query = query.or(`${textFields},cedula.eq.${numTerm}`);
@@ -786,7 +796,9 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
       fecha_nacimiento: parseDateSafe(r.fecha_nacimiento as string),
       es_jefe_familia: r.es_jefe_familia as boolean,
       nro_cama: (r.nro_cama as string) || '',
-      procedencia: (r.procedencia as string) || '',
+      estado: (r.estado as string) || undefined,
+      municipio: (r.municipio as string) || undefined,
+      parroquia: (r.parroquia as string) || '',
       fecha_ingreso: r.fecha_ingreso ? parseDateSafe(r.fecha_ingreso as string) : undefined,
       direccion_exacta: (r.direccion_exacta as string) || undefined,
       discapacidad: r.discapacidad as boolean,
