@@ -242,10 +242,10 @@ export default function Inicio() {
     return map;
   }, [refugiadosDelCampamento]);
 
-  const jefesPorProcedencia = useMemo(() => {
+  const jefesPorParroquia = useMemo(() => {
     const map = new Map<string, typeof jefesActivos>();
     jefesActivos.forEach(j => {
-      const proc = j.procedencia?.trim() || 'SIN ESPECIFICAR';
+      const proc = j.parroquia?.trim() || 'SIN ESPECIFICAR';
       if (!map.has(proc)) map.set(proc, []);
       map.get(proc)!.push(j);
     });
@@ -257,14 +257,10 @@ export default function Inicio() {
   jefesActivos.forEach(r => {
     const proc = r.parroquia?.trim() || 'SIN ESPECIFICAR';
     parroquiasMap.set(proc, (parroquiasMap.get(proc) || 0) + 1);
-    const proc = r.parroquia?.trim() || 'SIN ESPECIFICAR';
-    parroquiasMap.set(proc, (parroquiasMap.get(proc) || 0) + 1);
   });
-  const parroquiasRanking = Array.from(parroquiasMap.entries())
   const parroquiasRanking = Array.from(parroquiasMap.entries())
     .map(([nombre, cantidad]) => ({ nombre, cantidad }))
     .sort((a, b) => b.cantidad - a.cantidad);
-  const maxParroquia = parroquiasRanking.length > 0 ? parroquiasRanking[0].cantidad : 1;
   const maxParroquia = parroquiasRanking.length > 0 ? parroquiasRanking[0].cantidad : 1;
 
   // Colores vibrantes para las barras
@@ -995,67 +991,57 @@ export default function Inicio() {
         </div>
 
         {/* COLUMNA DERECHA: Ranking de Parroquias */}
-        {/* COLUMNA DERECHA: Ranking de Parroquias */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 max-md:bg-transparent max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3 max-md:max-w-[calc(100vw-1rem)] max-md:-ml-4 max-md:mr-0">
           <div className="flex items-center gap-2 mb-6">
             <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
             <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wider">Ranking de Parroquias</h2>
-            <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wider">Ranking de Parroquias</h2>
           </div>
 
           {parroquiasRanking.length > 0 ? (
-            {
-              parroquiasRanking.length > 0 ? (
-                <div className="space-y-3">
-                  {parroquiasRanking.map((proc, index) => {
-                    const pct = (proc.cantidad / maxParroquia) * 100;
-                    {
-                      parroquiasRanking.map((proc, index) => {
-                        const pct = (proc.cantidad / maxParroquia) * 100;
-                        const color = barColors[index % barColors.length];
-                        return (
-                          <div
-                            key={proc.nombre}
-                            className={`flex items-center gap-3 group relative max-md:flex-col max-md:items-start max-md:gap-1 max-md:overflow-hidden cursor-pointer ${hoveredBar === index ? 'z-50 max-md:overflow-visible' : 'z-0'}`}
-                            onMouseEnter={() => setHoveredBar(index)}
-                            onMouseLeave={() => setHoveredBar(null)}
-                            onClick={() => abrirLista(`Procedencia: ${proc.nombre}`, jefesPorProcedencia.get(proc.nombre) || [])}
-                          >
-                            <p className="text-xs font-semibold text-gray-500 text-right w-36 shrink-0 truncate uppercase max-md:w-full max-md:text-left max-md:whitespace-normal max-md:overflow-visible" title={proc.nombre}>
-                              {proc.nombre}
-                            </p>
-                            <div className="flex-1 h-7 bg-gray-50 rounded-md relative max-md:w-full max-md:flex-none">
-                              <div
-                                className="h-full rounded-md transition-all duration-500 ease-out"
-                                style={{
-                                  width: `${pct}%`,
-                                  backgroundColor: color,
-                                  minWidth: '24px',
-                                  opacity: hoveredBar === null || hoveredBar === index ? 1 : 0.4
-                                }}
-                              />
-                              {hoveredBar === index && (
-                                <div className="absolute left-1/2 -translate-x-1/2 -top-14 bg-white border border-gray-200 shadow-xl rounded-lg px-4 py-2 z-[999] whitespace-nowrap pointer-events-none">
-                                  <p className="text-xs font-bold text-gray-700">{proc.nombre}</p>
-                                  <p className="text-xs text-gray-500">
-                                    {proc.nombre}: <span className="font-bold text-gray-800">{proc.cantidad}</span> familias <span className="text-gray-400 font-medium">({((proc.cantidad / totalJefes) * 100).toFixed(1)}%)</span>
-                                  </p>
-                                  <div className="absolute left-1/2 -translate-x-1/2 top-full w-2 h-2 bg-white border-r border-b border-gray-200 rotate-45 -mt-1"></div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })
-                    }
+            <div className="space-y-3">
+              {parroquiasRanking.map((proc, index) => {
+                const pct = (proc.cantidad / maxParroquia) * 100;
+                const color = barColors[index % barColors.length];
+                return (
+                  <div
+                    key={proc.nombre}
+                    className={`flex items-center gap-3 group relative max-md:flex-col max-md:items-start max-md:gap-1 max-md:overflow-hidden cursor-pointer ${hoveredBar === index ? 'z-50 max-md:overflow-visible' : 'z-0'}`}
+                    onMouseEnter={() => setHoveredBar(index)}
+                    onMouseLeave={() => setHoveredBar(null)}
+                    onClick={() => abrirLista(`Parroquia: ${proc.nombre}`, jefesPorParroquia.get(proc.nombre) || [])}
+                  >
+                    <p className="text-xs font-semibold text-gray-500 text-right w-36 shrink-0 truncate uppercase max-md:w-full max-md:text-left max-md:whitespace-normal max-md:overflow-visible" title={proc.nombre}>
+                      {proc.nombre}
+                    </p>
+                    <div className="flex-1 h-7 bg-gray-50 rounded-md relative max-md:w-full max-md:flex-none">
+                      <div
+                        className="h-full rounded-md transition-all duration-500 ease-out"
+                        style={{
+                          width: `${pct}%`,
+                          backgroundColor: color,
+                          minWidth: '24px',
+                          opacity: hoveredBar === null || hoveredBar === index ? 1 : 0.4
+                        }}
+                      />
+                      {hoveredBar === index && (
+                        <div className="absolute left-1/2 -translate-x-1/2 -top-14 bg-white border border-gray-200 shadow-xl rounded-lg px-4 py-2 z-[999] whitespace-nowrap pointer-events-none">
+                          <p className="text-xs font-bold text-gray-700">{proc.nombre}</p>
+                          <p className="text-xs text-gray-500">
+                            {proc.nombre}: <span className="font-bold text-gray-800">{proc.cantidad}</span> familias <span className="text-gray-400 font-medium">({((proc.cantidad / totalJefes) * 100).toFixed(1)}%)</span>
+                          </p>
+                          <div className="absolute left-1/2 -translate-x-1/2 top-full w-2 h-2 bg-white border-r border-b border-gray-200 rotate-45 -mt-1"></div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-              ) : (
-                <div className="text-center py-10 text-gray-400">
-                  <p className="font-medium">No hay jefes de familia registrados para mostrar parroquias.</p>
-                  <p className="font-medium">No hay jefes de familia registrados para mostrar parroquias.</p>
-                </div>
-              )
-            }
+          ) : (
+            <div className="text-center py-10 text-gray-400">
+              <p className="font-medium">No hay jefes de familia registrados para mostrar parroquias.</p>
+            </div>
+          )}
         </div>
 
       </div>
