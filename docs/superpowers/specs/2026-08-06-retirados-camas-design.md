@@ -1,7 +1,7 @@
 # Spec: Visualización de Retirados y Filtrado de Camas
 
 **Fecha:** 2026-08-06
-**Módulos:** Inicio, Refugiados, Familias, Actas, Reportes
+**Módulos:** Inicio, Refugiados, Actas, Reportes
 
 ## 1. Propósito
 
@@ -12,7 +12,7 @@ Establecer una lógica uniforme para el tratamiento de integrantes con estatus "
 ```
 SI hogar_solidario === "RETIRADO" Y nro_cama no está vacío
   → La cama se considera NO ocupada para todos los cálculos
-  → Visualmente la cama se muestra en gris y tachada
+  → Visualmente la cama se muestra en gris y tachada solo en el módulo de Refugiados
 ```
 
 ## 3. Función utilitaria compartida
@@ -79,22 +79,7 @@ En el `useMemo` interno que construye `occupiedBeds` y `bedOccupants` (~líneas 
 
 Agregar `import { esRetirado } from '../lib/retiredFilter';`
 
-## 7. FichaRefugiadoModal.tsx
-
-- **Línea 1137:** `<FichaField label="Nro de Cama" ... />`. Si `esRetirado(refugiado) && refugiado.nro_cama`, pasar el valor con estilo gris y tachado. Esto puede requerir que `FichaField` acepte una prop `className` para el valor, o aplicar el estilo en el padre.
-
-## 8. Familias y DetalleFamiliaModal
-
-### 8.1 Familias.tsx
-
-- **Línea 142:** `cama: r.nro_cama || '-'`. Al renderizar la celda de cama, aplicar gris + tachado si `esRetirado(r) && r.nro_cama`.
-
-### 8.2 DetalleFamiliaModal.tsx
-
-- **Línea 316 (resumen):** `p.nro_cama || '—'`. Misma lógica de gris + tachado.
-- **Línea 583 (tabla):** `{p.nro_cama || '—'}`. Misma lógica.
-
-## 9. Edge cases
+## 7. Edge cases
 
 | Caso | Comportamiento |
 |---|---|
@@ -102,10 +87,12 @@ Agregar `import { esRetirado } from '../lib/retiredFilter';`
 | Retirado sin `hogar_solidario` definido | `esRetirado()` retorna `false`. Se trata como activo. |
 | Cama con múltiples ocupantes, uno se retira | La cama se libera (el retirado no cuenta en `occupiedBeds`). Si ambos se retiran, queda libre. |
 | Exportaciones PDF/Excel | Heredan el filtro de `occupiedBeds`/`bedOccupants`. Sin cambios adicionales. |
-| `FichaField` no soporta className | Agregar prop opcional `valueClassName?: string` al componente. |
 
-## 10. Componentes que NO cambian
+## 8. Componentes que NO cambian
 
 - **CroquisViewer.tsx:** Recibe `occupiedBeds` y `bedOccupants` ya filtrados como props. Sin cambios.
 - **RegistroModal.tsx:** El formulario de edición/creación sigue mostrando el campo `nroCama` normalmente (el usuario puede editar el valor de cama de un retirado).
+- **FichaRefugiadoModal.tsx:** Muestra `nro_cama` normalmente, sin gris ni tachado.
+- **Familias.tsx:** Muestra `nro_cama` normalmente, sin gris ni tachado.
+- **DetalleFamiliaModal.tsx:** Muestra `nro_cama` normalmente, sin gris ni tachado.
 - **Módulos de Salud y Agenda:** Muestran `nro_cama` informativamente. No se alteran.
