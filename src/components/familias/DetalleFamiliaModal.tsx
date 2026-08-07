@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Users, BedDouble, Calendar, MapPin, Home, FileText, Loader2 } from 'lucide-react';
+import { X, Users, BedDouble, Calendar, MapPin, Home, FileText, Loader2, ExternalLink } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { useCampamento } from '../../context/CampamentoContext';
 import { toDisplayDate } from '../../lib/formatDate';
@@ -10,6 +10,8 @@ interface DetalleFamiliaModalProps {
   isOpen: boolean;
   onClose: () => void;
   familia: Familia | null;
+  showNavButton?: boolean;
+  onNavigateToModule?: () => void;
 }
 
 const loadImageAsDataUrl = (
@@ -44,7 +46,7 @@ const loadImageAsDataUrl = (
   });
 };
 
-export default function DetalleFamiliaModal({ isOpen, onClose, familia }: DetalleFamiliaModalProps) {
+export default function DetalleFamiliaModal({ isOpen, onClose, familia, showNavButton, onNavigateToModule }: DetalleFamiliaModalProps) {
   const { refugiados = [] } = useCampamento();
   const [isExporting, setIsExporting] = useState(false);
 
@@ -646,6 +648,15 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
         {/* Acciones — Mobile */}
         <div className="bg-white rounded-2xl shadow-sm md:hidden">
           <div className="p-4 flex items-center justify-end gap-3">
+            {showNavButton && onNavigateToModule && (
+              <button
+                onClick={onNavigateToModule}
+                className="flex items-center gap-2 bg-caracas-blue hover:bg-blue-800 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
+              >
+                <ExternalLink size={16} />
+                Ver en Familias
+              </button>
+            )}
             <button
               onClick={handleExportPDF}
               disabled={isExporting}
@@ -664,6 +675,15 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
 
         {/* Footer — Desktop */}
         <div className="hidden md:flex px-8 py-5 border-t border-gray-100 bg-gray-50 justify-end gap-3 shrink-0">
+          {showNavButton && onNavigateToModule && (
+            <button
+              onClick={onNavigateToModule}
+              className="flex items-center justify-center gap-2 bg-caracas-blue hover:bg-blue-800 text-white px-6 py-2.5 rounded-xl font-medium transition-all shadow-lg"
+            >
+              <ExternalLink size={18} />
+              Ver en el Módulo de Familias
+            </button>
+          )}
           <button
             onClick={handleExportPDF}
             disabled={isExporting}

@@ -1,4 +1,5 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Users, Search, ChevronRight, ShieldOff, Trash2, FileDown, Loader2 } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
@@ -30,6 +31,27 @@ export default function Familias() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [exportandoPDF, setExportandoPDF] = useState(false);
   const [exportandoXLSX, setExportandoXLSX] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Leer URL params al montar
+  useEffect(() => {
+    const buscar = searchParams.get('buscar');
+    const verFamilia = searchParams.get('verFamilia');
+    if (buscar || verFamilia) {
+      if (buscar) {
+        setSearchTerm(buscar);
+      }
+      if (verFamilia) {
+        const fam = familias.find(f => f.id === verFamilia && f.campamento_id === campamentoSeleccionado?.id);
+        if (fam) {
+          setSelectedFamilia(fam);
+          setIsModalOpen(true);
+        }
+      }
+      setSearchParams({}, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const familiasDelCampamento = useMemo(() => {
     if (!campamentoSeleccionado) return [];

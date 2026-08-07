@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Search, UserPlus, FileText, Pencil, Trash2, ShieldOff, Eye, FileDown, Loader2 } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
@@ -48,6 +49,8 @@ export default function Refugiados() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const REGISTROS_POR_PAGINA = 20;
   const isMobile = useIsMobile();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [fichaPorId, setFichaPorId] = useState<string | null>(null);
 
   const getEstatusLabel = (estatus: string) => estatus === 'HOGAR SOLIDARIO' ? 'H.S' : estatus;
 
@@ -104,6 +107,35 @@ export default function Refugiados() {
     setSortColumn(null);
     setSortDirection('asc');
   }, [campamentoSeleccionado?.id]);
+
+  // Leer URL params al montar
+  useEffect(() => {
+    const buscar = searchParams.get('buscar');
+    const verFicha = searchParams.get('verFicha');
+    if (buscar || verFicha) {
+      if (buscar) {
+        setSearchInput(buscar);
+        setDebouncedSearch(buscar);
+      }
+      if (verFicha) {
+        setFichaPorId(verFicha);
+      }
+      setSearchParams({}, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Abrir ficha por ID cuando los datos estén disponibles
+  useEffect(() => {
+    if (fichaPorId && paginados.length > 0) {
+      const ref = paginados.find(r => r.id === fichaPorId);
+      if (ref) {
+        setFichaRefugiado(ref);
+        setIsFichaOpen(true);
+        setFichaPorId(null);
+      }
+    }
+  }, [paginados, fichaPorId]);
 
   // Filas a mostrar con jerarquía resuelta
   const displayedRows = useMemo(() => {

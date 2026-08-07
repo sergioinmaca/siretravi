@@ -3,7 +3,7 @@ import {
   X, User, Users, MapPin, Accessibility, Shirt,
   Calendar, Phone, Briefcase, GraduationCap, Heart,
   PawPrint, AlertTriangle, Baby, Stethoscope, FileText, Loader2, Camera,
-  Save, Trash2, ChevronLeft, ChevronRight, ChevronDown, Activity, Gift, HeartHandshake,
+  Save, Trash2, ChevronLeft, ChevronRight, ChevronDown, Activity, Gift, HeartHandshake, ExternalLink,
 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { useFotoUpload } from '../../hooks/useFotoUpload';
@@ -23,9 +23,11 @@ interface FichaRefugiadoModalProps {
   refugiado: Refugiado | null;
   onActualizarFoto: (foto_url: string | null) => void;
   onActualizarMascotaFoto: (mascota_foto_url: string | null) => void;
+  showNavButton?: boolean;
+  onNavigateToModule?: () => void;
 }
 
-export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActualizarFoto, onActualizarMascotaFoto }: FichaRefugiadoModalProps) {
+export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActualizarFoto, onActualizarMascotaFoto, showNavButton, onNavigateToModule }: FichaRefugiadoModalProps) {
   const { familias = [], campamentos = [], actualizarFotoRefugiado } = useCampamento();
   const [isExporting, setIsExporting] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -1406,7 +1408,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
             </div>
           </div>
 
-          {/* Acciones — Mobile */}
+           {/* Acciones — Mobile */}
           <div className="bg-white rounded-2xl shadow-sm md:hidden">
             <div className="p-4 flex items-center justify-end gap-3">
               {esMaster && pagina === 1 && (
@@ -1417,6 +1419,15 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
                 >
                   {isSaving ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
                   {isSaving ? 'Guardando...' : 'Guardar'}
+                </button>
+              )}
+              {showNavButton && onNavigateToModule && (
+                <button
+                  onClick={onNavigateToModule}
+                  className="flex items-center gap-2 bg-caracas-blue hover:bg-blue-800 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
+                >
+                  <ExternalLink size={16} />
+                  Ver en Integrantes
                 </button>
               )}
               <button
@@ -1477,6 +1488,15 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
                     <Save size={18} />
                   )}
                   {isSaving ? 'Guardando...' : 'Guardar'}
+                </button>
+              )}
+              {showNavButton && onNavigateToModule && (
+                <button
+                  onClick={onNavigateToModule}
+                  className="flex items-center justify-center gap-2 bg-caracas-blue hover:bg-blue-800 text-white px-6 py-2.5 rounded-xl font-medium transition-all shadow-lg"
+                >
+                  <ExternalLink size={18} />
+                  Ver en el Módulo de Integrantes
                 </button>
               )}
               <button

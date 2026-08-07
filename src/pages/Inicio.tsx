@@ -1,17 +1,29 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Users, BedDouble, Tent, Home, Baby, Heart, Sparkles, ShieldOff, FileDown, Loader2, Milk, UserCheck, HeartPulse, Accessibility, AlertTriangle } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
 import { useIsMobile } from '../hooks/useIsMobile';
 import CroquisViewer, { countElements, contarTiposDesdeCroquis } from '../components/constructor/CroquisViewer';
 import PlanoGeneralViewer from '../components/constructor/PlanoGeneralViewer';
+import ListaIntegrantesModal from '../components/ui/ListaIntegrantesModal';
+import FichaRefugiadoModal from '../components/refugiados/FichaRefugiadoModal';
 import jsPDF from 'jspdf';
 import { filtrarActivos } from '../lib/retiredFilter';
 
 export default function Inicio() {
-  const { campamentoSeleccionado, refugiados = [] } = useCampamento();
+  const { campamentoSeleccionado, refugiados = [], familias = [] } = useCampamento();
   const { tienePermisoPorCampamento } = useAuth();
   const isMobile = useIsMobile();
+  const navigate = useNavigate();
+
+  // Modal state para cards/charts clickeables
+  const [listaModalOpen, setListaModalOpen] = useState(false);
+  const [listaTitulo, setListaTitulo] = useState('');
+  const [listaDatos, setListaDatos] = useState<any[]>([]);
+  const [listaFamilias, setListaFamilias] = useState<any[]>([]);
+  const [fichaDesdeDashboard, setFichaDesdeDashboard] = useState<any>(null);
+  const [fichaModalOpen, setFichaModalOpen] = useState(false);
 
   const tieneAcceso = campamentoSeleccionado
     ? tienePermisoPorCampamento('Inicio', campamentoSeleccionado.id, 'Ver')
@@ -103,8 +115,10 @@ export default function Inicio() {
   const noLactantesH = noLactantes.filter(r => r.genero === true).length;
   const noLactantesM = noLactantes.filter(r => r.genero === false).length;
 
-  const embarazadas = refugiadosActivos.filter(r => r.genero === false && r.embarazo === true).length;
-  const discapacitados = refugiadosActivos.filter(r => r.discapacidad === true).length;
+  const embarazadasArray = refugiadosActivos.filter(r => r.genero === false && r.embarazo === true);
+  const totalEmbarazadas = embarazadasArray.length;
+  const discapacitadosArray = refugiadosActivos.filter(r => r.discapacidad === true);
+  const totalDiscapacitados = discapacitadosArray.length;
 
   const adultos = refugiadosConEdad.filter(r =>
     (r.genero === true && r.edad >= 18 && r.edad < 60) ||
@@ -144,6 +158,25 @@ export default function Inicio() {
   // SVG dona – constantes
   const DONA_RADIUS = 70;
   const DONA_CIRCUMFERENCE = 2 * Math.PI * DONA_RADIUS;
+
+  const donutSlicePath = (pct: number, offsetIn: number): string => {
+    const dashLen = pct * DONA_CIRCUMFERENCE;
+    const angleStart = (offsetIn / DONA_CIRCUMFERENCE) * 2 * Math.PI;
+    const angleEnd = ((offsetIn + dashLen) / DONA_CIRCUMFERENCE) * 2 * Math.PI;
+    const cx = 100, cy = 100;
+    const rOuter = DONA_RADIUS + 14;
+    const rInner = DONA_RADIUS - 14;
+    const x1o = cx + rOuter * Math.cos(angleStart);
+    const y1o = cy + rOuter * Math.sin(angleStart);
+    const x2o = cx + rOuter * Math.cos(angleEnd);
+    const y2o = cy + rOuter * Math.sin(angleEnd);
+    const x2i = cx + rInner * Math.cos(angleEnd);
+    const y2i = cy + rInner * Math.sin(angleEnd);
+    const x1i = cx + rInner * Math.cos(angleStart);
+    const y1i = cy + rInner * Math.sin(angleStart);
+    const largeArc = pct > 0.5 ? 1 : 0;
+    return `M ${x1o} ${y1o} A ${rOuter} ${rOuter} 0 ${largeArc} 1 ${x2o} ${y2o} L ${x2i} ${y2i} A ${rInner} ${rInner} 0 ${largeArc} 0 ${x1i} ${y1i} Z`;
+  };
 
   const donaSectores = useMemo(() => {
     let offset = 0;
@@ -188,6 +221,37 @@ export default function Inicio() {
     });
   }, [estatusData, totalIntegrantes]);
 
+  // Agrupaciones para charts clickeables
+  const jefesPorTenencia = useMemo(() => {
+    const map = new Map<string, typeof refugiadosActivos>();
+    jefesActivos.forEach(j => {
+      const t = j.tenencia_vivienda?.trim() || 'Sin especificar';
+      if (!map.has(t)) map.set(t, []);
+      map.get(t)!.push(j);
+    });
+    return map;
+  }, [jefesActivos]);
+
+  const refugiadosPorEstatus = useMemo(() => {
+    const map = new Map<string, typeof refugiadosDelCampamento>();
+    refugiadosDelCampamento.forEach(r => {
+      const s = ((r.hogar_solidario || '').trim().toUpperCase() || 'PRESENTE');
+      if (!map.has(s)) map.set(s, []);
+      map.get(s)!.push(r);
+    });
+    return map;
+  }, [refugiadosDelCampamento]);
+
+  const jefesPorProcedencia = useMemo(() => {
+    const map = new Map<string, typeof jefesActivos>();
+    jefesActivos.forEach(j => {
+      const proc = j.procedencia?.trim() || 'SIN ESPECIFICAR';
+      if (!map.has(proc)) map.set(proc, []);
+      map.get(proc)!.push(j);
+    });
+    return map;
+  }, [jefesActivos]);
+
   // Calcular ranking de procedencias (solo jefes de familia)
   const procedenciasMap = new Map<string, number>();
   jefesActivos.forEach(r => {
@@ -208,6 +272,8 @@ export default function Inicio() {
 
   // Estado para tooltip
   const [hoveredBar, setHoveredBar] = useState<number | null>(null);
+  const [hoveredTenenciaSector, setHoveredTenenciaSector] = useState<string | null>(null);
+  const [hoveredEstatusSector, setHoveredEstatusSector] = useState<string | null>(null);
 
   // Calcular offsets de numeracion para encadenar numeros entre modulos
   const modulos = campamentoSeleccionado?.modulos || [];
@@ -551,6 +617,27 @@ export default function Inicio() {
     }
   }, [campamentoSeleccionado, planos]);
 
+  // ── Helpers para cards/charts clickeables ──────────────────────────────
+  const abrirLista = (titulo: string, datos: any[]) => {
+    if (datos.length === 0) return;
+    setListaTitulo(titulo);
+    setListaDatos(datos);
+    setListaFamilias(familias);
+    setListaModalOpen(true);
+  };
+
+  const abrirFichaDesdeLista = (refugiado: any) => {
+    setFichaDesdeDashboard(refugiado);
+    setFichaModalOpen(true);
+  };
+
+  const navigateToRefugiados = () => {
+    setFichaModalOpen(false);
+    setFichaDesdeDashboard(null);
+    const nombre = `${fichaDesdeDashboard!.apellidos} ${fichaDesdeDashboard!.nombres}`;
+    navigate(`/refugiados?buscar=${encodeURIComponent(nombre)}&verFicha=${fichaDesdeDashboard!.id}`);
+  };
+
   return (
     <div className="space-y-6">
       <div className="mb-8">
@@ -636,14 +723,16 @@ export default function Inicio() {
       {/* Embarazadas y Discapacitados */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 md:gap-6 max-md:-mx-4">
         {/* Embarazadas */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-pink-500 flex items-center gap-4 hover:shadow-md transition-shadow max-md:bg-pink-500 max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:border-l-0 max-md:px-4 max-md:py-3 max-md:gap-2">
+        <div
+          onClick={() => abrirLista('Embarazadas', embarazadasArray)}
+          className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-pink-500 flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer max-md:bg-pink-500 max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:border-l-0 max-md:px-4 max-md:py-3 max-md:gap-2">
           <HeartPulse size={isMobile ? 18 : 32} className="max-md:text-white shrink-0 md:hidden" />
           <div className="max-md:hidden p-4 bg-pink-500/10 rounded-xl text-pink-500 shrink-0">
             <HeartPulse size={32} />
           </div>
           <div className="overflow-hidden">
             <p className="text-sm font-medium text-black truncate max-md:text-white">Embarazadas</p>
-            <p className="text-3xl font-bold text-gray-900 max-md:text-white max-md:text-xl">{embarazadas}</p>
+            <p className="text-3xl font-bold text-gray-900 max-md:text-white max-md:text-xl">{totalEmbarazadas}</p>
             <p className="text-xs text-gray-400 mt-1 truncate max-md:text-base max-md:text-yellow-300">
               Mujeres en estado de gestación
             </p>
@@ -651,14 +740,16 @@ export default function Inicio() {
         </div>
 
         {/* Discapacitados */}
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-purple-500 flex items-center gap-4 hover:shadow-md transition-shadow max-md:bg-purple-500 max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:border-l-0 max-md:px-4 max-md:py-3 max-md:gap-2">
+        <div
+          onClick={() => abrirLista('Discapacitados', discapacitadosArray)}
+          className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-purple-500 flex items-center gap-4 hover:shadow-md transition-shadow cursor-pointer max-md:bg-purple-500 max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:border-l-0 max-md:px-4 max-md:py-3 max-md:gap-2">
           <Accessibility size={isMobile ? 18 : 32} className="max-md:text-white shrink-0 md:hidden" />
           <div className="max-md:hidden p-4 bg-purple-500/10 rounded-xl text-purple-500 shrink-0">
             <Accessibility size={32} />
           </div>
           <div className="overflow-hidden">
             <p className="text-sm font-medium text-black truncate max-md:text-white">Discapacitados</p>
-            <p className="text-3xl font-bold text-gray-900 max-md:text-white max-md:text-xl">{discapacitados}</p>
+            <p className="text-3xl font-bold text-gray-900 max-md:text-white max-md:text-xl">{totalDiscapacitados}</p>
             <p className="text-xs text-gray-400 mt-1 truncate max-md:text-base max-md:text-yellow-300">
               Personas con condición especial
             </p>
@@ -671,7 +762,7 @@ export default function Inicio() {
         {/* Cards de Niñez */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-y-2 md:gap-6 max-md:-mx-4">
           {/* Niños (0-11) */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-orange-400 hover:shadow-md transition-shadow max-md:bg-[#e76e1c] max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:border-l-0 max-md:px-4 max-md:py-3">
+          <div onClick={() => abrirLista('Niños (0-11 años)', ninos)} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-orange-400 hover:shadow-md transition-shadow cursor-pointer max-md:bg-[#e76e1c] max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:border-l-0 max-md:px-4 max-md:py-3">
             <div className="flex items-center gap-3 mb-4 max-md:gap-2 max-md:mb-0">
               <Baby size={isMobile ? 18 : 28} className="max-md:text-white shrink-0 md:hidden" />
               <div className="max-md:hidden p-3 bg-orange-100 rounded-xl text-orange-500">
@@ -688,7 +779,7 @@ export default function Inicio() {
           </div>
 
           {/* Niños Lactantes (0-3) */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-orange-400 hover:shadow-md transition-shadow max-md:bg-[#e98b3f] max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:border-l-0 max-md:px-4 max-md:py-3">
+          <div onClick={() => abrirLista('Niños Lactantes (0-2 años)', lactantes)} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-orange-400 hover:shadow-md transition-shadow cursor-pointer max-md:bg-[#e98b3f] max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:border-l-0 max-md:px-4 max-md:py-3">
             <div className="flex items-center gap-3 mb-4 max-md:gap-2 max-md:mb-0">
               <Milk size={isMobile ? 18 : 28} className="max-md:text-white shrink-0 md:hidden" />
               <div className="max-md:hidden p-3 bg-sky-100 rounded-xl text-sky-500">
@@ -705,7 +796,7 @@ export default function Inicio() {
           </div>
 
           {/* No Lactantes (4-11) */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-orange-500 hover:shadow-md transition-shadow max-md:bg-[#ce8043] max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:border-l-0 max-md:px-4 max-md:py-3">
+          <div onClick={() => abrirLista('No Lactantes (3-11 años)', noLactantes)} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-orange-500 hover:shadow-md transition-shadow cursor-pointer max-md:bg-[#ce8043] max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:border-l-0 max-md:px-4 max-md:py-3">
             <div className="flex items-center gap-3 mb-4 max-md:gap-2 max-md:mb-0">
               <Baby size={isMobile ? 18 : 28} className="max-md:text-white shrink-0 md:hidden" />
               <div className="max-md:hidden p-3 bg-amber-100 rounded-xl text-amber-600">
@@ -725,7 +816,7 @@ export default function Inicio() {
         {/* Adolescentes, Adultos, Adulto Mayor */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-y-2 md:gap-6 max-md:-mx-4">
           {/* Adolescentes (12-17) */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-amber-500 hover:shadow-md transition-shadow max-md:bg-amber-500 max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:border-l-0 max-md:px-4 max-md:py-3">
+          <div onClick={() => abrirLista('Adolescentes (12-17 años)', adolescentes)} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-amber-500 hover:shadow-md transition-shadow cursor-pointer max-md:bg-amber-500 max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:border-l-0 max-md:px-4 max-md:py-3">
             <div className="flex items-center gap-3 mb-4 max-md:gap-2 max-md:mb-0">
               <Sparkles size={isMobile ? 18 : 28} className="max-md:text-white shrink-0 md:hidden" />
               <div className="max-md:hidden p-3 bg-yellow-100 rounded-xl text-yellow-600">
@@ -742,7 +833,7 @@ export default function Inicio() {
           </div>
 
           {/* Adultos (18-59 H / 18-54 M) */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-emerald-400 hover:shadow-md transition-shadow max-md:bg-[#48ba8d] max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:border-l-0 max-md:px-4 max-md:py-3">
+          <div onClick={() => abrirLista('Adultos (18-59 H / 18-54 M)', adultos)} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-emerald-400 hover:shadow-md transition-shadow cursor-pointer max-md:bg-[#48ba8d] max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:border-l-0 max-md:px-4 max-md:py-3">
             <div className="flex items-center gap-3 mb-4 max-md:gap-2 max-md:mb-0">
               <UserCheck size={isMobile ? 18 : 28} className="max-md:text-white shrink-0 md:hidden" />
               <div className="max-md:hidden p-3 bg-emerald-100 rounded-xl text-emerald-600">
@@ -759,7 +850,7 @@ export default function Inicio() {
           </div>
 
           {/* Adulto Mayor */}
-          <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-rose-400 hover:shadow-md transition-shadow max-md:bg-[#d57177] max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:border-l-0 max-md:px-4 max-md:py-3">
+          <div onClick={() => abrirLista('Adulto Mayor (H ≥60 / M ≥55)', adultoMayor)} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-l-4 border-l-rose-400 hover:shadow-md transition-shadow cursor-pointer max-md:bg-[#d57177] max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:border-l-0 max-md:px-4 max-md:py-3">
             <div className="flex items-center gap-3 mb-4 max-md:gap-2 max-md:mb-0">
               <Heart size={isMobile ? 18 : 28} className="max-md:text-white shrink-0 md:hidden" />
               <div className="max-md:hidden p-3 bg-rose-100 rounded-xl text-rose-500">
@@ -793,22 +884,22 @@ export default function Inicio() {
             {tenenciaData.length > 0 ? (
               <div className="flex items-center gap-6">
                 <div className="relative w-40 h-40 shrink-0">
-                  <svg viewBox="0 0 200 200" className="w-full h-full -rotate-90">
-                    <circle cx="100" cy="100" r={DONA_RADIUS} fill="none" stroke="#F3F4F6" strokeWidth="28" />
+                  <svg viewBox="0 0 200 200" className="w-full h-full -rotate-90" onMouseLeave={() => setHoveredTenenciaSector(null)}>
+                    <circle cx="100" cy="100" r={DONA_RADIUS + 14} fill="none" stroke="#F3F4F6" strokeWidth="28" />
+                    <circle cx="100" cy="100" r={DONA_RADIUS - 14} fill="#fff" />
                     {donaSectores.map(s => (
-                      <circle
+                      <path
                         key={s.nombre}
-                        cx="100" cy="100" r={DONA_RADIUS}
-                        fill="none"
-                        stroke={tenenciaColores[s.nombre] || '#9CA3AF'}
-                        strokeWidth="28"
-                        strokeDasharray={`${s.dash} ${DONA_CIRCUMFERENCE - s.dash}`}
-                        strokeDashoffset={-s.offset}
-                        strokeLinecap="butt"
+                        d={donutSlicePath(s.pct, s.offset)}
+                        fill={tenenciaColores[s.nombre] || '#9CA3AF'}
+                        opacity={hoveredTenenciaSector === null || hoveredTenenciaSector === s.nombre ? 1 : 0.4}
+                        style={{ cursor: 'pointer', transition: 'opacity 0.2s ease' }}
+                        onMouseEnter={() => setHoveredTenenciaSector(s.nombre)}
+                        onClick={() => abrirLista(`Tenencia: ${s.nombre}`, jefesPorTenencia.get(s.nombre) || [])}
                       />
                     ))}
                   </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ pointerEvents: 'none' }}>
                     <span className="text-2xl font-bold text-gray-800">{totalJefes}</span>
                     <span className="text-xs text-black">Familias</span>
                   </div>
@@ -816,7 +907,10 @@ export default function Inicio() {
                 <div className="flex-1 space-y-2.5 min-w-0">
                   {tenenciaData.map(c => (
                     <div key={c.nombre} className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2 min-w-0">
+                      <div
+                        className="flex items-center gap-2 min-w-0 cursor-pointer hover:opacity-70 transition-opacity"
+                        onClick={() => abrirLista(`Tenencia: ${c.nombre}`, jefesPorTenencia.get(c.nombre) || [])}
+                      >
                         <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: tenenciaColores[c.nombre] || '#9CA3AF' }} />
                         <span className="text-gray-600 truncate">{c.nombre}</span>
                       </div>
@@ -844,30 +938,38 @@ export default function Inicio() {
             {estatusData.length > 0 ? (
               <div className="flex items-center gap-6">
                 <div className="relative w-40 h-40 shrink-0">
-                  <svg viewBox="0 0 200 200" className="w-full h-full -rotate-90">
-                    <circle cx="100" cy="100" r={DONA_RADIUS} fill="none" stroke="#F3F4F6" strokeWidth="28" />
-                    {estatusSectores.map(s => (
-                      <circle
-                        key={s.nombre}
-                        cx="100" cy="100" r={DONA_RADIUS}
-                        fill="none"
-                        stroke={estatusColores[s.nombre] || '#9CA3AF'}
-                        strokeWidth="28"
-                        strokeDasharray={`${s.dash} ${DONA_CIRCUMFERENCE - s.dash}`}
-                        strokeDashoffset={-s.offset}
-                        strokeLinecap="butt"
-                      />
-                    ))}
+                  <svg viewBox="0 0 200 200" className="w-full h-full -rotate-90" onMouseLeave={() => setHoveredEstatusSector(null)}>
+                    <circle cx="100" cy="100" r={DONA_RADIUS + 14} fill="none" stroke="#F3F4F6" strokeWidth="28" />
+                    <circle cx="100" cy="100" r={DONA_RADIUS - 14} fill="#fff" />
+                    {estatusSectores.map(s => {
+                      const esClickleable = s.nombre === 'HOGAR SOLIDARIO' || s.nombre === 'RETIRADO';
+                      return (
+                        <path
+                          key={s.nombre}
+                          d={donutSlicePath(s.pct, s.offset)}
+                          fill={estatusColores[s.nombre] || '#9CA3AF'}
+                          opacity={hoveredEstatusSector === null || hoveredEstatusSector === s.nombre ? 1 : 0.4}
+                          style={{ cursor: esClickleable ? 'pointer' : 'default', transition: 'opacity 0.2s ease' }}
+                          onMouseEnter={esClickleable ? () => setHoveredEstatusSector(s.nombre) : undefined}
+                          onClick={esClickleable ? () => abrirLista(`Estatus: ${s.nombre.charAt(0) + s.nombre.slice(1).toLowerCase()}`, refugiadosPorEstatus.get(s.nombre) || []) : undefined}
+                        />
+                      );
+                    })}
                   </svg>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ pointerEvents: 'none' }}>
                     <span className="text-2xl font-bold text-gray-800">{totalIntegrantes}</span>
                     <span className="text-[11px] text-black text-center leading-tight -mt-1">Integrantes<br/>Registrados</span>
                   </div>
                 </div>
                 <div className="flex-1 space-y-2.5 min-w-0">
-                  {estatusData.map(c => (
+                  {estatusData.map(c => {
+                    const esClickleable = c.nombre === 'HOGAR SOLIDARIO' || c.nombre === 'RETIRADO';
+                    return (
                     <div key={c.nombre} className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2 min-w-0">
+                      <div
+                        className={`flex items-center gap-2 min-w-0 ${esClickleable ? 'cursor-pointer hover:opacity-70 transition-opacity' : ''}`}
+                        onClick={esClickleable ? () => abrirLista(`Estatus: ${c.nombre.charAt(0) + c.nombre.slice(1).toLowerCase()}`, refugiadosPorEstatus.get(c.nombre) || []) : undefined}
+                      >
                         <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: estatusColores[c.nombre] || '#9CA3AF' }} />
                         <span className="text-gray-600 truncate capitalize">{c.nombre.charAt(0) + c.nombre.slice(1).toLowerCase()}</span>
                       </div>
@@ -875,7 +977,8 @@ export default function Inicio() {
                         {c.cantidad} <span className="text-gray-400 font-normal">({((c.cantidad / totalIntegrantes) * 100).toFixed(1)}%)</span>
                       </span>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             ) : (
@@ -902,9 +1005,10 @@ export default function Inicio() {
                 return (
                   <div
                     key={proc.nombre}
-                    className={`flex items-center gap-3 group relative max-md:flex-col max-md:items-start max-md:gap-1 max-md:overflow-hidden ${hoveredBar === index ? 'z-50 max-md:overflow-visible' : 'z-0'}`}
+                    className={`flex items-center gap-3 group relative max-md:flex-col max-md:items-start max-md:gap-1 max-md:overflow-hidden cursor-pointer ${hoveredBar === index ? 'z-50 max-md:overflow-visible' : 'z-0'}`}
                     onMouseEnter={() => setHoveredBar(index)}
                     onMouseLeave={() => setHoveredBar(null)}
+                    onClick={() => abrirLista(`Procedencia: ${proc.nombre}`, jefesPorProcedencia.get(proc.nombre) || [])}
                   >
                     <p className="text-xs font-semibold text-gray-500 text-right w-36 shrink-0 truncate uppercase max-md:w-full max-md:text-left max-md:whitespace-normal max-md:overflow-visible" title={proc.nombre}>
                       {proc.nombre}
@@ -1090,6 +1194,26 @@ export default function Inicio() {
           </div>
         )}
       </div>
+
+      <ListaIntegrantesModal
+        key={listaTitulo}
+        isOpen={listaModalOpen}
+        onClose={() => setListaModalOpen(false)}
+        titulo={listaTitulo}
+        datos={listaDatos}
+        familias={listaFamilias}
+        onVerDetalle={abrirFichaDesdeLista}
+      />
+
+      <FichaRefugiadoModal
+        isOpen={fichaModalOpen}
+        onClose={() => { setFichaModalOpen(false); setFichaDesdeDashboard(null); }}
+        refugiado={fichaDesdeDashboard}
+        onActualizarFoto={() => {}}
+        onActualizarMascotaFoto={() => {}}
+        showNavButton
+        onNavigateToModule={navigateToRefugiados}
+      />
     </div>
   );
 }
