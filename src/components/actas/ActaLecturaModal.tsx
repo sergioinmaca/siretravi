@@ -166,8 +166,8 @@ export default function ActaLecturaModal({ isOpen, onClose, acta, refugiado }: A
                 </div>
                 <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-xs font-medium text-gray-500 mb-1">Procedencia</label>
-                    <p className="font-semibold text-gray-800 bg-gray-100 px-4 py-2.5 rounded-xl">{refugiado.procedencia || 'No registrada'}</p>
+                    <label className="block text-xs font-medium text-gray-500 mb-1">Parroquia</label>
+                    <p className="font-semibold text-gray-800 bg-gray-100 px-4 py-2.5 rounded-xl">{refugiado.parroquia || 'No registrada'}</p>
                   </div>
                   <div>
                     <label className="block text-xs font-medium text-gray-500 mb-1">Fecha de Ingreso</label>

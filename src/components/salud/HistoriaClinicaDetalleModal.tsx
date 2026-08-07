@@ -323,7 +323,7 @@ export default function HistoriaClinicaDetalleModal({
         'Fecha de Ingreso:', refugiado.fecha_ingreso ? toDisplayDate(refugiado.fecha_ingreso) : '—',
       );
 
-      drawFieldFull('Procedencia:', refugiado.procedencia || '—');
+      drawFieldFull('Parroquia:', refugiado.parroquia || '—');
       drawFieldFull('Dirección Exacta:', refugiado.direccion_exacta || '—');
 
       // ── 4. INFORMACIÓN ADICIONAL MÉDICA ──
@@ -517,7 +517,7 @@ export default function HistoriaClinicaDetalleModal({
             </div>
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
               <FichaField label="Nro de Cama" value={refugiado?.nro_cama || '—'} />
-              <FichaField label="Procedencia" value={refugiado?.procedencia || '—'} />
+              <FichaField label="Parroquia" value={refugiado?.parroquia || '—'} />
               <FichaField label="Dirección Exacta" value={refugiado?.direccion_exacta || '—'} />
               <FichaField
                 label="Fecha de Ingreso"

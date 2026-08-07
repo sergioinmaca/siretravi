@@ -39,9 +39,14 @@ export default function Reportes() {
     return `${String(now.getDate()).padStart(2, '0')}-${String(now.getMonth() + 1).padStart(2, '0')}-${now.getFullYear()}`;
   }, []);
 
-  // Clasificación de procedencias (La Guaira vs Caracas)
-  const getProcedenciaEstado = (procedencia: string): 'LA GUAIRA' | 'CARACAS' => {
-    const clean = (procedencia || '').toUpperCase().trim();
+  const getProcedenciaEstado = (estado: string | undefined, parroquia: string): 'LA GUAIRA' | 'CARACAS' | 'MIRANDA' => {
+    if (estado) {
+      const est = estado.toUpperCase().trim();
+      if (est === 'LA GUAIRA') return 'LA GUAIRA';
+      if (est === 'DISTRITO CAPITAL') return 'CARACAS';
+      if (est === 'MIRANDA') return 'MIRANDA';
+    }
+    const clean = (parroquia || '').toUpperCase().trim();
     const keywordsLaGuaira = [
       'LA GUAIRA', 'GUAIRA', 'VARGAS', 'MAIQUETIA', 'MAIQUETÍA', 'MACUTO',
       'CARABALLEDA', 'NAIGUATA', 'NAIGUATÁ', 'CATIA LA MAR', 'CARAYACA', 'CHUSPA', 'CARUAO'
@@ -162,23 +167,22 @@ export default function Reportes() {
     // Contar familias por procedencia (basándonos en la procedencia del jefe de familia o el primer miembro)
     let familiasLaGuaira = 0;
     let familiasCaracas = 0;
+    let familiasMiranda = 0;
 
     familiasDelCampamento.forEach(fam => {
       const miembros = refugiadosDelCampamento.filter(r => r.familia_id === fam.id);
       if (miembros.length > 0) {
         const jefe = miembros.find(m => m.es_jefe_familia) || miembros[0];
-        const procedencia = jefe?.procedencia || '';
-        if (getProcedenciaEstado(procedencia) === 'LA GUAIRA') {
-          familiasLaGuaira++;
-        } else {
-          familiasCaracas++;
-        }
+        const proc = getProcedenciaEstado(jefe?.estado, jefe?.parroquia || '');
+        if (proc === 'LA GUAIRA') familiasLaGuaira++;
+        else if (proc === 'MIRANDA') familiasMiranda++;
+        else familiasCaracas++;
       } else {
-        familiasCaracas++; // default
+        familiasCaracas++;
       }
     });
 
-    const totalFamilias = familiasLaGuaira + familiasCaracas;
+    const totalFamilias = familiasLaGuaira + familiasCaracas + familiasMiranda;
 
     return {
       totalRefugiados,
@@ -192,6 +196,7 @@ export default function Reportes() {
       discapacitados,
       familiasLaGuaira,
       familiasCaracas,
+      familiasMiranda,
       totalFamilias,
       nna_0_2,
       nna_3_6,
@@ -586,6 +591,7 @@ export default function Reportes() {
         telefono: string;
         procedenciaCaracas: string;
         procedenciaLaGuaira: string;
+        procedenciaMiranda: string;
         observacion: string;
         cama?: string;
         modulo?: string;
@@ -596,8 +602,10 @@ export default function Reportes() {
       let nucleoNum = 0;
       let totalFamiliasCaracas = 0;
       let totalFamiliasLaGuaira = 0;
+      let totalFamiliasMiranda = 0;
       let totalPersonasCaracas = 0;
       let totalPersonasLaGuaira = 0;
+      let totalPersonasMiranda = 0;
 
       const familiasSorted = [...familiasDelCampamento].sort((a, b) =>
         a.nombre.localeCompare(b.nombre)
@@ -613,15 +621,16 @@ export default function Reportes() {
 
         // Procedencia de la familia basada en el jefe (o primer miembro)
         const jefe = miembros.find(m => m.es_jefe_familia) || miembros[0];
-        const famProc = getProcedenciaEstado(jefe.procedencia || '');
+        const famProc = getProcedenciaEstado(jefe?.estado, jefe?.parroquia || '');
         if (famProc === 'CARACAS') { totalFamiliasCaracas++; totalPersonasCaracas += cantMiembros; }
+        else if (famProc === 'MIRANDA') { totalFamiliasMiranda++; totalPersonasMiranda += cantMiembros; }
         else { totalFamiliasLaGuaira++; totalPersonasLaGuaira += cantMiembros; }
 
         miembros.forEach((r, idx) => {
           const ageParts = formatAgeParts(r.fecha_nacimiento);
           const edad = ageParts ? `${ageParts.valor} ${ageParts.unidad}` : '';
           const fnDate = r.fecha_nacimiento instanceof Date ? r.fecha_nacimiento : new Date(r.fecha_nacimiento);
-          const proc = getProcedenciaEstado(r.procedencia || '');
+          const proc = getProcedenciaEstado(r.estado, r.parroquia || '');
           const obs: string[] = [];
           if (r.embarazo) obs.push(r.tiempo_embarazo ? `Embarazada (${r.tiempo_embarazo} sem.)` : 'Embarazada');
           const hcObs = hcMap[r.id];
@@ -639,6 +648,7 @@ export default function Reportes() {
             telefono: r.telefono || '',
             procedenciaCaracas: proc === 'CARACAS' ? 'X' : '',
             procedenciaLaGuaira: proc === 'LA GUAIRA' ? 'X' : '',
+            procedenciaMiranda: proc === 'MIRANDA' ? 'X' : '',
             observacion: obs.join(' | '),
             cama: incluirUbicacion ? (r.nro_cama || '') : undefined,
             modulo: incluirUbicacion ? moduloDeCama(r.nro_cama) : undefined,
@@ -656,8 +666,9 @@ export default function Reportes() {
         const ageParts = formatAgeParts(r.fecha_nacimiento);
         const edad = ageParts ? `${ageParts.valor} ${ageParts.unidad}` : '';
         const fnDate = r.fecha_nacimiento instanceof Date ? r.fecha_nacimiento : new Date(r.fecha_nacimiento);
-        const proc = getProcedenciaEstado(r.procedencia || '');
+        const proc = getProcedenciaEstado(r.estado, r.parroquia || '');
         if (proc === 'CARACAS') { totalFamiliasCaracas++; totalPersonasCaracas++; }
+        else if (proc === 'MIRANDA') { totalFamiliasMiranda++; totalPersonasMiranda++; }
         else { totalFamiliasLaGuaira++; totalPersonasLaGuaira++; }
         const obs: string[] = [];
         if (r.embarazo) obs.push(r.tiempo_embarazo ? `Embarazada (${r.tiempo_embarazo} sem.)` : 'Embarazada');
@@ -676,6 +687,7 @@ export default function Reportes() {
           telefono: r.telefono?.toString() || '',
           procedenciaCaracas: proc === 'CARACAS' ? 'X' : '',
           procedenciaLaGuaira: proc === 'LA GUAIRA' ? 'X' : '',
+          procedenciaMiranda: proc === 'MIRANDA' ? 'X' : '',
           observacion: obs.join(' | '),
           cama: incluirUbicacion ? (r.nro_cama || '') : undefined,
           modulo: incluirUbicacion ? moduloDeCama(r.nro_cama) : undefined,
@@ -704,11 +716,11 @@ export default function Reportes() {
       const C = incluirUbicacion
         ? {
             num: 0, nucleo: 1, nombre: 2, cedula: 3, fecha: 4, sexo: 5, edad: 6,
-            cama: 7, modulo: 8, parentesco: 9, telefono: 10, caracas: 11, guaira: 12, obs: 13,
+            cama: 7, modulo: 8, parentesco: 9, telefono: 10, caracas: 11, guaira: 12, miranda: 13, obs: 14,
           }
         : {
             num: 0, nucleo: 1, nombre: 2, cedula: 3, fecha: 4, sexo: 5, edad: 6,
-            cama: -1, modulo: -1, parentesco: 7, telefono: 8, caracas: 9, guaira: 10, obs: 11,
+            cama: -1, modulo: -1, parentesco: 7, telefono: 8, caracas: 9, guaira: 10, miranda: 11, obs: 12,
           };
 
       // ─── FILAS DE ENCABEZADO SUPERIOR (0-3) ───
@@ -757,13 +769,15 @@ export default function Reportes() {
         merges.push({ s: { r: 5, c: col }, e: { r: 6, c: col } });
       });
 
-      // Procedencia (cols C.caracas y C.guaira):
+      // Procedencia (cols C.caracas, C.guaira, C.miranda):
       setCell(5, C.caracas, 'PROCEDENCIA', headerStyle);
       setCell(5, C.guaira, '', headerStyle);
-      merges.push({ s: { r: 5, c: C.caracas }, e: { r: 5, c: C.guaira } });
+      setCell(5, C.miranda, '', headerStyle);
+      merges.push({ s: { r: 5, c: C.caracas }, e: { r: 5, c: C.miranda } });
 
       setCell(6, C.caracas, 'CARACAS', headerStyle);
       setCell(6, C.guaira, 'LA GUAIRA', headerStyle);
+      setCell(6, C.miranda, 'MIRANDA', headerStyle);
 
       // ─── FILAS DE DATOS (Empiezan en fila 7 base-0 = fila 8 en Excel) ───
       let dataRow = 7;
@@ -807,6 +821,7 @@ export default function Reportes() {
         setCell(dataRow, C.telefono,   row.telefono,           cellStyle({ horizontal: 'center' }));
         setCell(dataRow, C.caracas,    row.procedenciaCaracas,  cellStyle({ horizontal: 'center' }));
         setCell(dataRow, C.guaira,     row.procedenciaLaGuaira, cellStyle({ horizontal: 'center' }));
+        setCell(dataRow, C.miranda,    row.procedenciaMiranda,  cellStyle({ horizontal: 'center' }));
         setCell(dataRow, C.obs,        row.observacion,         cellStyle());
 
         dataRow++;
@@ -828,16 +843,27 @@ export default function Reportes() {
       merges.push({ s: { r: totalsRow + 1, c: 0 }, e: { r: totalsRow + 1, c: 1 } });
       setCell(totalsRow + 1, 2, totalPersonasCaracas, valStyle);
 
-      // Tabla derecha (cols 4-6)
-      setCell(totalsRow,     4, 'TOTAL FAMILIAS DE LA GUAIRA',  labelStyle);
-      setCell(totalsRow,     5, '', labelStyle);
-      merges.push({ s: { r: totalsRow, c: 4 }, e: { r: totalsRow, c: 5 } });
-      setCell(totalsRow,     6, totalFamiliasLaGuaira, valStyle);
+      // Tabla centro (cols 3-4)
+      setCell(totalsRow,     3, 'TOTAL FAMILIAS DE MIRANDA',  labelStyle);
+      setCell(totalsRow,     4, '', labelStyle);
+      merges.push({ s: { r: totalsRow, c: 3 }, e: { r: totalsRow, c: 4 } });
+      setCell(totalsRow,     5, totalFamiliasMiranda, valStyle);
 
-      setCell(totalsRow + 1, 4, 'TOTAL PERSONAS DE LA GUAIRA',  labelStyle);
-      setCell(totalsRow + 1, 5, '', labelStyle);
-      merges.push({ s: { r: totalsRow + 1, c: 4 }, e: { r: totalsRow + 1, c: 5 } });
-      setCell(totalsRow + 1, 6, totalPersonasLaGuaira, valStyle);
+      setCell(totalsRow + 1, 3, 'TOTAL PERSONAS DE MIRANDA',  labelStyle);
+      setCell(totalsRow + 1, 4, '', labelStyle);
+      merges.push({ s: { r: totalsRow + 1, c: 3 }, e: { r: totalsRow + 1, c: 4 } });
+      setCell(totalsRow + 1, 5, totalPersonasMiranda, valStyle);
+
+      // Tabla derecha (cols 6-8)
+      setCell(totalsRow,     6, 'TOTAL FAMILIAS DE LA GUAIRA',  labelStyle);
+      setCell(totalsRow,     7, '', labelStyle);
+      merges.push({ s: { r: totalsRow, c: 6 }, e: { r: totalsRow, c: 7 } });
+      setCell(totalsRow,     8, totalFamiliasLaGuaira, valStyle);
+
+      setCell(totalsRow + 1, 6, 'TOTAL PERSONAS DE LA GUAIRA',  labelStyle);
+      setCell(totalsRow + 1, 7, '', labelStyle);
+      merges.push({ s: { r: totalsRow + 1, c: 6 }, e: { r: totalsRow + 1, c: 7 } });
+      setCell(totalsRow + 1, 8, totalPersonasLaGuaira, valStyle);
 
       // ─── Metadata de la hoja ───
       const lastRow = totalsRow + 1;
@@ -1486,7 +1512,7 @@ export default function Reportes() {
 
               {/* Subtitle */}
               <h3 className="text-center text-[13px] font-black text-slate-700 uppercase tracking-wide mt-3 z-10 relative">
-                POBLACIÓN CENSADA LA GUAIRA - CARACAS
+                POBLACIÓN CENSADA LA GUAIRA - CARACAS - MIRANDA
               </h3>
 
               {/* Content body */}
@@ -1506,6 +1532,12 @@ export default function Reportes() {
                         <td className="p-3 text-base font-bold text-left tracking-wide">FAMILIAS CARACAS</td>
                         <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
                           {String(datosReporte.familiasCaracas).padStart(2, '0')}
+                        </td>
+                      </tr>
+                      <tr className="border-b border-slate-300">
+                        <td className="p-3 text-base font-bold text-left tracking-wide">FAMILIAS MIRANDA</td>
+                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
+                          {String(datosReporte.familiasMiranda).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="bg-slate-50 font-black">
@@ -2332,7 +2364,7 @@ export default function Reportes() {
                               <tr key={r.id} className={`border-b border-slate-200 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/[.85]'}`}>
                                 <td className="py-[4.5px] px-0.5 text-base font-mono text-center border-r border-slate-200">{r.codigo || '—'}</td>
                                 <td className="py-[4.5px] px-0.5 text-base border-r border-slate-200">{r.nombres} {r.apellidos}</td>
-                                <td className="py-[4.5px] px-0.5 text-base border-r border-slate-200">{r.procedencia || '—'}</td>
+                                <td className="py-[4.5px] px-0.5 text-base border-r border-slate-200">{r.parroquia || '—'}</td>
                                 <td className="py-[4.5px] px-0.5 text-base border-r border-slate-200">{r.tenencia_vivienda || 'Sin especificar'}</td>
                                 <td className="py-[4.5px] px-0.5 text-[13px] leading-snug break-words">{r.direccion_exacta || '—'}</td>
                               </tr>

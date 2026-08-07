@@ -294,7 +294,7 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
           'Fecha de Ingreso:', jefe.fecha_ingreso ? toDisplayDate(jefe.fecha_ingreso) : '—',
         );
 
-        drawFieldFull('Procedencia:', jefe.procedencia || '—');
+        drawFieldFull('Parroquia:', jefe.parroquia || '—');
         drawFieldFull('Direcci\u00f3n Exacta:', jefe.direccion_exacta || '—');
         drawFieldFull('Tel\u00e9fono:', jefe.telefono || '—');
       }
@@ -529,10 +529,10 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia }: Detall
                   </div>
                 </div>
                 <div className="text-right">
-                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Procedencia</h4>
+                  <h4 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Parroquia</h4>
                   <div className="flex items-center gap-2 text-gray-800 justify-end">
                     <MapPin size={16} className="text-caracas-blue shrink-0" />
-                    <span className="font-medium">{jefe.procedencia || '—'}</span>
+                    <span className="font-medium">{jefe.parroquia || '—'}</span>
                   </div>
                 </div>
               </div>

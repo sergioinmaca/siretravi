@@ -250,7 +250,7 @@ export default function HistoriaClinicaModal({ isOpen, onClose, historiaToEdit, 
           fecha_nacimiento: refOriginal!.fecha_nacimiento,
           es_jefe_familia: refOriginal!.es_jefe_familia,
           nro_cama: refOriginal!.nro_cama,
-          procedencia: refOriginal!.procedencia,
+          procedencia: refOriginal!.parroquia,
           fecha_ingreso: refOriginal!.fecha_ingreso,
           direccion_exacta: refOriginal!.direccion_exacta,
           discapacidad: formData.discapacidad,
@@ -536,8 +536,8 @@ export default function HistoriaClinicaModal({ isOpen, onClose, historiaToEdit, 
                       <p className="font-semibold text-gray-800 bg-gray-100 px-4 py-2.5 rounded-xl">{refugiadoEncontrado.nro_cama || 'Sin asignar'}</p>
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Procedencia</label>
-                      <p className="font-semibold text-gray-800 bg-gray-100 px-4 py-2.5 rounded-xl">{refugiadoEncontrado.procedencia || 'No registrada'}</p>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">Parroquia</label>
+                      <p className="font-semibold text-gray-800 bg-gray-100 px-4 py-2.5 rounded-xl">{refugiadoEncontrado.parroquia || 'No registrada'}</p>
                     </div>
                     <div>
                       <label className="block text-xs font-medium text-gray-500 mb-1">Direccion Exacta</label>

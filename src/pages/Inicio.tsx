@@ -188,16 +188,16 @@ export default function Inicio() {
     });
   }, [estatusData, totalIntegrantes]);
 
-  // Calcular ranking de procedencias (solo jefes de familia)
-  const procedenciasMap = new Map<string, number>();
+  // Calcular ranking de parroquias (solo jefes de familia)
+  const parroquiasMap = new Map<string, number>();
   jefesActivos.forEach(r => {
-    const proc = r.procedencia?.trim() || 'SIN ESPECIFICAR';
-    procedenciasMap.set(proc, (procedenciasMap.get(proc) || 0) + 1);
+    const proc = r.parroquia?.trim() || 'SIN ESPECIFICAR';
+    parroquiasMap.set(proc, (parroquiasMap.get(proc) || 0) + 1);
   });
-  const procedenciasRanking = Array.from(procedenciasMap.entries())
+  const parroquiasRanking = Array.from(parroquiasMap.entries())
     .map(([nombre, cantidad]) => ({ nombre, cantidad }))
     .sort((a, b) => b.cantidad - a.cantidad);
-  const maxProcedencia = procedenciasRanking.length > 0 ? procedenciasRanking[0].cantidad : 1;
+  const maxParroquia = parroquiasRanking.length > 0 ? parroquiasRanking[0].cantidad : 1;
 
   // Colores vibrantes para las barras
   const barColors = [
@@ -777,7 +777,7 @@ export default function Inicio() {
         </div>
       </div>
 
-      {/* Dashboard: Tenencia de Vivienda + Estatus | Ranking de Procedencias */}
+      {/* Dashboard: Tenencia de Vivienda + Estatus | Ranking de Parroquias */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
         {/* COLUMNA IZQUIERDA: Tenencia de Vivienda + Situación de Estatus apilados */}
@@ -887,17 +887,17 @@ export default function Inicio() {
 
         </div>
 
-        {/* COLUMNA DERECHA: Ranking de Procedencias */}
+        {/* COLUMNA DERECHA: Ranking de Parroquias */}
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 max-md:bg-transparent max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3 max-md:max-w-[calc(100vw-1rem)] max-md:-ml-4 max-md:mr-0">
           <div className="flex items-center gap-2 mb-6">
             <div className="w-1 h-6 bg-emerald-500 rounded-full"></div>
-            <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wider">Ranking de Procedencias</h2>
+            <h2 className="text-sm font-bold text-gray-600 uppercase tracking-wider">Ranking de Parroquias</h2>
           </div>
 
-          {procedenciasRanking.length > 0 ? (
+          {parroquiasRanking.length > 0 ? (
             <div className="space-y-3">
-              {procedenciasRanking.map((proc, index) => {
-                const pct = (proc.cantidad / maxProcedencia) * 100;
+              {parroquiasRanking.map((proc, index) => {
+                const pct = (proc.cantidad / maxParroquia) * 100;
                 const color = barColors[index % barColors.length];
                 return (
                   <div
@@ -935,7 +935,7 @@ export default function Inicio() {
             </div>
           ) : (
             <div className="text-center py-10 text-gray-400">
-              <p className="font-medium">No hay jefes de familia registrados para mostrar procedencias.</p>
+              <p className="font-medium">No hay jefes de familia registrados para mostrar parroquias.</p>
             </div>
           )}
         </div>

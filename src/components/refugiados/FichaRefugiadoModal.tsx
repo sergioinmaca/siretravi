@@ -408,7 +408,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
 
       drawFieldFull('Estatus:', refugiado.hogar_solidario || '—');
 
-      drawFieldFull('Procedencia:', refugiado.procedencia || '—');
+      drawFieldFull('Parroquia:', refugiado.parroquia || '—');
       drawFieldFull('Direcci\u00f3n Exacta:', refugiado.direccion_exacta || '—');
 
       // ── 3. EVALUACIÓN DE SALUD ──
@@ -1136,7 +1136,7 @@ export default function FichaRefugiadoModal({ isOpen, onClose, refugiado, onActu
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
               <FichaField label="Nro de Cama" value={refugiado.nro_cama || '—'} />
               <FichaField label="Estatus" value={refugiado.hogar_solidario || '—'} />
-              <FichaField label="Procedencia" value={refugiado.procedencia || '—'} />
+              <FichaField label="Parroquia" value={refugiado.parroquia || '—'} />
               <FichaField label="Dirección Exacta" value={refugiado.direccion_exacta || '—'} />
               <FichaField
                 label="Fecha de Ingreso"

@@ -115,7 +115,9 @@ export interface Refugiado {
   es_jefe_familia: boolean;
   nro_cama?: string;
   hogar_solidario?: string;
-  procedencia: string;
+  estado?: string;
+  municipio?: string;
+  parroquia: string;
   fecha_ingreso?: Date;
   direccion_exacta?: string;
   discapacidad: boolean;

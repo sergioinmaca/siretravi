@@ -8,6 +8,7 @@ import { toDateInput, parseDateSafe } from '../../lib/formatDate';
 import DateInput from '../ui/DateInput';
 import CameraCapture from '../ui/CameraCapture';
 import { useVerificarCedula } from '../../hooks/useVerificarCedula';
+import { ESTADOS, MUNICIPIOS_POR_ESTADO, PARROQUIAS_POR_MUNICIPIO } from '../../lib/geografia';
 
 interface RegistroModalProps {
   isOpen: boolean;
@@ -54,7 +55,9 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     esJefeFamilia: true,
     familiaId: '',
     nroCama: '',
-    procedencia: '',
+    estado: '',
+    municipio: '',
+    parroquia: '',
     fechaIngreso: '',
     direccionExacta: '',
     discapacidad: false,
@@ -118,7 +121,9 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
         esJefeFamilia: refugiadoToEdit.es_jefe_familia,
         familiaId: refugiadoToEdit.familia_id || '',
         nroCama: refugiadoToEdit.nro_cama || '',
-        procedencia: refugiadoToEdit.procedencia,
+        estado: refugiadoToEdit.estado || '',
+        municipio: refugiadoToEdit.municipio || '',
+        parroquia: refugiadoToEdit.parroquia,
         fechaIngreso: refugiadoToEdit.fecha_ingreso
           ? toDateInput(refugiadoToEdit.fecha_ingreso)
           : '',
@@ -161,7 +166,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       setFormData({
         nombres: '', apellidos: '', nacionalidad: '', cedula: '', genero: 'M',
         fechaNacimiento: '', edad: '', esJefeFamilia: true, familiaId: '',
-        nroCama: '', procedencia: '', fechaIngreso: '', direccionExacta: '',
+        nroCama: '', estado: '', municipio: '', parroquia: '', fechaIngreso: '', direccionExacta: '',
         discapacidad: false,
         embarazo: false, tiempoEmbarazo: '', mascotas: false, tipoMascota: '',
         mascotaSexo: '', mascotaRaza: '', mascotaNombre: '', mascotaEdad: '',
@@ -344,7 +349,9 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       fecha_nacimiento: parseDateSafe(formData.fechaNacimiento),
       es_jefe_familia: formData.esJefeFamilia,
       nro_cama: formData.nroCama || undefined,
-      procedencia: formData.procedencia,
+      estado: formData.estado || undefined,
+      municipio: formData.municipio || undefined,
+      parroquia: formData.parroquia,
       fecha_ingreso: formData.fechaIngreso ? parseDateSafe(formData.fechaIngreso) : undefined,
       direccion_exacta: formData.direccionExacta || undefined,
       discapacidad: formData.discapacidad,
@@ -524,7 +531,9 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
         formData.genero !== (refugiadoToEdit.genero ? 'M' : 'F') ||
         formData.fechaNacimiento !== toDateInput(new Date(refugiadoToEdit.fecha_nacimiento)) ||
         formData.nroCama !== (refugiadoToEdit.nro_cama || '') ||
-        formData.procedencia !== refugiadoToEdit.procedencia ||
+        formData.estado !== (refugiadoToEdit.estado || '') ||
+        formData.municipio !== (refugiadoToEdit.municipio || '') ||
+        formData.parroquia !== refugiadoToEdit.parroquia ||
         formData.direccionExacta !== (refugiadoToEdit.direccion_exacta || '') ||
         (formData.fechaIngreso || '') !== (refugiadoToEdit.fecha_ingreso ? toDateInput(refugiadoToEdit.fecha_ingreso) : '') ||
         formData.telefono !== (refugiadoToEdit.telefono || '') ||
@@ -564,7 +573,9 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       formData.genero !== 'M' ||
       formData.fechaNacimiento !== '' ||
       formData.nroCama !== '' ||
-      formData.procedencia !== '' ||
+      formData.estado !== '' ||
+      formData.municipio !== '' ||
+      formData.parroquia !== '' ||
       formData.direccionExacta !== '' ||
       formData.fechaIngreso !== '' ||
       formData.telefono !== '' ||
@@ -865,29 +876,50 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
                 <div className="p-2 bg-yellow-100 rounded-lg">
                   <MapPin size={18} className="text-yellow-600" />
                 </div>
-                <h3 className="font-semibold text-gray-800">3. Ubicación y Procedencia</h3>
+                <h3 className="font-semibold text-gray-800">3. Ubicación</h3>
               </div>
-            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nro de cama / Estatus</label>
+            <div className="p-6 space-y-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-28">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nro de cama / Estatus</label>
+                  </div>
                   <div className="flex items-center gap-3">
                     <input type="text" name="nroCama" value={formData.nroCama} onChange={handleChange} maxLength={3} pattern="[0-9]{0,3}" className="w-28 px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all" placeholder="EJ. 042" />
                     <select name="hogarSolidario" value={formData.hogarSolidario} onChange={handleChange} className="px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all text-gray-800 text-sm">
                       {ESTATUS_OPTIONS.map(op => <option key={op} value={op}>{op}</option>)}
                     </select>
                   </div>
-                  {formData.nroCama && refugiados.some(
-                    r => r.campamento_id === campamentoSeleccionado?.id && r.nro_cama === formData.nroCama && r.id !== refugiadoToEdit?.id
-                  ) && (
-                    <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
-                      <AlertCircle size={12} />
-                      Esta cama ya tiene ocupantes
-                    </p>
-                  )}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Procedencia <span className="text-caracas-red">*</span></label>
-                  <input required type="text" name="procedencia" value={formData.procedencia} onChange={handleChange} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase" placeholder="EJ. MAIQUETÍA" />
+                {formData.nroCama && refugiados.some(
+                  r => r.campamento_id === campamentoSeleccionado?.id && r.nro_cama === formData.nroCama && r.id !== refugiadoToEdit?.id
+                ) && (
+                  <p className="text-xs text-amber-600 mt-1 flex items-center gap-1">
+                    <AlertCircle size={12} />
+                    Esta cama ya tiene ocupantes
+                  </p>
+                )}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Estado <span className="text-caracas-red">*</span></label>
+                    <select required name="estado" value={formData.estado} onChange={(e) => setFormData(prev => ({ ...prev, estado: e.target.value, municipio: '', parroquia: '' }))} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all">
+                      <option value="">-- SELECCIONE --</option>
+                      {ESTADOS.map(est => <option key={est.nombre} value={est.nombre}>{est.nombre}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Municipio <span className="text-caracas-red">*</span></label>
+                    <select required name="municipio" value={formData.municipio} onChange={(e) => setFormData(prev => ({ ...prev, municipio: e.target.value, parroquia: '' }))} disabled={!formData.estado} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all disabled:bg-gray-100 disabled:text-gray-400">
+                      <option value="">-- SELECCIONE --</option>
+                      {(MUNICIPIOS_POR_ESTADO[formData.estado] || []).map(mun => <option key={mun} value={mun}>{mun}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Parroquia <span className="text-caracas-red">*</span></label>
+                    <select required name="parroquia" value={formData.parroquia} onChange={(e) => setFormData(prev => ({ ...prev, parroquia: e.target.value }))} disabled={!formData.municipio} className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all disabled:bg-gray-100 disabled:text-gray-400">
+                      <option value="">-- SELECCIONE --</option>
+                      {(PARROQUIAS_POR_MUNICIPIO[formData.municipio] || []).map(parr => <option key={parr} value={parr}>{parr}</option>)}
+                    </select>
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Dirección Exacta</label>
