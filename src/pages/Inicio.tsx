@@ -1,11 +1,12 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
-import { Users, BedDouble, Tent, Home, Baby, Heart, Sparkles, ShieldOff, FileDown, Loader2, Milk, UserCheck, HeartPulse, Accessibility } from 'lucide-react';
+import { Users, BedDouble, Tent, Home, Baby, Heart, Sparkles, ShieldOff, FileDown, Loader2, Milk, UserCheck, HeartPulse, Accessibility, AlertTriangle } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
 import { useIsMobile } from '../hooks/useIsMobile';
 import CroquisViewer, { countElements, contarTiposDesdeCroquis } from '../components/constructor/CroquisViewer';
 import PlanoGeneralViewer from '../components/constructor/PlanoGeneralViewer';
 import jsPDF from 'jspdf';
+import { filtrarActivos } from '../lib/retiredFilter';
 
 export default function Inicio() {
   const { campamentoSeleccionado, refugiados = [] } = useCampamento();
@@ -41,14 +42,14 @@ export default function Inicio() {
   const jefesActivos = refugiadosActivos.filter(r => r.es_jefe_familia === true);
 
   const occupiedBeds = useMemo(() => {
-    return refugiadosDelCampamento
+    return filtrarActivos(refugiadosDelCampamento)
       .map(r => r.nro_cama)
       .filter((cama): cama is string => !!cama);
   }, [refugiadosDelCampamento]);
 
   const bedOccupants = useMemo(() => {
     const map: Record<string, string[]> = {};
-    refugiadosDelCampamento.forEach(r => {
+    filtrarActivos(refugiadosDelCampamento).forEach(r => {
       if (r.nro_cama) {
         if (!map[r.nro_cama]) map[r.nro_cama] = [];
         map[r.nro_cama].push(`${r.nombres} ${r.apellidos}`);
@@ -556,6 +557,15 @@ export default function Inicio() {
         <h2 className="text-2xl font-bold text-gray-800">Visión General</h2>
         <p className="text-gray-500 max-md:max-w-[calc(100vw-2rem)] max-md:[overflow-wrap:anywhere]">
           Mostrando indicadores para: <span className="font-semibold text-caracas-red">{campamentoSeleccionado?.nombre || 'Ninguno'}</span>
+        </p>
+      </div>
+
+      <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center gap-3 max-md:-mx-4 max-md:rounded-none">
+        <AlertTriangle size={20} className="text-amber-500 shrink-0" />
+        <p className="text-sm text-amber-800">
+          <span className="font-semibold">Nota:</span> La información suministrada no contempla
+          los integrantes que están retirados del campamento. Solamente en{' '}
+          <span className="font-medium underline">Situación de Estatus</span> se ven reflejados.
         </p>
       </div>
 

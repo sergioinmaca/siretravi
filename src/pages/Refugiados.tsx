@@ -9,6 +9,7 @@ import { formatAge, formatAgeParts } from '../lib/formatAge';
 import { formatCedula } from '../lib/formatCedula';
 import { obtenerHistoriasClinicas } from '../lib/salud';
 import { useIsMobile } from '../hooks/useIsMobile';
+import { esRetirado } from '../lib/retiredFilter';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 
@@ -521,7 +522,7 @@ export default function Refugiados() {
                         </span>
                       </td>
                       <td className="py-3 px-6">
-                        <div className="flex items-center gap-1.5 text-sm font-semibold text-caracas-red">
+                        <div className={`flex items-center gap-1.5 text-sm font-semibold ${esRetirado(refugiado.refugiado) && refugiado.cama ? 'text-gray-400 line-through' : 'text-caracas-red'}`}>
                           <FileText size={14} />
                           {refugiado.cama}
                         </div>
@@ -677,7 +678,7 @@ export default function Refugiados() {
                     </div>
                     <div className="flex-1 space-y-1 text-sm text-gray-600">
                       <div className="text-xs text-gray-400">Cama</div>
-                      <div className="flex items-center gap-1 font-semibold text-caracas-red">
+                      <div className={`flex items-center gap-1 font-semibold ${esRetirado(refugiado.refugiado) && refugiado.cama ? 'text-gray-400 line-through' : 'text-caracas-red'}`}>
                         <FileText size={12} />
                         <span className="text-sm">{refugiado.cama}</span>
                       </div>

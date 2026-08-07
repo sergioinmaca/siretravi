@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useCallback, useMemo, forwardRef } from 'react';
 import { useCampamento } from '../../context/CampamentoContext';
 import { contarActasPorRefugiado } from '../../lib/actas';
+import { filtrarActivos } from '../../lib/retiredFilter';
 
 interface PlacedBed {
   type: 'litera' | 'individual' | 'duplex';
@@ -338,13 +339,13 @@ const CroquisViewer2 = forwardRef<HTMLCanvasElement, CroquisViewer2Props>(functi
   );
 
   const occupiedBeds = useMemo(
-    () => refugiadosDelCampamento.map(r => r.nro_cama).filter((c): c is string => !!c),
+    () => filtrarActivos(refugiadosDelCampamento).map(r => r.nro_cama).filter((c): c is string => !!c),
     [refugiadosDelCampamento]
   );
 
   const bedOccupants = useMemo(() => {
     const map: Record<string, string[]> = {};
-    refugiadosDelCampamento.forEach(r => {
+    filtrarActivos(refugiadosDelCampamento).forEach(r => {
       if (!r.nro_cama) return;
       map[r.nro_cama] = [`${r.nombres} ${r.apellidos}`];
     });
@@ -353,7 +354,7 @@ const CroquisViewer2 = forwardRef<HTMLCanvasElement, CroquisViewer2Props>(functi
 
   const bedColorMap = useMemo(() => {
     const map: Record<string, string> = {};
-    refugiadosDelCampamento.forEach(r => {
+    filtrarActivos(refugiadosDelCampamento).forEach(r => {
       if (!r.nro_cama) return;
       const count = conteoActas[r.id] || 0;
       if (count === 0) {
