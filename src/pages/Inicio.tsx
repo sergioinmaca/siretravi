@@ -634,8 +634,7 @@ export default function Inicio() {
   const navigateToRefugiados = () => {
     setFichaModalOpen(false);
     setFichaDesdeDashboard(null);
-    const nombre = `${fichaDesdeDashboard!.apellidos} ${fichaDesdeDashboard!.nombres}`;
-    navigate(`/refugiados?buscar=${encodeURIComponent(nombre)}&verFicha=${fichaDesdeDashboard!.id}`);
+    navigate(`/refugiados?buscar=${encodeURIComponent(fichaDesdeDashboard!.apellidos)}&verFicha=${fichaDesdeDashboard!.id}`);
   };
 
   return (
