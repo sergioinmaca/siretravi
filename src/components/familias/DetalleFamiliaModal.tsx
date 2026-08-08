@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { X, Users, BedDouble, Calendar, MapPin, Home, FileText, Loader2, ExternalLink } from 'lucide-react';
 import jsPDF from 'jspdf';
 import { useCampamento } from '../../context/CampamentoContext';
+import { useAuth } from '../../context/AuthContext';
 import { toDisplayDate } from '../../lib/formatDate';
 import { formatCedula } from '../../lib/formatCedula';
-import type { Familia } from '../../types';
+import { type Familia, ESTATUS_OPTIONS } from '../../types';
 
 interface DetalleFamiliaModalProps {
   isOpen: boolean;
@@ -47,8 +48,10 @@ const loadImageAsDataUrl = (
 };
 
 export default function DetalleFamiliaModal({ isOpen, onClose, familia, showNavButton, onNavigateToModule }: DetalleFamiliaModalProps) {
-  const { refugiados = [] } = useCampamento();
+  const { refugiados = [], actualizarRefugiado, campamentoSeleccionado } = useCampamento();
+  const { tienePermisoPorCampamento } = useAuth();
   const [isExporting, setIsExporting] = useState(false);
+  const [editingEstatusId, setEditingEstatusId] = useState<string | null>(null);
 
   if (!isOpen || !familia) return null;
 
@@ -306,8 +309,8 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia, showNavB
       drawSectionHeader('2', 'Integrantes de la Familia');
 
       if (integrantes.length > 0) {
-        const tableHeaders = ['C\u00f3digo', 'C\u00e9dula', 'Apellidos y Nombres', 'Edad', 'G\u00e9n', 'Cama', 'Parentesco'];
-        const tableColWidths = [22, 22, 80, 10, 8, 12, 28];
+        const tableHeaders = ['C\u00f3digo', 'C\u00e9dula', 'Apellidos y Nombres', 'Edad', 'G\u00e9n', 'Cama', 'Parentesco', 'Estatus'];
+        const tableColWidths = [20, 20, 68, 10, 8, 10, 22, 22];
 
         const tableRows = sortedIntegrantes.map(p => [
           p.codigo || '—',
@@ -317,6 +320,7 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia, showNavB
           p.genero ? 'M' : 'F',
           p.nro_cama || '—',
           p.es_jefe_familia ? 'Jefe' : (p.parentesco || '—'),
+          p.hogar_solidario || 'PRESENTE',
         ]);
 
         drawTable(tableHeaders, tableRows, tableColWidths);
@@ -489,7 +493,7 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia, showNavB
 
   return (
     <div className="fixed inset-0 z-[60] flex flex-col md:items-center md:justify-center md:p-4 md:bg-gray-900/40 md:backdrop-blur-sm">
-      <div className="bg-white w-full h-full pt-4 md:pt-0 md:h-auto md:max-h-[90vh] md:max-w-4xl md:rounded-3xl md:shadow-2xl flex flex-col overflow-hidden animate-slide-up relative">
+      <div className="bg-white w-full h-full pt-4 md:pt-0 md:h-auto md:max-h-[90vh] md:max-w-5xl md:rounded-3xl md:shadow-2xl flex flex-col overflow-hidden animate-slide-up relative">
         {/* Header — Desktop */}
         <div className="hidden md:flex px-8 py-5 border-b border-gray-100 items-center justify-between shrink-0 bg-white">
           <div className="flex-1 text-center ml-8">
@@ -553,11 +557,12 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia, showNavB
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
-                  <thead>
+                   <thead>
                     <tr className="bg-gray-50/80 border-b border-gray-100">
                       <th className="py-4 px-6 font-semibold text-sm text-gray-500">Código</th>
                       <th className="py-4 px-6 font-semibold text-sm text-gray-500">Cédula</th>
                       <th className="py-4 px-6 font-semibold text-sm text-gray-500">Apellidos y Nombres</th>
+                      <th className="py-4 px-6 font-semibold text-sm text-gray-500">Estatus</th>
                       <th className="py-4 px-6 font-semibold text-sm text-gray-500">Edad</th>
                       <th className="py-4 px-6 font-semibold text-sm text-gray-500">Género</th>
                       <th className="py-4 px-6 font-semibold text-sm text-gray-500">Cama</th>
@@ -572,6 +577,48 @@ export default function DetalleFamiliaModal({ isOpen, onClose, familia, showNavB
                         <td className="py-3 px-6">
                           <div className="text-sm font-bold text-gray-800">{p.apellidos}</div>
                           <div className="text-xs text-gray-500">{p.nombres}</div>
+                        </td>
+                        <td className="py-3 px-6">
+                          {editingEstatusId === p.id ? (
+                            <select
+                              value={p.hogar_solidario || 'PRESENTE'}
+                              onChange={async (e) => {
+                                const nuevo = e.target.value;
+                                await actualizarRefugiado(p.id, { ...p, hogar_solidario: nuevo });
+                                setEditingEstatusId(null);
+                              }}
+                              onBlur={() => setEditingEstatusId(null)}
+                              autoFocus
+                              className="px-2 py-1 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none uppercase"
+                            >
+                              {ESTATUS_OPTIONS.map(op => <option key={op} value={op}>{op}</option>)}
+                            </select>
+                          ) : campamentoSeleccionado && tienePermisoPorCampamento('Familias', campamentoSeleccionado.id, 'Modificar') ? (
+                            <button
+                              onClick={() => setEditingEstatusId(p.id)}
+                              className="cursor-pointer inline-flex items-center gap-1"
+                              title="Click para cambiar estatus"
+                            >
+                              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${(p.hogar_solidario || 'PRESENTE') === 'PRESENTE'
+                                  ? 'bg-green-50 text-green-700 border-green-200'
+                                  : (p.hogar_solidario || 'PRESENTE') === 'HOGAR SOLIDARIO'
+                                    ? 'bg-orange-100 text-orange-800 border-orange-300'
+                                    : 'bg-red-50 text-red-700 border-red-200'
+                                }`}>
+                                {p.hogar_solidario || 'PRESENTE'}
+                              </span>
+                              <span className="text-gray-400 text-[10px]">▼</span>
+                            </button>
+                          ) : (
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${(p.hogar_solidario || 'PRESENTE') === 'PRESENTE'
+                                ? 'bg-green-50 text-green-700 border-green-200'
+                                : (p.hogar_solidario || 'PRESENTE') === 'HOGAR SOLIDARIO'
+                                  ? 'bg-orange-100 text-orange-800 border-orange-300'
+                                  : 'bg-red-50 text-red-700 border-red-200'
+                              }`}>
+                              {p.hogar_solidario || 'PRESENTE'}
+                            </span>
+                          )}
                         </td>
                         <td className="py-3 px-6 text-sm text-gray-600">{calcularEdad(p.fecha_nacimiento)} años</td>
                         <td className="py-3 px-6">

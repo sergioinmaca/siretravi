@@ -146,7 +146,7 @@ BEGIN
   INSERT INTO acciones (modulo_id, nombre) VALUES
     (v_inicio_id, 'Ver'),
     (v_refugiados_id, 'Ver'), (v_refugiados_id, 'Crear'), (v_refugiados_id, 'Modificar'), (v_refugiados_id, 'Eliminar'),
-    (v_familias_id, 'Ver'),
+    (v_familias_id, 'Ver'), (v_familias_id, 'Modificar'), (v_familias_id, 'Eliminar'),
     (v_constructor_id, 'Ver'), (v_constructor_id, 'Crear'), (v_constructor_id, 'Modificar'), (v_constructor_id, 'Eliminar'),
     (v_reportes_id, 'Ver'), (v_reportes_id, 'Exportar'),
     (v_usuarios_id, 'Ver'), (v_usuarios_id, 'Crear'), (v_usuarios_id, 'Modificar'), (v_usuarios_id, 'Eliminar')

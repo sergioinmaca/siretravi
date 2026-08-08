@@ -504,7 +504,7 @@ export default function Refugiados() {
                         ) : campamentoSeleccionado && tienePermisoPorCampamento('Integrantes', campamentoSeleccionado.id, 'Modificar') ? (
                           <button
                             onClick={() => setEditingEstatusId(refugiado.id)}
-                            className="cursor-pointer"
+                            className="cursor-pointer inline-flex items-center gap-1"
                             title="Click para cambiar estatus"
                           >
                             <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${refugiado.estatus === 'PRESENTE'
@@ -515,6 +515,7 @@ export default function Refugiados() {
                               }`}>
                               {refugiado.estatus}
                             </span>
+                            <span className="text-gray-400 text-[10px]">▼</span>
                           </button>
                         ) : (
                           <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${refugiado.estatus === 'PRESENTE'
