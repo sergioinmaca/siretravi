@@ -8,6 +8,7 @@ import type { Familia } from '../types';
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 import { formatCedula } from '../lib/formatCedula';
+import { esRetirado } from '../lib/retiredFilter';
 
 export default function Familias() {
   const { campamentoSeleccionado, familias = [], refugiados = [], eliminarFamilia } = useCampamento();
@@ -101,6 +102,7 @@ export default function Familias() {
         { key: 'sexo', header: 'Sexo', w: 14 },
         { key: 'cama', header: 'Nro Cama', w: 22 },
         { key: 'parentesco', header: 'Parentesco', w: 28 },
+        { key: 'estatus', header: 'Estatus', w: 22 },
       ];
       const tableWidth = cols.reduce((s, c) => s + c.w, 0);
       const headerHeight = 8;
@@ -146,7 +148,7 @@ export default function Familias() {
 
       familiasCamp.forEach(familia => {
         const miembros = refugiados
-          .filter(r => r.familia_id === familia.id)
+          .filter(r => r.familia_id === familia.id && !esRetirado(r))
           .sort((a, b) => {
             if (a.es_jefe_familia) return -1;
             if (b.es_jefe_familia) return 1;
@@ -163,6 +165,7 @@ export default function Familias() {
           sexo: r.genero ? 'M' : 'F',
           cama: r.nro_cama || '-',
           parentesco: r.es_jefe_familia ? 'Jefe de Familia' : (r.parentesco || '\u2014'),
+          estatus: r.hogar_solidario || 'PRESENTE',
         }));
 
         if (currentY + titleGap + headerHeight + rowHeight > pageH - margin - footerH) {
