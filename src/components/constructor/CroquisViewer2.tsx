@@ -315,6 +315,7 @@ export function contarTiposDesdeCroquis(croquisData: string): { literas: number;
 const CroquisViewer2 = forwardRef<HTMLCanvasElement, CroquisViewer2Props>(function CroquisViewer2({ croquisData, moduloNombre, campamentoId, width = 700, height = 600, elementNumberOffset = 0, tipoContabilizacion = 'elemento', literasCount, individualesCount, duplexCount, disponiblesModulo }, ref) {
   const internalCanvasRef = useRef<HTMLCanvasElement>(null);
   const bedsRenderRef = useRef<BedRenderInfo[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [hoveredBed, setHoveredBed] = useState<HoveredBed | null>(null);
   const [conteoActas, setConteoActas] = useState<Record<string, number>>({});
 
@@ -471,6 +472,7 @@ const CroquisViewer2 = forwardRef<HTMLCanvasElement, CroquisViewer2Props>(functi
     const scaleY = canvas.height / rect.height;
     const mouseX = (e.clientX - rect.left) * scaleX;
     const mouseY = (e.clientY - rect.top) * scaleY;
+    const containerRect = containerRef.current?.getBoundingClientRect();
 
     let found: HoveredBed | null = null;
     for (const bed of bedsRenderRef.current) {
@@ -487,8 +489,8 @@ const CroquisViewer2 = forwardRef<HTMLCanvasElement, CroquisViewer2Props>(functi
           found = {
             numbers: bed.numbers,
             occupiedNumbers: bed.occupiedNumbers,
-            x: e.clientX - rect.left,
-            y: e.clientY - rect.top,
+            x: e.clientX - (containerRect?.left ?? rect.left),
+            y: e.clientY - (containerRect?.top ?? rect.top),
           };
         }
         break;
@@ -502,7 +504,7 @@ const CroquisViewer2 = forwardRef<HTMLCanvasElement, CroquisViewer2Props>(functi
   }, []);
 
   return (
-    <div className="space-y-3">
+    <div ref={containerRef} className="space-y-3 relative">
       <div className="flex items-center gap-3">
         <div className="h-8 w-1 bg-caracas-red rounded-full" />
         <h4 className="font-semibold text-gray-800">{moduloNombre}</h4>
@@ -533,7 +535,7 @@ const CroquisViewer2 = forwardRef<HTMLCanvasElement, CroquisViewer2Props>(functi
         </div>
       )}
       <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white">
-        <div className="relative">
+        <div>
           <canvas
             ref={setCanvasRef}
             width={width}
@@ -543,37 +545,37 @@ const CroquisViewer2 = forwardRef<HTMLCanvasElement, CroquisViewer2Props>(functi
             onMouseMove={handleCanvasMouseMove}
             onMouseLeave={handleCanvasMouseLeave}
           />
-          {hoveredBed && (
-            <div
-              className="absolute z-50 bg-gray-900 text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-lg pointer-events-none whitespace-nowrap"
-              style={{
-                left: hoveredBed.x + 12,
-                top: hoveredBed.y,
-                transform: 'translateX(-50%) translateY(calc(-100% - 5px))',
-              }}
-            >
-              {hoveredBed.numbers.map(num => {
-                 const occupants = hoveredBed.occupiedNumbers.includes(num) ? (bedOccupants[num] || []) : [];
-                 const color = bedColorMap[num];
-                 const tieneNaranja = color === '#F97316';
-                 const tieneRojo = color === '#EF4444';
-                 const tieneActa = tieneNaranja || tieneRojo;
-                 const rowBg = tieneRojo ? 'bg-red-600/80' : tieneNaranja ? 'bg-orange-600/80' : '';
-                 return (
-                   <div key={num} className={`border-b border-gray-700 last:border-0 py-0.5 ${rowBg}`}>
-                     <div className={`font-semibold ${tieneActa ? 'text-white' : 'text-white/80'}`}>Cama {num}</div>
-                     {occupants.length > 0 ? occupants.map((name, i) => (
-                       <div key={i} className={`pl-2 ${tieneActa ? 'text-white' : 'text-white'}`}>{name}</div>
-                     )) : (
-                       <div className="pl-2 text-gray-400">Libre</div>
-                     )}
-                   </div>
-                 );
-               })}
-            </div>
-          )}
         </div>
       </div>
+      {hoveredBed && (
+        <div
+          className="absolute z-50 bg-gray-900 text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-lg pointer-events-none whitespace-nowrap"
+          style={{
+            left: hoveredBed.x + 12,
+            top: hoveredBed.y,
+            transform: 'translateX(-50%) translateY(calc(-100% - 5px))',
+          }}
+        >
+          {hoveredBed.numbers.map(num => {
+             const occupants = hoveredBed.occupiedNumbers.includes(num) ? (bedOccupants[num] || []) : [];
+             const color = bedColorMap[num];
+             const tieneNaranja = color === '#F97316';
+             const tieneRojo = color === '#EF4444';
+             const tieneActa = tieneNaranja || tieneRojo;
+             const rowBg = tieneRojo ? 'bg-red-600/80' : tieneNaranja ? 'bg-orange-600/80' : '';
+             return (
+               <div key={num} className={`border-b border-gray-700 last:border-0 py-0.5 ${rowBg}`}>
+                 <div className={`font-semibold ${tieneActa ? 'text-white' : 'text-white/80'}`}>Cama {num}</div>
+                 {occupants.length > 0 ? occupants.map((name, i) => (
+                   <div key={i} className={`pl-2 ${tieneActa ? 'text-white' : 'text-white'}`}>{name}</div>
+                 )) : (
+                   <div className="pl-2 text-gray-400">Libre</div>
+                 )}
+               </div>
+             );
+           })}
+        </div>
+      )}
     </div>
   );
 });

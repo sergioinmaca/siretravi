@@ -88,6 +88,7 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
   const pinchRef = useRef({ dist: 0, zoom: 1, offsetX: 0, offsetY: 0 });
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLongPressActiveRef = useRef(false);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const setCanvasRef = useCallback((node: HTMLCanvasElement | null) => {
     internalCanvasRef.current = node;
@@ -238,6 +239,7 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
     const mouseX = (e.clientX - rect.left) * scaleX;
     const mouseY = (e.clientY - rect.top) * scaleY;
     const { wx: worldX, wy: worldY } = screenToWorld(mouseX, mouseY);
+    const containerRect = containerRef.current?.getBoundingClientRect();
 
     let found: HoveredBed | null = null;
     for (const bed of bedsRenderRef.current) {
@@ -254,8 +256,8 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
           found = {
             numbers: bed.numbers,
             occupiedNumbers: bed.occupiedNumbers,
-            x: e.clientX - rect.left,
-            y: e.clientY - rect.top,
+            x: e.clientX - (containerRect?.left ?? rect.left),
+            y: e.clientY - (containerRect?.top ?? rect.top),
           };
         }
         break;
@@ -442,7 +444,7 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
   }, [zoom, offsetX, offsetY]);
 
   return (
-    <div className="space-y-3 min-w-0">
+    <div ref={containerRef} className="space-y-3 min-w-0 relative">
       <div className="flex items-center gap-3">
         <div className="h-8 w-1 bg-caracas-red rounded-full" />
         <h4 className="font-semibold text-gray-800">{moduloNombre}</h4>
@@ -473,7 +475,7 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
         </div>
       )}
       <div className="box-border border border-gray-200 rounded-xl overflow-hidden shadow-sm bg-white" style={portrait ? { width: '92vw', height: '550px' } : undefined}>
-        <div className="relative">
+        <div>
           <canvas
             ref={setCanvasRef}
             width={width}
@@ -488,35 +490,6 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
           />
-          {hoveredBed && (
-            <div
-              className="absolute z-50 bg-gray-900 text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-lg pointer-events-none whitespace-nowrap"
-              style={portrait ? {
-                left: hoveredBed.y,
-                top: hoveredBed.x + 12,
-                transform: 'rotate(90deg)',
-                transformOrigin: '0 0',
-              } : {
-                left: hoveredBed.x + 12,
-                top: hoveredBed.y,
-                transform: 'translateX(-50%) translateY(calc(-100% - 5px))',
-              }}
-            >
-              {hoveredBed.numbers.map(num => {
-                const occupants = hoveredBed.occupiedNumbers.includes(num) ? (bedOccupants[num] || []) : [];
-                return (
-                  <div key={num} className="border-b border-gray-700 last:border-0 py-0.5">
-                    <div className="font-semibold text-white/80">Cama {num}</div>
-                    {occupants.length > 0 ? occupants.map((name, i) => (
-                      <div key={i} className="pl-2 text-white">{name}</div>
-                    )) : (
-                      <div className="pl-2 text-gray-400">Libre</div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
           {zoom !== 1.0 && (
             <div className="absolute bottom-0 left-0 right-0 flex items-center gap-2 justify-center py-2 bg-gray-50/90 z-10">
               <button
@@ -536,6 +509,35 @@ const CroquisViewer = forwardRef<HTMLCanvasElement, CroquisViewerProps>(function
           )}
         </div>
       </div>
+      {hoveredBed && (
+        <div
+          className="absolute z-50 bg-gray-900 text-white text-xs font-medium px-3 py-1.5 rounded-lg shadow-lg pointer-events-none whitespace-nowrap"
+          style={portrait ? {
+            left: hoveredBed.y,
+            top: hoveredBed.x + 12,
+            transform: 'rotate(90deg)',
+            transformOrigin: '0 0',
+          } : {
+            left: hoveredBed.x + 12,
+            top: hoveredBed.y,
+            transform: 'translateX(-50%) translateY(calc(-100% - 5px))',
+          }}
+        >
+          {hoveredBed.numbers.map(num => {
+            const occupants = hoveredBed.occupiedNumbers.includes(num) ? (bedOccupants[num] || []) : [];
+            return (
+              <div key={num} className="border-b border-gray-700 last:border-0 py-0.5">
+                <div className="font-semibold text-white/80">Cama {num}</div>
+                {occupants.length > 0 ? occupants.map((name, i) => (
+                  <div key={i} className="pl-2 text-white">{name}</div>
+                )) : (
+                  <div className="pl-2 text-gray-400">Libre</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 });
