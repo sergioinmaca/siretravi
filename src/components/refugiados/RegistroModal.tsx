@@ -304,7 +304,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
     console.log('[DEBUG-FAMILIA] RegistroModal.handleSubmit — formData.familiaId:', formData.familiaId, '| esJefeFamilia:', formData.esJefeFamilia, '| isEditing:', isEditing);
 
     if (formData.esJefeFamilia) {
-      if (isEditing && refugiadoToEdit?.familia_id) {
+      if (isEditing && refugiadoToEdit?.familia_id && refugiadoToEdit?.es_jefe_familia) {
         finalFamiliaId = refugiadoToEdit.familia_id;
       } else {
         const nombreFamilia = `FAMILIA ${formData.nombres} ${formData.apellidos}`;
@@ -379,7 +379,7 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
       ingreso_familiar: formData.ingresoFamiliar || undefined,
       observaciones: formData.observaciones || undefined,
       observaciones_generales: formData.observacionesGenerales || undefined,
-      parentesco: formData.parentesco || undefined,
+      parentesco: formData.esJefeFamilia ? undefined : (formData.parentesco || undefined),
       hogar_solidario: formData.hogarSolidario,
       registro_captahuella: formData.registroCaptahuella === 'SI',
       registro_unico_vivienda: formData.registroUnicoVivienda === 'SI',
@@ -842,11 +842,11 @@ export default function RegistroModal({ isOpen, onClose, refugiadoToEdit }: Regi
               <div className="p-6 space-y-6">
                 <div className="flex gap-8">
                   <label className="flex items-center gap-3 cursor-pointer">
-                    <input type="radio" name="jerarquia" checked={formData.esJefeFamilia} onChange={() => setFormData(prev => ({...prev, esJefeFamilia: true}))} className="w-5 h-5 text-caracas-red focus:ring-caracas-red" />
+                    <input type="radio" name="jerarquia" checked={formData.esJefeFamilia} onChange={() => setFormData(prev => ({...prev, esJefeFamilia: true, familiaId: '', parentesco: ''}))} className="w-5 h-5 text-caracas-red focus:ring-caracas-red" />
                     <span className="text-gray-700 font-medium">Es Jefe de Familia</span>
                   </label>
                   <label className="flex items-center gap-3 cursor-pointer">
-                    <input type="radio" name="jerarquia" checked={!formData.esJefeFamilia} onChange={() => setFormData(prev => ({...prev, esJefeFamilia: false}))} className="w-5 h-5 text-caracas-red focus:ring-caracas-red" />
+                    <input type="radio" name="jerarquia" checked={!formData.esJefeFamilia} onChange={() => setFormData(prev => ({...prev, esJefeFamilia: false, parentesco: ''}))} className="w-5 h-5 text-caracas-red focus:ring-caracas-red" />
                     <span className="text-gray-700 font-medium">Pertenece a una familia</span>
                   </label>
                 </div>
