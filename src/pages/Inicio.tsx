@@ -10,6 +10,7 @@ import ListaIntegrantesModal from '../components/ui/ListaIntegrantesModal';
 import FichaRefugiadoModal from '../components/refugiados/FichaRefugiadoModal';
 import jsPDF from 'jspdf';
 import { filtrarActivos } from '../lib/retiredFilter';
+import DistribucionGeografica from '../components/inicio/DistribucionGeografica';
 
 export default function Inicio() {
   const { campamentoSeleccionado, refugiados = [], familias = [] } = useCampamento();
@@ -866,6 +867,8 @@ export default function Inicio() {
           </div>
         </div>
       </div>
+
+      <DistribucionGeografica refugiadosActivos={refugiadosActivos} onAbrirLista={abrirLista} />
 
       {/* Dashboard: Tenencia de Vivienda + Estatus | Ranking de Parroquias */}
       {/* Dashboard: Tenencia de Vivienda + Estatus | Ranking de Parroquias */}
