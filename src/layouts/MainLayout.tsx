@@ -360,7 +360,7 @@ export default function MainLayout() {
 
         {/* Content */}
         <div className={`flex-1 min-h-0 min-w-0 overflow-y-auto bg-caracas-light z-0 ${isMobile ? 'p-4 pt-14 pb-[72px]' : 'p-8 md:ml-20'}`}>
-          <div className={location.pathname === '/agenda' ? 'flex-1 min-h-0 flex flex-col overflow-hidden' : 'max-w-7xl mx-auto'}>
+          <div className={location.pathname === '/agenda' || location.pathname === '/cocina' ? 'flex-1 min-h-0 flex flex-col overflow-hidden' : 'max-w-7xl mx-auto'}>
             <Outlet />
           </div>
         </div>
