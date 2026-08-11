@@ -19,6 +19,7 @@ interface CompletarSemanaModalProps {
     fecha: string;
     tipo: TipoComida;
     menu: string;
+    bebida: string;
     hora_servicio: string;
     raciones: number;
     responsable?: string;
@@ -27,6 +28,7 @@ interface CompletarSemanaModalProps {
 
 interface ComidaForm {
   menu: string;
+  bebida: string;
   hora_servicio: string;
   raciones: number;
   responsable: string;
@@ -59,6 +61,7 @@ export default function CompletarSemanaModal({
       slots.forEach((s) => {
         forms[s.tipo] = {
           menu: '',
+          bebida: '',
           hora_servicio: s.hora_servicio,
           raciones: racionesDefault,
           responsable: responsableDefault,
@@ -116,11 +119,20 @@ export default function CompletarSemanaModal({
       return;
     }
 
+    const sinBebida = comidasSeleccionadas.filter(
+      (t) => !(porComida[t]?.bebida || '').trim()
+    );
+    if (sinBebida.length > 0) {
+      setError(`Falta la bebida de: ${sinBebida.map((t) => NOMBRE_TIPO_COMIDA[t]).join(', ')}`);
+      return;
+    }
+
     const entries = diasSeleccionados.flatMap((fecha) =>
       comidasSeleccionadas.map((tipo) => ({
         fecha,
         tipo,
         menu: (porComida[tipo]?.menu || '').trim(),
+        bebida: (porComida[tipo]?.bebida || '').trim(),
         hora_servicio: porComida[tipo]?.hora_servicio || '',
         raciones: Number(porComida[tipo]?.raciones) || 0,
         responsable: (porComida[tipo]?.responsable || '').trim() || undefined,
@@ -259,6 +271,18 @@ export default function CompletarSemanaModal({
                               rows={2}
                               className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all resize-none uppercase"
                               placeholder="Menú para todos los días seleccionados"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 mb-1">
+                              Bebida <span className="text-caracas-red">*</span>
+                            </label>
+                            <textarea
+                              value={form.bebida}
+                              onChange={(e) => updateComida(slot.tipo, { bebida: e.target.value.toUpperCase() })}
+                              rows={2}
+                              className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all resize-none uppercase"
+                              placeholder="Bebida para todos los días seleccionados"
                             />
                           </div>
                           <div className="grid grid-cols-3 gap-3">

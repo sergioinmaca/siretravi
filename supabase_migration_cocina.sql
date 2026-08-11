@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS cocina_menu (
   fecha         DATE NOT NULL,
   tipo          TEXT NOT NULL CHECK (tipo IN ('desayuno','merienda_1','almuerzo','merienda_2','cena','merienda_3')),
   menu          TEXT NOT NULL,
+  bebida        TEXT NOT NULL DEFAULT '',
   raciones      INTEGER NOT NULL DEFAULT 0,
   hora_servicio TIME NOT NULL,
   responsable   TEXT,

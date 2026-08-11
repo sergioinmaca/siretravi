@@ -104,6 +104,7 @@ export default function Cocina() {
 
   const handleSaveCelda = async (data: {
     menu: string;
+    bebida: string;
     hora_servicio: string;
     raciones: number;
     responsable?: string;
@@ -134,6 +135,7 @@ export default function Cocina() {
     fecha: string;
     tipo: TipoComida;
     menu: string;
+    bebida: string;
     hora_servicio: string;
     raciones: number;
     responsable?: string;

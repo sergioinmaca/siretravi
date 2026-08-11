@@ -19,6 +19,7 @@ interface EditarComidaModalProps {
   onClose: () => void;
   onSave: (data: {
     menu: string;
+    bebida: string;
     hora_servicio: string;
     raciones: number;
     responsable?: string;
@@ -42,6 +43,7 @@ export default function EditarComidaModal({
   onDelete,
 }: EditarComidaModalProps) {
   const [menu, setMenu] = useState('');
+  const [bebida, setBebida] = useState('');
   const [hora, setHora] = useState(slotHora);
   const [raciones, setRaciones] = useState(racionesDefault);
   const [responsable, setResponsable] = useState('');
@@ -52,6 +54,7 @@ export default function EditarComidaModal({
   useEffect(() => {
     if (isOpen) {
       setMenu(comida?.menu || '');
+      setBebida(comida?.bebida || '');
       setHora(comida?.hora_servicio || slotHora);
       setRaciones(comida?.raciones ?? racionesDefault);
       setResponsable(comida?.responsable || '');
@@ -76,6 +79,11 @@ export default function EditarComidaModal({
       return;
     }
 
+    if (!bebida.trim()) {
+      setError('La bebida es obligatoria');
+      return;
+    }
+
     if (!hora) {
       setError('La hora de servicio es obligatoria');
       return;
@@ -85,6 +93,7 @@ export default function EditarComidaModal({
     try {
       await onSave({
         menu: menu.trim(),
+        bebida: bebida.trim(),
         hora_servicio: hora,
         raciones: Number(raciones) || 0,
         responsable: responsable.trim() || undefined,
@@ -151,6 +160,20 @@ export default function EditarComidaModal({
               disabled={soloLectura}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all resize-none uppercase disabled:bg-gray-100 disabled:text-gray-500"
               placeholder="Describe qué se va a servir"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Bebida <span className="text-caracas-red">*</span>
+            </label>
+            <textarea
+              value={bebida}
+              onChange={(e) => setBebida(e.target.value.toUpperCase())}
+              rows={2}
+              disabled={soloLectura}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all resize-none uppercase disabled:bg-gray-100 disabled:text-gray-500"
+              placeholder="Qué se va a tomar (ej. Jugo de piña con pepino, café y agua)"
             />
           </div>
 

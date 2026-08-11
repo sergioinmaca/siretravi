@@ -129,6 +129,7 @@ export interface ComidaMenu {
   fecha: string;        // 'YYYY-MM-DD'
   tipo: TipoComida;
   menu: string;
+  bebida: string;
   raciones: number;
   hora_servicio: string; // 'HH:MM'
   responsable?: string | null;

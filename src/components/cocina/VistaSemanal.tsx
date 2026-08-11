@@ -133,9 +133,14 @@ export default function VistaSemanal({
                             {formatTime12h(comida.hora_servicio)}
                           </span>
                         )}
-                        <p className="text-[13px] font-semibold text-gray-800 leading-snug uppercase break-words pr-6">
+                        <p className="text-[13px] font-semibold text-gray-800 leading-snug uppercase hyphens-auto break-words pr-6">
                           {comida.menu}
                         </p>
+                        {comida.bebida && (
+                          <p className="text-[13px] font-semibold text-gray-800 leading-snug uppercase hyphens-auto break-words pr-6 mt-1">
+                            🥤 {comida.bebida}
+                          </p>
+                        )}
                         <p className="text-xs text-gray-500 mt-1">{comida.raciones} raciones</p>
                         {comida.responsable && (
                           <p className="text-xs font-medium text-gray-600 truncate mt-0.5">{comida.responsable}</p>

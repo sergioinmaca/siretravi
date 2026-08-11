@@ -138,12 +138,16 @@ export async function crearComida(data: {
   fecha: string;
   tipo: TipoComida;
   menu: string;
+  bebida: string;
   raciones: number;
   hora_servicio: string;
   responsable?: string;
 }): Promise<ComidaMenu> {
   if (!data.menu.trim()) {
     throw new Error('El menú es obligatorio');
+  }
+  if (!data.bebida.trim()) {
+    throw new Error('La bebida es obligatoria');
   }
 
   const { data: result, error } = await supabase
@@ -153,6 +157,7 @@ export async function crearComida(data: {
       fecha: data.fecha,
       tipo: data.tipo,
       menu: data.menu.trim(),
+      bebida: data.bebida.trim(),
       raciones: data.raciones,
       hora_servicio: data.hora_servicio,
       responsable: data.responsable?.trim() || null,
@@ -177,20 +182,30 @@ export async function crearComidas(
     fecha: string;
     tipo: TipoComida;
     menu: string;
+    bebida: string;
     raciones: number;
     hora_servicio: string;
     responsable?: string;
   }[]
 ): Promise<ComidaMenu[]> {
-  const rows = data.map((d) => ({
-    campamento_id: d.campamento_id,
-    fecha: d.fecha,
-    tipo: d.tipo,
-    menu: d.menu.trim(),
-    raciones: d.raciones,
-    hora_servicio: d.hora_servicio,
-    responsable: d.responsable?.trim() || null,
-  }));
+  const rows = data.map((d) => {
+    if (!d.menu.trim()) {
+      throw new Error('El menú es obligatorio');
+    }
+    if (!d.bebida.trim()) {
+      throw new Error('La bebida es obligatoria');
+    }
+    return {
+      campamento_id: d.campamento_id,
+      fecha: d.fecha,
+      tipo: d.tipo,
+      menu: d.menu.trim(),
+      bebida: d.bebida.trim(),
+      raciones: d.raciones,
+      hora_servicio: d.hora_servicio,
+      responsable: d.responsable?.trim() || null,
+    };
+  });
 
   const { data: result, error } = await supabase
     .from('cocina_menu')
@@ -212,6 +227,7 @@ export async function actualizarComida(
   id: string,
   data: {
     menu?: string;
+    bebida?: string;
     raciones?: number;
     hora_servicio?: string;
     responsable?: string;
@@ -223,6 +239,12 @@ export async function actualizarComida(
       throw new Error('El menú es obligatorio');
     }
     payload.menu = data.menu.trim();
+  }
+  if (data.bebida !== undefined) {
+    if (!data.bebida.trim()) {
+      throw new Error('La bebida es obligatoria');
+    }
+    payload.bebida = data.bebida.trim();
   }
   if (data.raciones !== undefined) payload.raciones = data.raciones;
   if (data.hora_servicio !== undefined) payload.hora_servicio = data.hora_servicio;
