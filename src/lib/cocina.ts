@@ -97,6 +97,26 @@ export async function fetchMenu(
   return (data || []) as ComidaMenu[];
 }
 
+export async function fetchResponsables(campamentoId: string): Promise<string[]> {
+  const { data, error } = await supabase
+    .from('cocina_menu')
+    .select('responsable')
+    .eq('campamento_id', campamentoId)
+    .not('responsable', 'is', null);
+
+  if (error) {
+    console.error('Error fetching responsables:', error);
+    throw error;
+  }
+
+  const set = new Set<string>();
+  (data || []).forEach((r) => {
+    const v = ((r as { responsable?: string | null }).responsable || '').trim().toUpperCase();
+    if (v) set.add(v);
+  });
+  return Array.from(set).sort((a, b) => a.localeCompare(b, 'es'));
+}
+
 export async function fetchPresentes(campamentoId: string): Promise<number> {
   const { data, error } = await supabase
     .from('refugiados')

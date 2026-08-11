@@ -3,9 +3,11 @@ import { X, Save, Trash2 } from 'lucide-react';
 import dayjs from '../../lib/dayjs';
 import { NOMBRE_TIPO_COMIDA } from '../../types';
 import type { ComidaMenu, TipoComida } from '../../types';
+import { fetchResponsables } from '../../lib/cocina';
 
 interface EditarComidaModalProps {
   isOpen: boolean;
+  campamentoId: string;
   fecha: string;
   tipo: TipoComida;
   comida: ComidaMenu | null;
@@ -26,6 +28,7 @@ interface EditarComidaModalProps {
 
 export default function EditarComidaModal({
   isOpen,
+  campamentoId,
   fecha,
   tipo,
   comida,
@@ -42,6 +45,7 @@ export default function EditarComidaModal({
   const [hora, setHora] = useState(slotHora);
   const [raciones, setRaciones] = useState(racionesDefault);
   const [responsable, setResponsable] = useState('');
+  const [responsables, setResponsables] = useState<string[]>([]);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
@@ -53,8 +57,11 @@ export default function EditarComidaModal({
       setResponsable(comida?.responsable || '');
       setError('');
       setSubmitting(false);
+      if (campamentoId) {
+        fetchResponsables(campamentoId).then(setResponsables).catch(console.error);
+      }
     }
-  }, [isOpen, comida, slotHora, racionesDefault]);
+  }, [isOpen, comida, slotHora, racionesDefault, campamentoId]);
 
   if (!isOpen) return null;
 
@@ -179,12 +186,18 @@ export default function EditarComidaModal({
             </label>
             <input
               type="text"
+              list="sugerencia-responsables"
               value={responsable}
               onChange={(e) => setResponsable(e.target.value.toUpperCase())}
               disabled={soloLectura}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase disabled:bg-gray-100 disabled:text-gray-500"
               placeholder="Nombre de quien prepara/sirve"
             />
+            <datalist id="sugerencia-responsables">
+              {responsables.map((r) => (
+                <option key={r} value={r} />
+              ))}
+            </datalist>
           </div>
 
           <div className="flex gap-3 justify-end pt-2">

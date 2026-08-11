@@ -4,9 +4,11 @@ import dayjs from '../../lib/dayjs';
 import { NOMBRE_TIPO_COMIDA } from '../../types';
 import type { CocinaSlot, TipoComida } from '../../types';
 import { formatTime12h } from '../../lib/formatTime';
+import { fetchResponsables } from '../../lib/cocina';
 
 interface CompletarSemanaModalProps {
   isOpen: boolean;
+  campamentoId: string;
   campamentoNombre: string;
   dias: dayjs.Dayjs[];
   slots: CocinaSlot[];
@@ -32,6 +34,7 @@ interface ComidaForm {
 
 export default function CompletarSemanaModal({
   isOpen,
+  campamentoId,
   campamentoNombre,
   dias,
   slots,
@@ -43,6 +46,7 @@ export default function CompletarSemanaModal({
   const [diasSeleccionados, setDiasSeleccionados] = useState<string[]>([]);
   const [comidasSeleccionadas, setComidasSeleccionadas] = useState<TipoComida[]>([]);
   const [porComida, setPorComida] = useState<Record<string, ComidaForm>>({});
+  const [responsables, setResponsables] = useState<string[]>([]);
   const [result, setResult] = useState<{ creadas: number; omitidas: number } | null>(null);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -64,8 +68,11 @@ export default function CompletarSemanaModal({
       setResult(null);
       setError('');
       setSubmitting(false);
+      if (campamentoId) {
+        fetchResponsables(campamentoId).then(setResponsables).catch(console.error);
+      }
     }
-  }, [isOpen, dias, slots, racionesDefault, responsableDefault]);
+  }, [isOpen, dias, slots, racionesDefault, responsableDefault, campamentoId]);
 
   if (!isOpen) return null;
 
@@ -278,6 +285,7 @@ export default function CompletarSemanaModal({
                               <label className="block text-xs font-medium text-gray-600 mb-1">Responsable</label>
                               <input
                                 type="text"
+                                list="sugerencia-responsables"
                                 value={form.responsable}
                                 onChange={(e) => updateComida(slot.tipo, { responsable: e.target.value.toUpperCase() })}
                                 className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase"
@@ -291,6 +299,12 @@ export default function CompletarSemanaModal({
                 })}
               </div>
             </div>
+
+            <datalist id="sugerencia-responsables">
+              {responsables.map((r) => (
+                <option key={r} value={r} />
+              ))}
+            </datalist>
 
             <div className="flex gap-3 justify-end pt-2">
               <button

@@ -281,6 +281,7 @@ export default function Cocina() {
 
       <EditarComidaModal
         isOpen={!!celdaEdicion}
+        campamentoId={campamentoSeleccionado.id}
         fecha={celdaEdicion?.fecha || ''}
         tipo={celdaEdicion?.tipo || 'desayuno'}
         comida={celdaEdicion?.comida || null}
@@ -298,6 +299,7 @@ export default function Cocina() {
 
       <CompletarSemanaModal
         isOpen={isCompletarOpen}
+        campamentoId={campamentoSeleccionado.id}
         campamentoNombre={campamentoSeleccionado.nombre}
         dias={dias}
         slots={slotsActivos}
