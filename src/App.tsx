@@ -10,6 +10,7 @@ import Usuarios from './pages/Usuarios';
 import Login from './pages/Login';
 import Reportes from './pages/Reportes';
 import Agenda from './pages/Agenda';
+import Cocina from './pages/Cocina';
 import Actas from './pages/Actas';
 import SaludIndex from './pages/Salud/Index';
 import HistoriasClinicas from './pages/Salud/HistoriasClinicas';
@@ -58,6 +59,7 @@ function AppRoutes() {
         <Route path="salud/regimen-diario" element={<RegimenDiario />} />
         <Route path="salud/atenciones" element={<Atenciones />} />
         <Route path="agenda" element={<Agenda />} />
+        <Route path="cocina" element={<Cocina />} />
         <Route path="actas" element={<Actas />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

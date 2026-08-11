@@ -17,6 +17,7 @@ import {
   HeartPulse,
   Calendar,
   FileText,
+  UtensilsCrossed,
   Loader2,
   X,
   RefreshCw,
@@ -34,6 +35,7 @@ const menuItems = [
   { path: '/reportes', icon: BarChart2, label: 'Reportes' },
   { path: '/usuarios', icon: Settings, label: 'Usuarios' },
   { path: '/agenda', icon: Calendar, label: 'Agenda' },
+  { path: '/cocina', icon: UtensilsCrossed, label: 'Cocina' },
   { path: '/actas', icon: FileText, label: 'Actas' },
 ];
 
@@ -46,6 +48,7 @@ const pathToModulo: Record<string, string> = {
   '/reportes': 'Reportes',
   '/usuarios': 'Usuarios',
   '/agenda': 'Agenda',
+  '/cocina': 'Cocina',
   '/actas': 'Actas',
 };
 

@@ -102,6 +102,40 @@ export interface CategoriaEvento {
   created_at?: string;
 }
 
+export const TIPOS_COMIDA = ['desayuno', 'merienda_1', 'almuerzo', 'merienda_2', 'cena', 'merienda_3'] as const;
+export type TipoComida = typeof TIPOS_COMIDA[number];
+
+export const NOMBRE_TIPO_COMIDA: Record<TipoComida, string> = {
+  desayuno: 'Desayuno',
+  merienda_1: 'Merienda (Post desayuno)',
+  almuerzo: 'Almuerzo',
+  merienda_2: 'Merienda (Post almuerzo)',
+  cena: 'Cena',
+  merienda_3: 'Merienda (Post cena)',
+};
+
+export interface CocinaSlot {
+  id: string;
+  campamento_id: string;
+  tipo: TipoComida;
+  activo: boolean;
+  hora_servicio: string;
+  created_at?: string;
+}
+
+export interface ComidaMenu {
+  id: string;
+  campamento_id: string;
+  fecha: string;        // 'YYYY-MM-DD'
+  tipo: TipoComida;
+  menu: string;
+  raciones: number;
+  hora_servicio: string; // 'HH:MM'
+  responsable?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface Refugiado {
   id: string;
   campamento_id: string;
