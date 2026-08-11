@@ -11,6 +11,7 @@ import FichaRefugiadoModal from '../components/refugiados/FichaRefugiadoModal';
 import jsPDF from 'jspdf';
 import { filtrarActivos } from '../lib/retiredFilter';
 import DistribucionGeografica from '../components/inicio/DistribucionGeografica';
+import MenuDelDia from '../components/inicio/MenuDelDia';
 
 export default function Inicio() {
   const { campamentoSeleccionado, refugiados = [], familias = [] } = useCampamento();
@@ -866,6 +867,8 @@ export default function Inicio() {
             </p>
           </div>
         </div>
+
+        <MenuDelDia campamentoId={campamentoSeleccionado?.id} />
       </div>
 
       <DistribucionGeografica refugiadosActivos={refugiadosActivos} onAbrirLista={abrirLista} />

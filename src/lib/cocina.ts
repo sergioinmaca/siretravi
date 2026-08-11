@@ -17,6 +17,12 @@ export function sortSlots(slots: CocinaSlot[]): CocinaSlot[] {
   );
 }
 
+export function dividirNombreComida(nombre: string): { titulo: string; subtitulo: string | null } {
+  const idx = nombre.indexOf(' (');
+  if (idx === -1) return { titulo: nombre, subtitulo: null };
+  return { titulo: nombre.slice(0, idx), subtitulo: nombre.slice(idx + 1) };
+}
+
 export async function fetchSlots(campamentoId: string): Promise<CocinaSlot[]> {
   const { data, error } = await supabase
     .from('cocina_slots')

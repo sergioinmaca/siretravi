@@ -3,12 +3,7 @@ import dayjs from '../../lib/dayjs';
 import { NOMBRE_TIPO_COMIDA } from '../../types';
 import type { CocinaSlot, ComidaMenu, TipoComida } from '../../types';
 import { formatTime12h } from '../../lib/formatTime';
-
-const dividirNombreComida = (nombre: string): { titulo: string; subtitulo: string | null } => {
-  const idx = nombre.indexOf(' (');
-  if (idx === -1) return { titulo: nombre, subtitulo: null };
-  return { titulo: nombre.slice(0, idx), subtitulo: nombre.slice(idx + 1) };
-};
+import { dividirNombreComida } from '../../lib/cocina';
 
 interface VistaSemanalProps {
   dias: dayjs.Dayjs[];
