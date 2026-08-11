@@ -5,6 +5,7 @@ import SelectorCategoria from './SelectorCategoria';
 import DateInput from '../ui/DateInput';
 import { fetchCategorias, crearCategoria, actualizarCategoria } from '../../lib/eventos';
 import { addOneHour } from '../../lib/formatTime';
+import { useAuth } from '../../context/AuthContext';
 import type { CategoriaEvento } from '../../types';
 
 interface CrearEventoModalProps {
@@ -19,6 +20,7 @@ interface CrearEventoModalProps {
     tipo: 'permanente' | 'unico';
     fecha_fin?: string;
     categoria_id?: string;
+    responsable?: string;
   }) => Promise<void>;
   selectedDate?: dayjs.Dayjs;
   campamentoNombre?: string;
@@ -26,6 +28,7 @@ interface CrearEventoModalProps {
 }
 
 export default function CrearEventoModal({ isOpen, onClose, onSave, selectedDate, campamentoNombre, tienePermisoCrear }: CrearEventoModalProps) {
+  const { usuarioActual } = useAuth();
   const [titulo, setTitulo] = useState('');
   const [fecha, setFecha] = useState('');
   const [horaInicio, setHoraInicio] = useState('08:00');
@@ -33,6 +36,7 @@ export default function CrearEventoModal({ isOpen, onClose, onSave, selectedDate
   const [descripcion, setDescripcion] = useState('');
   const [tipo, setTipo] = useState<'unico' | 'permanente'>('unico');
   const [categoriaId, setCategoriaId] = useState<string | undefined>();
+  const [responsable, setResponsable] = useState('');
   const [categorias, setCategorias] = useState<CategoriaEvento[]>([]);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -46,10 +50,11 @@ export default function CrearEventoModal({ isOpen, onClose, onSave, selectedDate
       setDescripcion('');
       setTipo('unico');
       setCategoriaId(undefined);
+      setResponsable(usuarioActual ? `${usuarioActual.nombres} ${usuarioActual.apellidos}` : '');
       setError('');
       fetchCategorias().then(setCategorias).catch(console.error);
     }
-  }, [isOpen, selectedDate]);
+  }, [isOpen, selectedDate, usuarioActual]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,6 +62,11 @@ export default function CrearEventoModal({ isOpen, onClose, onSave, selectedDate
 
     if (!titulo.trim()) {
       setError('El título es obligatorio');
+      return;
+    }
+
+    if (!responsable.trim()) {
+      setError('El responsable es obligatorio');
       return;
     }
 
@@ -80,6 +90,7 @@ export default function CrearEventoModal({ isOpen, onClose, onSave, selectedDate
         tipo,
         fecha_fin: fechaFin,
         categoria_id: categoriaId || undefined,
+        responsable: responsable.trim() || undefined,
       });
       onClose();
     } catch (err: any) {
@@ -135,6 +146,26 @@ export default function CrearEventoModal({ isOpen, onClose, onSave, selectedDate
               className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase"
               placeholder="Nombre del evento"
               autoFocus
+            />
+          </div>
+
+          <SelectorCategoria
+            categorias={categorias}
+            selectedId={categoriaId}
+            onSelect={setCategoriaId}
+            onCreateCategoria={handleCrearCategoria}
+            onUpdateCategoria={handleUpdateCategoria}
+            puedeCrear={!!tienePermisoCrear}
+          />
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Responsable <span className="text-caracas-red">*</span></label>
+            <input
+              type="text"
+              value={responsable}
+              onChange={(e) => setResponsable(e.target.value.toUpperCase())}
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase"
+              placeholder="Nombre y apellido del responsable"
             />
           </div>
 
@@ -197,15 +228,6 @@ export default function CrearEventoModal({ isOpen, onClose, onSave, selectedDate
               />
             </div>
           </div>
-
-          <SelectorCategoria
-            categorias={categorias}
-            selectedId={categoriaId}
-            onSelect={setCategoriaId}
-            onCreateCategoria={handleCrearCategoria}
-            onUpdateCategoria={handleUpdateCategoria}
-            puedeCrear={!!tienePermisoCrear}
-          />
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Descripción (opcional)</label>

@@ -10,10 +10,11 @@ interface CalendarioSemanalProps {
   currentDate: dayjs.Dayjs;
   eventosPorDia: Map<string, EventoOcurrencia[]>;
   onDayClick: (date: dayjs.Dayjs) => void;
+  onEventoClick: (evento: EventoOcurrencia) => void;
   categorias: CategoriaEvento[];
 }
 
-export default function CalendarioSemanal({ currentDate, eventosPorDia, onDayClick, categorias }: CalendarioSemanalProps) {
+export default function CalendarioSemanal({ currentDate, eventosPorDia, onDayClick, onEventoClick, categorias }: CalendarioSemanalProps) {
   const hoy = dayjs().format('YYYY-MM-DD');
   const inicioSemana = currentDate.startOf('week');
 
@@ -112,7 +113,7 @@ export default function CalendarioSemanal({ currentDate, eventosPorDia, onDayCli
                           return (
                             <div
                               key={baseKey}
-                              className="text-[13px] px-1 py-0.5 rounded text-white absolute overflow-hidden pointer-events-auto"
+                              className="text-[13px] px-1 py-0.5 rounded text-white absolute overflow-hidden pointer-events-auto cursor-pointer"
                               style={{
                                 backgroundColor: getCategoriaColor(evento),
                                 top: `${top}rem`,
@@ -120,6 +121,10 @@ export default function CalendarioSemanal({ currentDate, eventosPorDia, onDayCli
                                 width: `calc(100% - ${offset}rem)`,
                                 minHeight: `${h}rem`,
                                 zIndex: hoveredKey === baseKey ? 50 : level,
+                              }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onEventoClick(evento);
                               }}
                               onMouseEnter={(e) => {
                                 setHoveredKey(baseKey);

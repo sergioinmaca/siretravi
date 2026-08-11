@@ -61,7 +61,6 @@ interface DetalleEventoModalProps {
   evento: EventoOcurrencia | null;
   categorias: CategoriaEvento[];
   campamentoNombre?: string;
-  campamentoId: string;
   tienePermisoEditar?: boolean;  // se pasa tienePermisoCrear
   onEventoUpdated: () => void;
 }

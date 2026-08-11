@@ -41,6 +41,7 @@ export default function EditorEventosModal({
   const [formDescripcion, setFormDescripcion] = useState('');
   const [formTipo, setFormTipo] = useState<'unico' | 'permanente'>('unico');
   const [formCategoriaId, setFormCategoriaId] = useState<string | undefined>();
+  const [formResponsable, setFormResponsable] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -97,6 +98,7 @@ export default function EditorEventosModal({
       setFormDescripcion(selectedEvento.descripcion || '');
       setFormTipo(selectedEvento.tipo);
       setFormCategoriaId(selectedEvento.categoria_id || undefined);
+      setFormResponsable(selectedEvento.responsable || '');
       setError('');
     }
   }, [selectedEvento]);
@@ -111,6 +113,11 @@ export default function EditorEventosModal({
 
     if (!formTitulo.trim()) {
       setError('El título es obligatorio');
+      return;
+    }
+
+    if (!formResponsable.trim()) {
+      setError('El responsable es obligatorio');
       return;
     }
 
@@ -134,6 +141,7 @@ export default function EditorEventosModal({
           hora_fin: formHoraFin || addOneHour(formHoraInicio),
         tipo: formTipo,
         categoria_id: formCategoriaId || undefined,
+        responsable: formResponsable.trim() || undefined,
       });
       const evts = await fetchEventos(campamentoId, fechaHasta);
       setEventos(evts);
@@ -281,6 +289,26 @@ export default function EditorEventosModal({
                   />
                 </div>
 
+                <SelectorCategoria
+                  categorias={categorias}
+                  selectedId={formCategoriaId}
+                  onSelect={setFormCategoriaId}
+                  onCreateCategoria={handleCrearCategoria}
+                  onUpdateCategoria={handleUpdateCategoria}
+                  puedeCrear={!!tienePermisoCrear}
+                />
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Responsable <span className="text-caracas-red">*</span></label>
+                  <input
+                    type="text"
+                    value={formResponsable}
+                    onChange={(e) => setFormResponsable(e.target.value.toUpperCase())}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase"
+                    placeholder="Nombre y apellido del responsable"
+                  />
+                </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de evento</label>
                   <div className="flex gap-2">
@@ -340,15 +368,6 @@ export default function EditorEventosModal({
                     />
                   </div>
                 </div>
-
-                <SelectorCategoria
-                  categorias={categorias}
-                  selectedId={formCategoriaId}
-                  onSelect={setFormCategoriaId}
-                  onCreateCategoria={handleCrearCategoria}
-                  onUpdateCategoria={handleUpdateCategoria}
-                  puedeCrear={!!tienePermisoCrear}
-                />
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Descripción (opcional)</label>

@@ -9,10 +9,11 @@ interface CalendarioMensualProps {
   currentDate: dayjs.Dayjs;
   eventosPorDia: Map<string, EventoOcurrencia[]>;
   onDayClick: (date: dayjs.Dayjs) => void;
+  onEventoClick: (evento: EventoOcurrencia) => void;
   categorias: CategoriaEvento[];
 }
 
-export default function CalendarioMensual({ currentDate, eventosPorDia, onDayClick, categorias }: CalendarioMensualProps) {
+export default function CalendarioMensual({ currentDate, eventosPorDia, onDayClick, onEventoClick, categorias }: CalendarioMensualProps) {
   const hoy = dayjs().format('YYYY-MM-DD');
   const inicioMes = currentDate.startOf('month');
   const finMes = currentDate.endOf('month');
@@ -91,8 +92,12 @@ export default function CalendarioMensual({ currentDate, eventosPorDia, onDayCli
                       {eventos.map((evento, idx) => (
                         <div
                           key={`${evento.id}-${idx}`}
-                          className="text-sm px-1.5 py-1 rounded text-white relative overflow-hidden"
+                          className="text-sm px-1.5 py-1 rounded text-white relative overflow-hidden cursor-pointer"
                           style={{ backgroundColor: getCategoriaColor(evento) }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onEventoClick(evento);
+                          }}
                           onMouseEnter={(e) => {
                             if (evento.descripcion) {
                               const rect = (e.target as HTMLElement).getBoundingClientRect();

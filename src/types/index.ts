@@ -87,6 +87,7 @@ export interface Evento {
   hora_fin?: string;
   tipo: 'permanente' | 'unico';
   categoria_id?: string;
+  responsable?: string;
   created_at?: string;
 }
 

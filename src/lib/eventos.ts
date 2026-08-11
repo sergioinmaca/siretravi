@@ -29,7 +29,11 @@ export async function crearEvento(data: {
   hora_fin?: string;
   tipo: 'permanente' | 'unico';
   categoria_id?: string;
+  responsable?: string;
 }): Promise<Evento> {
+  if (!data.responsable || !data.responsable.trim()) {
+    throw new Error('El responsable es obligatorio');
+  }
   const { data: result, error } = await supabase
     .from('eventos')
     .insert({
@@ -42,6 +46,7 @@ export async function crearEvento(data: {
       hora_fin: data.hora_fin || null,
       tipo: data.tipo,
       categoria_id: data.categoria_id || null,
+      responsable: data.responsable.trim(),
     })
     .select()
     .single();
@@ -63,6 +68,7 @@ export async function actualizarEvento(id: string, data: {
   hora_fin?: string;
   tipo?: 'permanente' | 'unico';
   categoria_id?: string;
+  responsable?: string;
 }): Promise<Evento> {
   const payload: Record<string, unknown> = {};
   if (data.titulo !== undefined) payload.titulo = data.titulo;
@@ -76,6 +82,12 @@ export async function actualizarEvento(id: string, data: {
     payload.fecha_fin = data.tipo === 'permanente' ? data.fecha_fin : null;
   }
   if (data.categoria_id !== undefined) payload.categoria_id = data.categoria_id || null;
+  if (data.responsable !== undefined) {
+    if (!data.responsable.trim()) {
+      throw new Error('El responsable es obligatorio');
+    }
+    payload.responsable = data.responsable.trim();
+  }
 
   const { data: result, error } = await supabase
     .from('eventos')

@@ -10,6 +10,7 @@ import CalendarioMensual from '../components/agenda/CalendarioMensual';
 import CalendarioSemanal from '../components/agenda/CalendarioSemanal';
 import CrearEventoModal from '../components/agenda/CrearEventoModal';
 import EditorEventosModal from '../components/agenda/EditorEventosModal';
+import DetalleEventoModal from '../components/agenda/DetalleEventoModal';
 import type { Evento, CategoriaEvento, EventoOcurrencia } from '../types';
 
 export default function Agenda() {
@@ -42,6 +43,7 @@ export default function Agenda() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [modalDate, setModalDate] = useState<dayjs.Dayjs | undefined>();
+  const [eventoSeleccionado, setEventoSeleccionado] = useState<EventoOcurrencia | null>(null);
 
   const rango = useMemo(() => {
     if (vista === 'mes') {
@@ -142,6 +144,10 @@ export default function Agenda() {
     setIsModalOpen(true);
   };
 
+  const handleEventoClick = (evento: EventoOcurrencia) => {
+    setEventoSeleccionado(evento);
+  };
+
   const navegarAtras = () => {
     setCurrentDate((prev) =>
       vista === 'mes' ? prev.subtract(1, 'month') : prev.subtract(1, 'week')
@@ -235,7 +241,6 @@ export default function Agenda() {
       const legendRows = Math.ceil(catsArr.length / legendCols);
       const calY = Math.max(m + 17, legendY + legendRows * 5 + 2);
       const dayH = 8;
-      let calGridH = 0;
 
       if (vista === 'mes') {
         const inicioMes = currentDate.startOf('month');
@@ -259,7 +264,6 @@ export default function Agenda() {
         const calPct = 0.95;
         const calH = availH * calPct;
         const rowH = calH / semanas.length;
-        calGridH = semanas.length * rowH;
         const DIAS_H = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
         const eventSlot = 5;
@@ -344,9 +348,8 @@ export default function Agenda() {
         const hourColW = 13;
         const dayColW = (pw - m - hourColW - m) / 7;
         const availH = ph - m - calY - dayH - m;
-        const calH = availH * 0.68;
+        const calH = availH * 0.95;
         const hourRowH = calH / HORAS.length;
-        calGridH = HORAS.length * hourRowH;
         const gridY = calY + dayH;
 
         // Day headers (two-line format)
@@ -459,7 +462,7 @@ export default function Agenda() {
         }
       }
 
-      if (vista === 'mes') {
+      if (vista === 'mes' || vista === 'semana') {
         pdf.addPage();
         pdf.setFontSize(11);
         pdf.setFont('helvetica', 'bold');
@@ -468,7 +471,7 @@ export default function Agenda() {
         pdf.text(`Agenda ${tituloPeriodo()} - Listado de eventos`, pw - m, m + 5, { align: 'right' });
       }
 
-      const actY = vista === 'mes' ? m + 16 : calY + dayH + calGridH + 4;
+      const actY = m + 16;
       const DIAS_N = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
       const gap = 1;
       const numCols = vista === 'mes' ? 6 : 7;
@@ -507,10 +510,38 @@ export default function Agenda() {
           }
           
           if (colYs[col] > finAct - 2) return;
+
+          if (e.responsable) {
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(7);
+            pdf.setTextColor(107, 114, 128);
+            const wrappedResp = pdf.splitTextToSize(e.responsable, colW - 2);
+            for (let i = 0; i < wrappedResp.length; i++) {
+              if (colYs[col] > finAct - 2) break;
+              pdf.text(wrappedResp[i], colXs[col] + 2, colYs[col]);
+              colYs[col] += 3.5;
+            }
+          }
+
+          if (colYs[col] > finAct - 2) return;
           pdf.setFontSize(7);
           pdf.setTextColor(156, 163, 175);
           pdf.text(hStr, colXs[col] + 2, colYs[col]);
           colYs[col] += 5;
+
+          if (e.descripcion) {
+            pdf.setFont('helvetica', 'italic');
+            pdf.setFontSize(7);
+            pdf.setTextColor(107, 114, 128);
+            const wrappedDesc = pdf.splitTextToSize(e.descripcion, colW - 2);
+            for (let i = 0; i < wrappedDesc.length; i++) {
+              if (colYs[col] > finAct - 2) break;
+              pdf.text(wrappedDesc[i], colXs[col] + 2, colYs[col]);
+              colYs[col] += 3.5;
+            }
+            colYs[col] += 1;
+            pdf.setFont('helvetica', 'normal');
+          }
         };
 
         if (vista === 'semana') {
@@ -663,6 +694,7 @@ export default function Agenda() {
               currentDate={currentDate}
               eventosPorDia={eventosPorDia}
               onDayClick={handleDayClick}
+              onEventoClick={handleEventoClick}
               categorias={categorias}
             />
           ) : (
@@ -670,6 +702,7 @@ export default function Agenda() {
               currentDate={currentDate}
               eventosPorDia={eventosPorDia}
               onDayClick={handleDayClick}
+              onEventoClick={handleEventoClick}
               categorias={categorias}
             />
           )}
@@ -694,6 +727,16 @@ export default function Agenda() {
         campamentoId={campamentoSeleccionado.id}
         campamentoNombre={campamentoSeleccionado.nombre}
         tienePermisoCrear={tienePermisoCrear}
+      />
+
+      <DetalleEventoModal
+        isOpen={!!eventoSeleccionado}
+        onClose={() => setEventoSeleccionado(null)}
+        evento={eventoSeleccionado}
+        categorias={categorias}
+        campamentoNombre={campamentoSeleccionado.nombre}
+        tienePermisoEditar={tienePermisoCrear}
+        onEventoUpdated={recargarEventos}
       />
     </div>
   );
