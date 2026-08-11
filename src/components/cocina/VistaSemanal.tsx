@@ -128,6 +128,11 @@ export default function VistaSemanal({
                             <Trash2 size={14} />
                           </button>
                         )}
+                        {comida.hora_servicio.slice(0, 5) !== slot.hora_servicio.slice(0, 5) && (
+                          <span className="inline-block text-[11px] font-bold text-caracas-red mb-1 mr-6">
+                            {formatTime12h(comida.hora_servicio)}
+                          </span>
+                        )}
                         <p className="text-[13px] font-semibold text-gray-800 leading-snug uppercase break-words pr-6">
                           {comida.menu}
                         </p>

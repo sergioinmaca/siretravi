@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Save } from 'lucide-react';
+import { X, Save, Lock } from 'lucide-react';
 import { NOMBRE_TIPO_COMIDA } from '../../types';
 import type { CocinaSlot, TipoComida } from '../../types';
 import { formatTime12h } from '../../lib/formatTime';
@@ -106,8 +106,10 @@ export default function ConfigHorariosModal({
                       type="button"
                       onClick={() => !bloqueado && update(s.tipo, { activo: !s.activo })}
                       className={`relative w-11 h-6 rounded-full transition-colors shrink-0 ${
-                        s.activo ? 'bg-caracas-red' : 'bg-gray-300'
-                      } ${bloqueado ? 'cursor-default' : 'cursor-pointer'}`}
+                        bloqueado
+                          ? `bg-gray-400 cursor-not-allowed opacity-70`
+                          : `${s.activo ? 'bg-caracas-red' : 'bg-gray-300'} cursor-pointer`
+                      }`}
                       title={bloqueado ? 'Esta comida siempre está activa' : undefined}
                     >
                       <span
@@ -117,9 +119,14 @@ export default function ConfigHorariosModal({
                       />
                     </button>
                     <div className="min-w-0">
-                      <p className="text-sm font-semibold text-gray-700 truncate">
-                        {NOMBRE_TIPO_COMIDA[s.tipo]}
-                      </p>
+                      <div className="flex items-center gap-1.5">
+                        {bloqueado && (
+                          <Lock size={12} className="text-gray-400 shrink-0" />
+                        )}
+                        <p className="text-sm font-semibold text-gray-700 truncate">
+                          {NOMBRE_TIPO_COMIDA[s.tipo]}
+                        </p>
+                      </div>
                       <p className="text-xs text-gray-400">
                         {formatTime12h(s.hora_servicio) || 'Sin hora'}
                       </p>
@@ -137,8 +144,8 @@ export default function ConfigHorariosModal({
           </div>
 
           <p className="text-xs text-gray-400 leading-relaxed">
-            La hora se precarga al crear comidas nuevas. Cambiar una hora aquí no altera las comidas
-            ya cargadas.
+            Desayuno, Almuerzo y Cena están siempre activos. La hora se precarga al crear comidas
+            nuevas; cambiarla aquí no altera las comidas ya cargadas.
           </p>
 
           <div className="flex gap-3 justify-end pt-2">
