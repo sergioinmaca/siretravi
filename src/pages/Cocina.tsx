@@ -198,7 +198,7 @@ export default function Cocina() {
 
   return (
     <div className="flex-1 grid grid-rows-[auto_auto_1fr] gap-1.5 min-h-0">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <h1 className="text-2xl font-bold text-gray-800">Cocina</h1>
         <div className="flex items-center gap-2">
           {(puedeCrear || puedeModificar) && (
@@ -216,7 +216,8 @@ export default function Cocina() {
               className="flex items-center gap-2 bg-caracas-red hover:bg-red-800 text-white px-5 py-2.5 rounded-xl font-medium transition-colors shadow-md"
             >
               <CalendarRange size={18} />
-              Completar Semana
+              <span className="md:hidden">Semana</span>
+              <span className="hidden md:inline">Completar Semana</span>
             </button>
           )}
         </div>
@@ -229,7 +230,13 @@ export default function Cocina() {
         >
           <ChevronLeft size={20} />
         </button>
-        <h2 className="text-lg font-semibold text-gray-700 min-w-[220px] text-center">
+        <button
+          onClick={irHoy}
+          className="px-3 py-1.5 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors md:order-4 md:ml-2"
+        >
+          Hoy
+        </button>
+        <h2 className="text-base md:text-lg font-semibold text-gray-700 min-w-[140px] md:min-w-[220px] text-center flex-1 md:flex-none">
           Semana del {dias[0].format('DD/MM/YYYY')} al {dias[6].format('DD/MM/YYYY')}
         </h2>
         <button
@@ -238,13 +245,7 @@ export default function Cocina() {
         >
           <ChevronRight size={20} />
         </button>
-        <button
-          onClick={irHoy}
-          className="ml-2 px-3 py-1.5 text-sm font-medium text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors"
-        >
-          Hoy
-        </button>
-        <span className="ml-2 text-xs text-gray-400">
+        <span className="ml-2 text-xs text-gray-400 hidden md:inline">
           Raciones por defecto: <span className="font-semibold text-gray-600">{presentes}</span> presentes
         </span>
       </div>

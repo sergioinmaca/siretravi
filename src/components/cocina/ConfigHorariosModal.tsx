@@ -3,6 +3,7 @@ import { X, Save, Lock } from 'lucide-react';
 import { NOMBRE_TIPO_COMIDA } from '../../types';
 import type { CocinaSlot, TipoComida } from '../../types';
 import { formatTime12h } from '../../lib/formatTime';
+import { useModalBackLock } from '../../hooks/useModalBackLock';
 
 interface ConfigHorariosModalProps {
   isOpen: boolean;
@@ -26,6 +27,8 @@ export default function ConfigHorariosModal({
   >([]);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  useModalBackLock(isOpen);
 
   useEffect(() => {
     if (isOpen) {
@@ -68,9 +71,9 @@ export default function ConfigHorariosModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden animate-fade-in-up">
-        <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between">
+    <div className="fixed inset-0 z-[60] flex flex-col md:items-center md:justify-center md:p-4 md:bg-gray-900/40 md:backdrop-blur-sm">
+      <div className="bg-white w-full h-full pt-[calc(env(safe-area-inset-top)+3.5rem)] md:pt-0 md:h-auto md:max-h-[90vh] md:max-w-md md:rounded-3xl md:shadow-2xl flex flex-col overflow-hidden animate-slide-up relative">
+        <div className="hidden md:flex px-6 py-5 border-b border-gray-100 items-center justify-between shrink-0">
           <div>
             <h2 className="text-xl font-bold text-gray-800">Horarios del Campamento</h2>
             {campamentoNombre && (
@@ -84,7 +87,19 @@ export default function ConfigHorariosModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5">
+        <button onClick={onClose} className="absolute top-[calc(env(safe-area-inset-top)+3.75rem)] right-4 z-20 md:hidden p-2 bg-caracas-red hover:bg-red-800 rounded-full text-white transition-colors">
+          <X size={24} />
+        </button>
+
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto pt-5 px-5 pb-[calc(env(safe-area-inset-bottom)+4.5rem)] md:p-6 space-y-5">
+          <div className="md:hidden">
+            <h2 className="text-xl font-bold text-gray-800">Horarios del Campamento</h2>
+            {campamentoNombre && (
+              <p className="text-sm text-gray-500 mt-0.5">
+                Campamento: <span className="font-semibold text-caracas-red">{campamentoNombre}</span>
+              </p>
+            )}
+          </div>
           {error && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm font-medium">
               {error}

@@ -5,6 +5,7 @@ import { NOMBRE_TIPO_COMIDA } from '../../types';
 import type { CocinaSlot, TipoComida } from '../../types';
 import { formatTime12h } from '../../lib/formatTime';
 import { fetchResponsables } from '../../lib/cocina';
+import { useModalBackLock } from '../../hooks/useModalBackLock';
 
 interface CompletarSemanaModalProps {
   isOpen: boolean;
@@ -52,6 +53,8 @@ export default function CompletarSemanaModal({
   const [result, setResult] = useState<{ creadas: number; omitidas: number } | null>(null);
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  useModalBackLock(isOpen);
 
   useEffect(() => {
     if (isOpen) {
@@ -151,9 +154,9 @@ export default function CompletarSemanaModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden animate-fade-in-up max-h-[90vh] flex flex-col">
-        <div className="px-6 py-5 border-b border-gray-100 flex items-center justify-between shrink-0">
+    <div className="fixed inset-0 z-[60] flex flex-col md:items-center md:justify-center md:p-4 md:bg-gray-900/40 md:backdrop-blur-sm">
+      <div className="bg-white w-full h-full pt-[calc(env(safe-area-inset-top)+3.5rem)] md:pt-0 md:h-auto md:max-h-[90vh] md:max-w-2xl md:rounded-3xl md:shadow-2xl flex flex-col overflow-hidden animate-slide-up relative">
+        <div className="hidden md:flex px-6 py-5 border-b border-gray-100 items-center justify-between shrink-0">
           <div>
             <h2 className="text-xl font-bold text-gray-800">Completar Semana</h2>
             {campamentoNombre && (
@@ -167,8 +170,20 @@ export default function CompletarSemanaModal({
           </button>
         </div>
 
+        <button onClick={onClose} className="absolute top-[calc(env(safe-area-inset-top)+3.75rem)] right-4 z-20 md:hidden p-2 bg-caracas-red hover:bg-red-800 rounded-full text-white transition-colors">
+          <X size={24} />
+        </button>
+
         {result ? (
-          <div className="p-8 space-y-4">
+          <div className="flex-1 overflow-y-auto pt-5 px-5 pb-[calc(env(safe-area-inset-bottom)+4.5rem)] md:p-8 space-y-4">
+            <div className="md:hidden">
+              <h2 className="text-xl font-bold text-gray-800">Completar Semana</h2>
+              {campamentoNombre && (
+                <p className="text-sm text-gray-500 mt-0.5">
+                  Campamento: <span className="font-semibold text-caracas-red">{campamentoNombre}</span>
+                </p>
+              )}
+            </div>
             <div className="flex items-center gap-3 text-green-700">
               <CheckCircle2 size={32} />
               <p className="font-semibold text-lg">Se guardaron {result.creadas} comidas.</p>
@@ -191,7 +206,15 @@ export default function CompletarSemanaModal({
             </div>
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="overflow-y-auto p-6 space-y-6">
+          <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto pt-5 px-5 pb-[calc(env(safe-area-inset-bottom)+4.5rem)] md:p-6 space-y-6">
+            <div className="md:hidden">
+              <h2 className="text-xl font-bold text-gray-800">Completar Semana</h2>
+              {campamentoNombre && (
+                <p className="text-sm text-gray-500 mt-0.5">
+                  Campamento: <span className="font-semibold text-caracas-red">{campamentoNombre}</span>
+                </p>
+              )}
+            </div>
             {error && (
               <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm font-medium">
                 {error}
