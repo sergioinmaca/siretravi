@@ -290,9 +290,9 @@ export default function CompletarSemanaModal({
                             </label>
                             <textarea
                               value={form.menu}
-                              onChange={(e) => updateComida(slot.tipo, { menu: e.target.value.toUpperCase() })}
+                              onChange={(e) => updateComida(slot.tipo, { menu: e.target.value })}
                               rows={2}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all resize-none uppercase"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all resize-none"
                               placeholder="Menú para todos los días seleccionados"
                             />
                           </div>
@@ -302,9 +302,9 @@ export default function CompletarSemanaModal({
                             </label>
                             <textarea
                               value={form.bebida}
-                              onChange={(e) => updateComida(slot.tipo, { bebida: e.target.value.toUpperCase() })}
+                              onChange={(e) => updateComida(slot.tipo, { bebida: e.target.value })}
                               rows={2}
-                              className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all resize-none uppercase"
+                              className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all resize-none"
                               placeholder="Bebida para todos los días seleccionados"
                             />
                           </div>
@@ -334,8 +334,8 @@ export default function CompletarSemanaModal({
                                 type="text"
                                 list="sugerencia-responsables"
                                 value={form.responsable}
-                                onChange={(e) => updateComida(slot.tipo, { responsable: e.target.value.toUpperCase() })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase"
+                                onChange={(e) => updateComida(slot.tipo, { responsable: e.target.value })}
+                                className="w-full px-3 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all"
                               />
                             </div>
                           </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { ChevronLeft, ChevronRight, ShieldOff, Settings, CalendarRange } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ShieldOff, Settings, CalendarRange, FileDown, Loader2 } from 'lucide-react';
 import dayjs from '../lib/dayjs';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
@@ -17,6 +17,7 @@ import VistaSemanal from '../components/cocina/VistaSemanal';
 import EditarComidaModal from '../components/cocina/EditarComidaModal';
 import CompletarSemanaModal from '../components/cocina/CompletarSemanaModal';
 import ConfigHorariosModal from '../components/cocina/ConfigHorariosModal';
+import { exportarMenuSemanalPDF } from '../lib/cocinaPdf';
 import type { CocinaSlot, ComidaMenu, TipoComida } from '../types';
 
 const getMonday = (d: dayjs.Dayjs) => {
@@ -56,6 +57,7 @@ export default function Cocina() {
   const [celdaEdicion, setCeldaEdicion] = useState<CeldaEdicion | null>(null);
   const [isCompletarOpen, setIsCompletarOpen] = useState(false);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [exportando, setExportando] = useState(false);
 
   const campamentoId = campamentoSeleccionado?.id;
 
@@ -167,6 +169,23 @@ export default function Cocina() {
     setSlots(actualizados);
   };
 
+  const handleExportPDF = async () => {
+    if (!campamentoSeleccionado) return;
+    setExportando(true);
+    try {
+      await exportarMenuSemanalPDF({
+        campamentoNombre: campamentoSeleccionado.nombre,
+        slots: slotsActivos,
+        comidas,
+        dias,
+      });
+    } catch (err) {
+      console.error('Error generando PDF del menú semanal:', err);
+    } finally {
+      setExportando(false);
+    }
+  };
+
   if (!tieneAcceso) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-gray-400">
@@ -201,6 +220,15 @@ export default function Cocina() {
       <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
         <h1 className="text-2xl font-bold text-gray-800">Cocina</h1>
         <div className="flex items-center gap-2">
+          <button
+            onClick={handleExportPDF}
+            disabled={exportando}
+            className="flex items-center gap-2 bg-white border border-gray-300 hover:bg-gray-100 text-gray-700 px-5 py-2.5 rounded-xl font-medium transition-colors disabled:opacity-60"
+          >
+            {exportando ? <Loader2 size={18} className="animate-spin" /> : <FileDown size={18} />}
+            <span className="md:hidden">PDF</span>
+            <span className="hidden md:inline">{exportando ? 'Generando...' : 'Exportar PDF'}</span>
+          </button>
           {(puedeCrear || puedeModificar) && (
             <button
               onClick={() => setIsConfigOpen(true)}

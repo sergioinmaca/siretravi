@@ -155,10 +155,10 @@ export default function EditarComidaModal({
             </label>
             <textarea
               value={menu}
-              onChange={(e) => setMenu(e.target.value.toUpperCase())}
+              onChange={(e) => setMenu(e.target.value)}
               rows={3}
               disabled={soloLectura}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all resize-none uppercase disabled:bg-gray-100 disabled:text-gray-500"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all resize-none disabled:bg-gray-100 disabled:text-gray-500"
               placeholder="Describe qué se va a servir"
             />
           </div>
@@ -169,10 +169,10 @@ export default function EditarComidaModal({
             </label>
             <textarea
               value={bebida}
-              onChange={(e) => setBebida(e.target.value.toUpperCase())}
+              onChange={(e) => setBebida(e.target.value)}
               rows={2}
               disabled={soloLectura}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all resize-none uppercase disabled:bg-gray-100 disabled:text-gray-500"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all resize-none disabled:bg-gray-100 disabled:text-gray-500"
               placeholder="Qué se va a tomar (ej. Jugo de piña con pepino, café y agua)"
             />
           </div>
@@ -211,9 +211,9 @@ export default function EditarComidaModal({
               type="text"
               list="sugerencia-responsables"
               value={responsable}
-              onChange={(e) => setResponsable(e.target.value.toUpperCase())}
+              onChange={(e) => setResponsable(e.target.value)}
               disabled={soloLectura}
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all uppercase disabled:bg-gray-100 disabled:text-gray-500"
+              className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all disabled:bg-gray-100 disabled:text-gray-500"
               placeholder="Nombre de quien prepara/sirve"
             />
             <datalist id="sugerencia-responsables">
