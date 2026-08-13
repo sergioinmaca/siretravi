@@ -15,6 +15,7 @@ interface CampamentoContextType {
   seleccionarCampamento: (id: string) => void;
   agregarCampamento: (nuevo: Campamento) => Promise<void>;
   actualizarCampamento: (id: string, actualizado: Campamento) => Promise<void>;
+  actualizarInclusionGeneral: (id: string, valor: boolean) => Promise<void>;
   eliminarCampamento: (id: string) => Promise<void>;
   agregarFamilia: (nueva: Familia) => Promise<Familia | null>;
   eliminarFamilia: (id: string) => Promise<boolean>;
@@ -51,6 +52,7 @@ function mapCampamento(row: Record<string, unknown>, carpasRows: Record<string, 
     estado: row.estado as 'activo' | 'inactivo',
     tipo_contabilizacion: (row.tipo_contabilizacion as 'cama' | 'elemento') || 'elemento',
     croquis_general: parseCroquisGeneral(row.croquis_general as string | null),
+    incluir_en_general: row.incluir_en_general == null ? true : (row.incluir_en_general as boolean),
     modulos: myModulos,
   };
 }
@@ -283,6 +285,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         capacidad_maxima: nuevo.capacidad_maxima,
         estado: nuevo.estado,
         tipo_contabilizacion: nuevo.tipo_contabilizacion,
+        incluir_en_general: true,
         croquis_general: nuevo.croquis_general && nuevo.croquis_general.length > 0 ? JSON.stringify(nuevo.croquis_general) : null,
       })
       .select()
@@ -331,6 +334,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         estado: campData.estado,
         tipo_contabilizacion: (campData.tipo_contabilizacion as 'cama' | 'elemento') || 'elemento',
         croquis_general: nuevo.croquis_general || null,
+        incluir_en_general: true,
         modulos: modulosGuardados,
       };
 
@@ -340,7 +344,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         return nuevos;
       });
     } else {
-      const campamentoCompleto: Campamento = { ...campData, croquis_general: null, modulos: [] } as Campamento;
+      const campamentoCompleto: Campamento = { ...campData, croquis_general: null, incluir_en_general: true, modulos: [] } as Campamento;
       setCampamentos(prev => {
         const nuevos = [...prev, campamentoCompleto];
         if (nuevos.length === 1) setCampamentoSeleccionado(campamentoCompleto);
@@ -360,6 +364,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
         capacidad_maxima: actualizado.capacidad_maxima,
         estado: actualizado.estado,
         tipo_contabilizacion: actualizado.tipo_contabilizacion,
+        incluir_en_general: actualizado.incluir_en_general ?? true,
         croquis_general: actualizado.croquis_general && actualizado.croquis_general.length > 0 ? JSON.stringify(actualizado.croquis_general) : null,
       })
       .eq('id', id);
@@ -406,6 +411,21 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
     const campActualizado = { ...actualizado, modulos: modulosGuardados };
     setCampamentos(prev => prev.map(c => c.id === id ? campActualizado : c));
     if (campamentoSeleccionado?.id === id) setCampamentoSeleccionado(campActualizado);
+  };
+
+  // ── Actualizar inclusión en GENERAL ────────────────────────────────────────
+  const actualizarInclusionGeneral = async (id: string, valor: boolean) => {
+    const { error } = await supabase
+      .from('campamentos')
+      .update({ incluir_en_general: valor })
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error al actualizar incluir_en_general:', error);
+      return;
+    }
+
+    setCampamentos(prev => prev.map(c => c.id === id ? { ...c, incluir_en_general: valor } : c));
   };
 
   // ── Eliminar Campamento ────────────────────────────────────────────────────
@@ -860,7 +880,7 @@ export function CampamentoProvider({ children }: { children: ReactNode }) {
     <CampamentoContext.Provider value={{
       campamentos, familias, refugiados,
       campamentoSeleccionado, loading, errorCarga, seleccionarCampamento,
-      agregarCampamento, actualizarCampamento, eliminarCampamento,
+      agregarCampamento, actualizarCampamento, actualizarInclusionGeneral, eliminarCampamento,
       agregarFamilia, eliminarFamilia, agregarRefugiado, eliminarRefugiado, actualizarRefugiado, actualizarFotoRefugiado,
       obtenerRefugiadosPaginados, contarRefugiados,
     }}>

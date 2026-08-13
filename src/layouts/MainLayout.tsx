@@ -21,12 +21,14 @@ import {
   Loader2,
   X,
   RefreshCw,
+  Landmark,
 } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
 import { useIsMobile } from '../hooks/useIsMobile';
 
 const menuItems = [
+  { path: '/general', icon: Landmark, label: 'General' },
   { path: '/', icon: Home, label: 'Inicio' },
   { path: '/refugiados', icon: Users, label: 'Integrantes' },
   { path: '/familias', icon: Heart, label: 'Familias' },
@@ -40,6 +42,7 @@ const menuItems = [
 ];
 
 const pathToModulo: Record<string, string> = {
+  '/general': 'General',
   '/': 'Inicio',
   '/refugiados': 'Integrantes',
   '/familias': 'Familias',
@@ -298,7 +301,7 @@ export default function MainLayout() {
         <header className="relative hidden md:flex h-16 bg-white border-b border-gray-200 items-center justify-between px-8 shadow-sm shrink-0 ml-20">
           <h1 className="text-xl font-semibold text-gray-800">Panel de Control</h1>
 
-          <div className="relative" ref={campamentoDropdownRef}>
+          <div className={`relative ${location.pathname === '/general' ? 'hidden' : ''}`} ref={campamentoDropdownRef}>
             <div
               className="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors"
               onClick={() => setIsCampamentoDropdownOpen(!isCampamentoDropdownOpen)}
@@ -346,7 +349,7 @@ export default function MainLayout() {
         <header className="fixed top-0 left-0 right-0 w-full flex md:hidden h-14 bg-white border-b border-gray-200 items-center justify-between px-4 shadow-sm z-30">
           <div className="flex flex-col min-w-0 overflow-hidden">
             <span className="text-[21px] font-semibold text-gray-800 leading-tight">{moduloActual}</span>
-            {campamentoSeleccionado && (
+            {campamentoSeleccionado && location.pathname !== '/general' && (
               <span className="text-xs text-gray-400 leading-tight truncate">{campamentoSeleccionado.nombre}</span>
             )}
           </div>

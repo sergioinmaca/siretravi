@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Tent, BedDouble, MapPin, Plus, ShieldOff, Trash2, Loader2, CheckCircle2, AlertCircle, Search, User, PawPrint, ImageOff } from 'lucide-react';
+import { Tent, BedDouble, MapPin, Plus, ShieldOff, Trash2, Loader2, CheckCircle2, AlertCircle, Search, User, PawPrint, ImageOff, Landmark } from 'lucide-react';
 import { useCampamento } from '../context/CampamentoContext';
 import { useAuth } from '../context/AuthContext';
 import type { Campamento } from '../types';
@@ -8,7 +8,7 @@ import { buscarFotosHuerfanas, eliminarFotosHuerfanas } from '../hooks/useFotoUp
 import type { FotoHuerfana, MotivoHuerfana } from '../hooks/useFotoUpload';
 
 export default function Constructor() {
-  const { campamentos } = useCampamento();
+  const { campamentos, actualizarInclusionGeneral } = useCampamento();
   const { tienePermiso, obtenerCampamentosPermitidos, usuarioActual } = useAuth();
 
   const campamentosPermitidos = useMemo(() => {
@@ -27,6 +27,7 @@ export default function Constructor() {
     tipo: 'exito' | 'error';
     mensaje: string;
   } | null>(null);
+  const [guardandoInclusionId, setGuardandoInclusionId] = useState<string | null>(null);
 
   const esMaster = usuarioActual?.es_master === true;
 
@@ -120,6 +121,15 @@ export default function Constructor() {
       setSeleccionados(new Set());
     } else {
       setSeleccionados(new Set(huerfanas.map((_, i) => i)));
+    }
+  };
+
+  const handleToggleInclusionGeneral = async (id: string, valor: boolean) => {
+    setGuardandoInclusionId(id);
+    try {
+      await actualizarInclusionGeneral(id, valor);
+    } finally {
+      setGuardandoInclusionId(null);
     }
   };
 
@@ -309,6 +319,43 @@ export default function Constructor() {
                   </button>
                 </div>
               </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Campamentos incluidos en el módulo GENERAL */}
+      {esMaster && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="bg-caracas-blue/5 border-b border-gray-100 px-6 py-4 flex items-center gap-3">
+            <div className="p-2 bg-caracas-blue/10 rounded-lg">
+              <Landmark size={18} className="text-caracas-blue" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-800">Campamentos incluidos en el módulo GENERAL</h3>
+              <p className="text-xs text-gray-500">Selecciona qué campamentos aportan sus números al totalizador del módulo General.</p>
+            </div>
+          </div>
+          <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {campamentos.map(camp => (
+              <label
+                key={camp.id}
+                className={`flex items-start gap-3 p-3 rounded-xl border transition-colors cursor-pointer ${guardandoInclusionId === camp.id ? 'opacity-60 pointer-events-none' : 'hover:bg-gray-50'} ${camp.incluir_en_general !== false ? 'border-caracas-blue/30 bg-caracas-blue/5' : 'border-gray-100 bg-gray-50/50'}`}
+              >
+                <input
+                  type="checkbox"
+                  checked={camp.incluir_en_general !== false}
+                  onChange={(e) => handleToggleInclusionGeneral(camp.id, e.target.checked)}
+                  className="mt-0.5 w-4 h-4 accent-caracas-red cursor-pointer shrink-0"
+                />
+                <span className="min-w-0">
+                  <span className="block text-sm font-medium text-gray-700 truncate">{camp.nombre}</span>
+                  <span className="block text-xs text-gray-400 truncate">{camp.ubicacion}</span>
+                </span>
+              </label>
+            ))}
+            {campamentos.length === 0 && (
+              <p className="text-sm text-gray-400 col-span-full">No hay campamentos registrados.</p>
             )}
           </div>
         </div>

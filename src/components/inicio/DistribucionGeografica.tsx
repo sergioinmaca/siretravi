@@ -5,9 +5,21 @@ const DONA_RADIUS = 70;
 const DONA_CIRCUMFERENCE = 2 * Math.PI * DONA_RADIUS;
 
 const COLORES_FIJOS: Record<string, string> = {
-  'DISTRITO CAPITAL': '#0033A0',
-  'LA GUAIRA': '#007229',
-  'MIRANDA': '#FFD100',
+  'DISTRITO CAPITAL': '#FF5F48',
+  'LA GUAIRA': '#73BAFF',
+  'MIRANDA': '#FFC44F',
+};
+
+const COLORES_ESTADO_CLAROS: Record<string, string> = {
+  'DISTRITO CAPITAL': '#FF8F7F',
+  'LA GUAIRA': '#9DCFFF',
+  'MIRANDA': '#FFD684',
+};
+
+const COLORES_MUNICIPIO_POR_ESTADO: Record<string, string> = {
+  'DISTRITO CAPITAL': '#ffbfb6',
+  'LA GUAIRA': '#c7e3ff',
+  'MIRANDA': '#ffe7b9',
 };
 
 const COLORES_EXTRA = ['#bc2f4a', '#6366f1', '#ec4899', '#f59e0b', '#14b8a6', '#a855f7', '#ef4444'];
@@ -142,11 +154,12 @@ function DonutChart({
 }
 
 /** Columna de tabla: título + encabezados #F / #P + grupos anidados */
-function ColumnaTabla({ titulo, grupos, colorIndicador, onAbrir }: {
+function ColumnaTabla({ titulo, grupos, colorIndicador, onAbrir, coloresGrupos }: {
   titulo: string;
   grupos: GrupoAgrupado[];
   colorIndicador: string;
   onAbrir?: (grupo: GrupoAgrupado, item: FilaTabla | null, tipo: TipoApertura) => void;
+  coloresGrupos?: Record<string, string>;
 }) {
   const clickeable = !!onAbrir;
   return (
@@ -169,7 +182,10 @@ function ColumnaTabla({ titulo, grupos, colorIndicador, onAbrir }: {
         {grupos.map(g => (
           <div key={g.titulo}>
             {/* Fila cabecera del grupo */}
-            <div className="grid grid-cols-[minmax(0,1fr)_72px_72px] gap-x-3 items-center px-1.5 py-2 rounded bg-gray-50 border border-gray-100">
+            <div
+              className="grid grid-cols-[minmax(0,1fr)_72px_72px] gap-x-3 items-center px-1.5 py-2 rounded border border-gray-100"
+              style={{ backgroundColor: coloresGrupos?.[g.titulo] ?? '#F9FAFB' }}
+            >
               <span
                 className={`text-xs font-bold text-gray-700 uppercase truncate ${clickeable ? 'cursor-pointer hover:text-caracas-red transition-colors' : ''}`}
                 title={g.titulo}
@@ -196,10 +212,10 @@ function ColumnaTabla({ titulo, grupos, colorIndicador, onAbrir }: {
             {g.items.map(item => (
               <div key={item.nombre} className="grid grid-cols-[minmax(0,1fr)_72px_72px] gap-x-3 items-center px-1.5 py-1.5 border-b border-gray-50">
                 <span
-                  className={`flex items-center gap-1.5 text-sm text-gray-500 min-w-0 ${clickeable ? 'cursor-pointer hover:text-gray-800 transition-colors' : ''}`}
+                  className={`flex items-center gap-1.5 text-sm text-gray-700 min-w-0 ${clickeable ? 'cursor-pointer hover:text-gray-800 transition-colors' : ''}`}
                   onClick={clickeable ? () => onAbrir(g, item, 'personas') : undefined}
                 >
-                  <span className="text-gray-300 shrink-0">–</span>
+                  <span className="text-gray-600 shrink-0">•</span>
                   <span className="truncate" title={item.nombre}>{item.nombre}</span>
                 </span>
                 <span
@@ -340,9 +356,12 @@ export default function DistribucionGeografica({ refugiadosActivos, onAbrirLista
 
   const gruposParroquias = useMemo(() => {
     const municipios = new Map<string, Map<string, { familias: number; personas: number; datosPersonas: Refugiado[]; datosJefes: Refugiado[] }>>();
+    const estadoPorMunicipio = new Map<string, string>();
     refugiadosActivos.forEach(r => {
       const municipio = r.municipio?.trim();
       if (!municipio) return;
+      const estado = r.estado?.trim();
+      if (estado && !estadoPorMunicipio.has(municipio)) estadoPorMunicipio.set(municipio, estado);
       const parroquia = r.parroquia?.trim() || SIN_ESPECIFICAR_FILA;
       if (!municipios.has(municipio)) municipios.set(municipio, new Map());
       const m = municipios.get(municipio)!;
@@ -362,6 +381,8 @@ export default function DistribucionGeografica({ refugiadosActivos, onAbrirLista
         entry.datosJefes.push(j);
       }
     });
+    const ordenEstados = new Map<string, number>();
+    gruposMunicipios.forEach((g, i) => ordenEstados.set(g.titulo, i));
     return Array.from(municipios.entries())
       .map(([municipio, mapa]) => {
         const items = Array.from(mapa.entries())
@@ -382,8 +403,36 @@ export default function DistribucionGeografica({ refugiadosActivos, onAbrirLista
           datosJefes: items.flatMap(i => i.datosJefes),
         };
       })
-      .sort((a, b) => a.titulo.localeCompare(b.titulo));
-  }, [refugiadosActivos, jefesActivos]);
+      .sort((a, b) => {
+        const iA = ordenEstados.get(estadoPorMunicipio.get(a.titulo) ?? '') ?? Number.MAX_SAFE_INTEGER;
+        const iB = ordenEstados.get(estadoPorMunicipio.get(b.titulo) ?? '') ?? Number.MAX_SAFE_INTEGER;
+        if (iA !== iB) return iA - iB;
+        return a.titulo.localeCompare(b.titulo);
+      });
+  }, [refugiadosActivos, jefesActivos, gruposMunicipios]);
+
+  const coloresEstadoClaro = useMemo(() => {
+    const map: Record<string, string> = {};
+    refugiadosActivos.forEach(r => {
+      const estado = r.estado?.trim();
+      if (!estado) return;
+      const color = COLORES_ESTADO_CLAROS[estado.toUpperCase()];
+      if (color && !(estado in map)) map[estado] = color;
+    });
+    return map;
+  }, [refugiadosActivos]);
+
+  const coloresMunicipio = useMemo(() => {
+    const map: Record<string, string> = {};
+    refugiadosActivos.forEach(r => {
+      const estado = r.estado?.trim().toUpperCase();
+      const municipio = r.municipio?.trim();
+      if (!estado || !municipio) return;
+      const color = COLORES_MUNICIPIO_POR_ESTADO[estado];
+      if (color && !(municipio in map)) map[municipio] = color;
+    });
+    return map;
+  }, [refugiadosActivos]);
 
   const abrirEstado = (tipo: 'familias' | 'personas', nombre: string) => {
     if (tipo === 'familias') {
@@ -470,7 +519,7 @@ export default function DistribucionGeografica({ refugiadosActivos, onAbrirLista
           {/* ── Columna 2: Municipios ── */}
           <div className="min-w-0">
             {gruposMunicipios.length > 0 ? (
-              <ColumnaTabla titulo="Municipio" grupos={gruposMunicipios} colorIndicador="#0033A0" onAbrir={abrirMunicipioColumna} />
+              <ColumnaTabla titulo="Municipio" grupos={gruposMunicipios} colorIndicador="#0033A0" onAbrir={abrirMunicipioColumna} coloresGrupos={coloresEstadoClaro} />
             ) : (
               <>
                 <div className="flex items-center gap-2 mb-4">
@@ -488,7 +537,7 @@ export default function DistribucionGeografica({ refugiadosActivos, onAbrirLista
           {/* ── Columna 3: Parroquias ── */}
           <div className="min-w-0">
             {gruposParroquias.length > 0 ? (
-              <ColumnaTabla titulo="Parroquia" grupos={gruposParroquias} colorIndicador="#d97706" onAbrir={abrirParroquiaColumna} />
+              <ColumnaTabla titulo="Parroquia" grupos={gruposParroquias} colorIndicador="#d97706" onAbrir={abrirParroquiaColumna} coloresGrupos={coloresMunicipio} />
             ) : (
               <>
                 <div className="flex items-center gap-2 mb-4">

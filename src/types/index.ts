@@ -20,6 +20,7 @@ export interface Campamento {
   estado: 'activo' | 'inactivo';
   tipo_contabilizacion: 'cama' | 'elemento';
   croquis_general?: CroquisGeneral[] | null;
+  incluir_en_general?: boolean;
   modulos: Modulo[];
 }
 

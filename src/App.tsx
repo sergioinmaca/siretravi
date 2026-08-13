@@ -3,6 +3,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { CampamentoProvider } from './context/CampamentoContext';
 import MainLayout from './layouts/MainLayout';
 import Inicio from './pages/Inicio';
+import General from './pages/General';
 import Refugiados from './pages/Refugiados';
 import Constructor from './pages/Constructor';
 import Familias from './pages/Familias';
@@ -49,6 +50,7 @@ function AppRoutes() {
         </ProtectedRoute>
       }>
         <Route index element={<Inicio />} />
+        <Route path="general" element={<General />} />
         <Route path="refugiados" element={<Refugiados />} />
         <Route path="constructor" element={<Constructor />} />
         <Route path="familias" element={<Familias />} />
