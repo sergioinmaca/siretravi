@@ -168,6 +168,6 @@ Prueba manual:
 |---|---|
 | Zona con 0 integrantes | No es clicable; se muestra con 0 y M/F en 0. |
 | Campamento sin refugiados | Todas las cards en 0; zonas no clicables. |
-| Género nulo/indefinido | Se cuenta como `false` (Femenino), igual que hoy. |
+| Género nulo/indefinido | No se cuenta en M ni en F; solo se refleja en el total, igual que hoy. |
 | `hogar_solidario` vacío | Se normaliza a `PRESENTE`. |
 | Retirados | No aparecen en Total (solo cuentan en el donut de Situación de Estatus, sin cambios). |

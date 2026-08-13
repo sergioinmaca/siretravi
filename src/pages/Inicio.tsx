@@ -12,6 +12,7 @@ import jsPDF from 'jspdf';
 import { filtrarActivos } from '../lib/retiredFilter';
 import DistribucionGeografica from '../components/inicio/DistribucionGeografica';
 import MenuDelDia from '../components/inicio/MenuDelDia';
+import IndicatorCard from '../components/inicio/IndicatorCard';
 
 export default function Inicio() {
   const { campamentoSeleccionado, refugiados = [], familias = [] } = useCampamento();
@@ -674,7 +675,7 @@ export default function Inicio() {
         </div>
 
         {/* Capacidad / Camas */}
-        <div className="bg-white p-6 rounded-2xl shadow-[0_1px_2px_0_rgba(0,0,0,0.05),0_0_0_0_rgba(0,0,0,0),-5px_5px_0_0_#007229] border border-gray-100 flex items-center gap-4 hover:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1),-5px_5px_0_0_#007229] transition-shadow max-md:bg-caracas-green max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3 max-md:gap-2">
+        <div className="bg-white p-6 rounded-2xl shadow-[0_1px_2px_0_rgba(0,0,0,0.05),0_0_0_0_rgba(0,0,0,0),-5px_5px_0_0_#007229] border border-gray-100 flex items-center gap-4 hover:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1),-5px_5px_0_0_#007229] transition-shadow max-md:bg-caracas-green max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3 max-md:gap-2 md:hidden">
           <BedDouble size={isMobile ? 18 : 32} className="max-md:text-white shrink-0 md:hidden" />
           <div className="max-md:hidden p-4 bg-caracas-green/10 rounded-xl text-caracas-green shrink-0">
             <BedDouble size={32} />
@@ -687,11 +688,17 @@ export default function Inicio() {
             </p>
           </div>
         </div>
+        <IndicatorCard
+          titulo="Camas totales"
+          icono={<BedDouble size={22} />}
+          color="#007229"
+          camas={{ total: totalCamasCroquis, ocupadas: uniqueOccupiedBedsSet.size, disponibles: disponiblesCroquis }}
+        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-y-2 md:gap-6 max-md:-mx-4">
         {/* Total Personas */}
-        <div className="bg-white p-6 rounded-2xl shadow-[0_1px_2px_0_rgba(0,0,0,0.05),0_0_0_0_rgba(0,0,0,0),-5px_5px_0_0_#bc2f4a] border border-gray-100 flex items-center gap-4 hover:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1),-5px_5px_0_0_#bc2f4a] transition-shadow max-md:bg-caracas-red max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3 max-md:gap-2">
+        <div className="bg-white p-6 rounded-2xl shadow-[0_1px_2px_0_rgba(0,0,0,0.05),0_0_0_0_rgba(0,0,0,0),-5px_5px_0_0_#bc2f4a] border border-gray-100 flex items-center gap-4 hover:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1),-5px_5px_0_0_#bc2f4a] transition-shadow max-md:bg-caracas-red max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3 max-md:gap-2 md:hidden">
           <Users size={isMobile ? 18 : 32} className="max-md:text-white shrink-0 md:hidden" />
           <div className="max-md:hidden p-4 bg-caracas-red/10 rounded-xl text-caracas-red shrink-0">
             <Users size={32} />
@@ -704,9 +711,16 @@ export default function Inicio() {
             </p>
           </div>
         </div>
+        <IndicatorCard
+          titulo="Total de Personas"
+          icono={<Users size={22} />}
+          color="#bc2f4a"
+          grupo={refugiadosActivos}
+          onAbrirLista={abrirLista}
+        />
 
         {/* Total Familias */}
-        <div className="bg-white p-6 rounded-2xl shadow-[0_1px_2px_0_rgba(0,0,0,0.05),0_0_0_0_rgba(0,0,0,0),-5px_5px_0_0_#6366f1] border border-gray-100 flex items-center gap-4 hover:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1),-5px_5px_0_0_#6366f1] transition-shadow max-md:bg-indigo-500 max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3 max-md:gap-2">
+        <div className="bg-white p-6 rounded-2xl shadow-[0_1px_2px_0_rgba(0,0,0,0.05),0_0_0_0_rgba(0,0,0,0),-5px_5px_0_0_#6366f1] border border-gray-100 flex items-center gap-4 hover:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1),-5px_5px_0_0_#6366f1] transition-shadow max-md:bg-indigo-500 max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3 max-md:gap-2 md:hidden">
           <Home size={isMobile ? 18 : 32} className="max-md:text-white shrink-0 md:hidden" />
           <div className="max-md:hidden p-4 bg-indigo-500/10 rounded-xl text-indigo-500 shrink-0">
             <Home size={32} />
@@ -719,6 +733,14 @@ export default function Inicio() {
             </p>
           </div>
         </div>
+        <IndicatorCard
+          titulo="Total de Familias"
+          icono={<Home size={22} />}
+          color="#6366f1"
+          grupo={jefesActivos}
+          esFamilia
+          onAbrirLista={abrirLista}
+        />
       </div>
 
       {/* Embarazadas y Discapacitados */}
@@ -726,7 +748,7 @@ export default function Inicio() {
         {/* Embarazadas */}
         <div
           onClick={() => abrirLista('Embarazadas', embarazadasArray)}
-          className="bg-white p-6 rounded-2xl shadow-[0_1px_2px_0_rgba(0,0,0,0.05),0_0_0_0_rgba(0,0,0,0),-5px_5px_0_0_#ec4899] border border-gray-100 flex items-center gap-4 hover:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1),-5px_5px_0_0_#ec4899] transition-shadow transition-colors cursor-pointer hover:bg-pink-500/10 max-md:bg-pink-500 max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3 max-md:gap-2">
+          className="bg-white p-6 rounded-2xl shadow-[0_1px_2px_0_rgba(0,0,0,0.05),0_0_0_0_rgba(0,0,0,0),-5px_5px_0_0_#ec4899] border border-gray-100 flex items-center gap-4 hover:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1),-5px_5px_0_0_#ec4899] transition-shadow transition-colors cursor-pointer hover:bg-pink-500/10 max-md:bg-pink-500 max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3 max-md:gap-2 md:hidden">
           <HeartPulse size={isMobile ? 18 : 32} className="max-md:text-white shrink-0 md:hidden" />
           <div className="max-md:hidden p-4 bg-pink-500/10 rounded-xl text-pink-500 shrink-0">
             <HeartPulse size={32} />
@@ -739,11 +761,18 @@ export default function Inicio() {
             </p>
           </div>
         </div>
+        <IndicatorCard
+          titulo="Embarazadas"
+          icono={<HeartPulse size={22} />}
+          color="#ec4899"
+          grupo={embarazadasArray}
+          onAbrirLista={abrirLista}
+        />
 
         {/* Discapacitados */}
         <div
           onClick={() => abrirLista('Discapacitados', discapacitadosArray)}
-          className="bg-white p-6 rounded-2xl shadow-[0_1px_2px_0_rgba(0,0,0,0.05),0_0_0_0_rgba(0,0,0,0),-5px_5px_0_0_#a855f7] border border-gray-100 flex items-center gap-4 hover:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1),-5px_5px_0_0_#a855f7] transition-shadow transition-colors cursor-pointer hover:bg-purple-500/10 max-md:bg-purple-500 max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3 max-md:gap-2">
+          className="bg-white p-6 rounded-2xl shadow-[0_1px_2px_0_rgba(0,0,0,0.05),0_0_0_0_rgba(0,0,0,0),-5px_5px_0_0_#a855f7] border border-gray-100 flex items-center gap-4 hover:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1),-5px_5px_0_0_#a855f7] transition-shadow transition-colors cursor-pointer hover:bg-purple-500/10 max-md:bg-purple-500 max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3 max-md:gap-2 md:hidden">
           <Accessibility size={isMobile ? 18 : 32} className="max-md:text-white shrink-0 md:hidden" />
           <div className="max-md:hidden p-4 bg-purple-500/10 rounded-xl text-purple-500 shrink-0">
             <Accessibility size={32} />
@@ -756,6 +785,13 @@ export default function Inicio() {
             </p>
           </div>
         </div>
+        <IndicatorCard
+          titulo="Discapacitados"
+          icono={<Accessibility size={22} />}
+          color="#a855f7"
+          grupo={discapacitadosArray}
+          onAbrirLista={abrirLista}
+        />
       </div>
 
       {/* Indicadores Demográficos Detallados */}
@@ -763,7 +799,7 @@ export default function Inicio() {
         {/* Cards de Niñez */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-y-2 md:gap-6 max-md:-mx-4">
           {/* Niños (0-11) */}
-          <div onClick={() => abrirLista('Niños (0-11 años)', ninos)} className="bg-white p-6 rounded-2xl shadow-[0_1px_2px_0_rgba(0,0,0,0.05),0_0_0_0_rgba(0,0,0,0),-5px_5px_0_0_#fb923c] border border-gray-100 hover:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1),-5px_5px_0_0_#fb923c] transition-shadow transition-colors cursor-pointer hover:bg-orange-400/10 max-md:bg-[#e76e1c] max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3">
+          <div onClick={() => abrirLista('Niños (0-11 años)', ninos)} className="bg-white p-6 rounded-2xl shadow-[0_1px_2px_0_rgba(0,0,0,0.05),0_0_0_0_rgba(0,0,0,0),-5px_5px_0_0_#fb923c] border border-gray-100 hover:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1),-5px_5px_0_0_#fb923c] transition-shadow transition-colors cursor-pointer hover:bg-orange-400/10 max-md:bg-[#e76e1c] max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3 md:hidden">
             <div className="flex items-center gap-3 mb-4 max-md:gap-2 max-md:mb-0">
               <Baby size={isMobile ? 18 : 28} className="max-md:text-white shrink-0 md:hidden" />
               <div className="max-md:hidden p-3 bg-orange-100 rounded-xl text-orange-500">
@@ -778,9 +814,16 @@ export default function Inicio() {
               0 a 11 años · <span className="text-blue-600 font-medium max-md:text-blue-200">{ninosH} H</span> · <span className="text-pink-600 font-medium max-md:text-pink-200">{ninosM} M</span>
             </p>
           </div>
+          <IndicatorCard
+            titulo="Niños"
+            icono={<Baby size={22} />}
+            color="#fb923c"
+            grupo={ninos}
+            onAbrirLista={abrirLista}
+          />
 
           {/* Niños Lactantes (0-3) */}
-          <div onClick={() => abrirLista('Niños Lactantes (0-2 años)', lactantes)} className="bg-white p-6 rounded-2xl shadow-[0_1px_2px_0_rgba(0,0,0,0.05),0_0_0_0_rgba(0,0,0,0),-5px_5px_0_0_#fb923c] border border-gray-100 hover:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1),-5px_5px_0_0_#fb923c] transition-shadow transition-colors cursor-pointer hover:bg-orange-400/10 max-md:bg-[#e98b3f] max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3">
+          <div onClick={() => abrirLista('Niños Lactantes (0-2 años)', lactantes)} className="bg-white p-6 rounded-2xl shadow-[0_1px_2px_0_rgba(0,0,0,0.05),0_0_0_0_rgba(0,0,0,0),-5px_5px_0_0_#fb923c] border border-gray-100 hover:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1),-5px_5px_0_0_#fb923c] transition-shadow transition-colors cursor-pointer hover:bg-orange-400/10 max-md:bg-[#e98b3f] max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3 md:hidden">
             <div className="flex items-center gap-3 mb-4 max-md:gap-2 max-md:mb-0">
               <Milk size={isMobile ? 18 : 28} className="max-md:text-white shrink-0 md:hidden" />
               <div className="max-md:hidden p-3 bg-sky-100 rounded-xl text-sky-500">
@@ -795,9 +838,16 @@ export default function Inicio() {
               0 a 2 años · <span className="text-blue-600 font-medium max-md:text-blue-200">{lactantesH} H</span> · <span className="text-pink-600 font-medium max-md:text-pink-200">{lactantesM} M</span>
             </p>
           </div>
+          <IndicatorCard
+            titulo="Niños Lactantes"
+            icono={<Milk size={22} />}
+            color="#fb923c"
+            grupo={lactantes}
+            onAbrirLista={abrirLista}
+          />
 
           {/* No Lactantes (4-11) */}
-          <div onClick={() => abrirLista('No Lactantes (3-11 años)', noLactantes)} className="bg-white p-6 rounded-2xl shadow-[0_1px_2px_0_rgba(0,0,0,0.05),0_0_0_0_rgba(0,0,0,0),-5px_5px_0_0_#f97316] border border-gray-100 hover:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1),-5px_5px_0_0_#f97316] transition-shadow transition-colors cursor-pointer hover:bg-orange-500/10 max-md:bg-[#ce8043] max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3">
+          <div onClick={() => abrirLista('No Lactantes (3-11 años)', noLactantes)} className="bg-white p-6 rounded-2xl shadow-[0_1px_2px_0_rgba(0,0,0,0.05),0_0_0_0_rgba(0,0,0,0),-5px_5px_0_0_#f97316] border border-gray-100 hover:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1),-5px_5px_0_0_#f97316] transition-shadow transition-colors cursor-pointer hover:bg-orange-500/10 max-md:bg-[#ce8043] max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3 md:hidden">
             <div className="flex items-center gap-3 mb-4 max-md:gap-2 max-md:mb-0">
               <Baby size={isMobile ? 18 : 28} className="max-md:text-white shrink-0 md:hidden" />
               <div className="max-md:hidden p-3 bg-amber-100 rounded-xl text-amber-600">
@@ -812,12 +862,19 @@ export default function Inicio() {
               3 a 11 años · <span className="text-blue-600 font-medium max-md:text-blue-200">{noLactantesH} H</span> · <span className="text-pink-600 font-medium max-md:text-pink-200">{noLactantesM} M</span>
             </p>
           </div>
+          <IndicatorCard
+            titulo="No Lactantes"
+            icono={<Baby size={22} />}
+            color="#f97316"
+            grupo={noLactantes}
+            onAbrirLista={abrirLista}
+          />
         </div>
 
         {/* Adolescentes, Adultos, Adulto Mayor */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-y-2 md:gap-6 max-md:-mx-4">
           {/* Adolescentes (12-17) */}
-          <div onClick={() => abrirLista('Adolescentes (12-17 años)', adolescentes)} className="bg-white p-6 rounded-2xl shadow-[0_1px_2px_0_rgba(0,0,0,0.05),0_0_0_0_rgba(0,0,0,0),-5px_5px_0_0_#f59e0b] border border-gray-100 hover:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1),-5px_5px_0_0_#f59e0b] transition-shadow transition-colors cursor-pointer hover:bg-amber-500/10 max-md:bg-amber-500 max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3">
+          <div onClick={() => abrirLista('Adolescentes (12-17 años)', adolescentes)} className="bg-white p-6 rounded-2xl shadow-[0_1px_2px_0_rgba(0,0,0,0.05),0_0_0_0_rgba(0,0,0,0),-5px_5px_0_0_#f59e0b] border border-gray-100 hover:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1),-5px_5px_0_0_#f59e0b] transition-shadow transition-colors cursor-pointer hover:bg-amber-500/10 max-md:bg-amber-500 max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3 md:hidden">
             <div className="flex items-center gap-3 mb-4 max-md:gap-2 max-md:mb-0">
               <Sparkles size={isMobile ? 18 : 28} className="max-md:text-white shrink-0 md:hidden" />
               <div className="max-md:hidden p-3 bg-yellow-100 rounded-xl text-yellow-600">
@@ -832,9 +889,16 @@ export default function Inicio() {
               12 a 17 años · <span className="text-blue-600 font-medium max-md:text-blue-200">{adolescentesH} H</span> · <span className="text-pink-600 font-medium max-md:text-pink-200">{adolescentesM} M</span>
             </p>
           </div>
+          <IndicatorCard
+            titulo="Adolescentes"
+            icono={<Sparkles size={22} />}
+            color="#f59e0b"
+            grupo={adolescentes}
+            onAbrirLista={abrirLista}
+          />
 
           {/* Adultos (18-59 H / 18-54 M) */}
-          <div onClick={() => abrirLista('Adultos (18-59 H / 18-54 M)', adultos)} className="bg-white p-6 rounded-2xl shadow-[0_1px_2px_0_rgba(0,0,0,0.05),0_0_0_0_rgba(0,0,0,0),-5px_5px_0_0_#34d399] border border-gray-100 hover:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1),-5px_5px_0_0_#34d399] transition-shadow transition-colors cursor-pointer hover:bg-emerald-400/10 max-md:bg-[#48ba8d] max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3">
+          <div onClick={() => abrirLista('Adultos (18-59 H / 18-54 M)', adultos)} className="bg-white p-6 rounded-2xl shadow-[0_1px_2px_0_rgba(0,0,0,0.05),0_0_0_0_rgba(0,0,0,0),-5px_5px_0_0_#34d399] border border-gray-100 hover:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1),-5px_5px_0_0_#34d399] transition-shadow transition-colors cursor-pointer hover:bg-emerald-400/10 max-md:bg-[#48ba8d] max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3 md:hidden">
             <div className="flex items-center gap-3 mb-4 max-md:gap-2 max-md:mb-0">
               <UserCheck size={isMobile ? 18 : 28} className="max-md:text-white shrink-0 md:hidden" />
               <div className="max-md:hidden p-3 bg-emerald-100 rounded-xl text-emerald-600">
@@ -849,9 +913,16 @@ export default function Inicio() {
               H 18-59 / M 18-54 · <span className="text-blue-600 font-medium max-md:text-blue-200">{adultosH} H</span> · <span className="text-pink-600 font-medium max-md:text-pink-200">{adultosM} M</span>
             </p>
           </div>
+          <IndicatorCard
+            titulo="Adultos"
+            icono={<UserCheck size={22} />}
+            color="#34d399"
+            grupo={adultos}
+            onAbrirLista={abrirLista}
+          />
 
           {/* Adulto Mayor */}
-          <div onClick={() => abrirLista('Adulto Mayor (H ≥60 / M ≥55)', adultoMayor)} className="bg-white p-6 rounded-2xl shadow-[0_1px_2px_0_rgba(0,0,0,0.05),0_0_0_0_rgba(0,0,0,0),-5px_5px_0_0_#fb7185] border border-gray-100 hover:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1),-5px_5px_0_0_#fb7185] transition-shadow transition-colors cursor-pointer hover:bg-rose-400/10 max-md:bg-[#d57177] max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3">
+          <div onClick={() => abrirLista('Adulto Mayor (H ≥60 / M ≥55)', adultoMayor)} className="bg-white p-6 rounded-2xl shadow-[0_1px_2px_0_rgba(0,0,0,0.05),0_0_0_0_rgba(0,0,0,0),-5px_5px_0_0_#fb7185] border border-gray-100 hover:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-2px_rgba(0,0,0,0.1),-5px_5px_0_0_#fb7185] transition-shadow transition-colors cursor-pointer hover:bg-rose-400/10 max-md:bg-[#d57177] max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3 md:hidden">
             <div className="flex items-center gap-3 mb-4 max-md:gap-2 max-md:mb-0">
               <Heart size={isMobile ? 18 : 28} className="max-md:text-white shrink-0 md:hidden" />
               <div className="max-md:hidden p-3 bg-rose-100 rounded-xl text-rose-500">
@@ -866,6 +937,13 @@ export default function Inicio() {
               H &ge;60 / M &ge;55 · <span className="text-blue-600 font-medium max-md:text-blue-200">{adultoMayorH} H</span> · <span className="text-pink-600 font-medium max-md:text-pink-200">{adultoMayorM} M</span>
             </p>
           </div>
+          <IndicatorCard
+            titulo="Adulto Mayor"
+            icono={<Heart size={22} />}
+            color="#fb7185"
+            grupo={adultoMayor}
+            onAbrirLista={abrirLista}
+          />
         </div>
 
         <MenuDelDia campamentoId={campamentoSeleccionado?.id} />
