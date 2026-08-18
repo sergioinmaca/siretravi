@@ -308,6 +308,7 @@ export interface TipoActa {
   descripcion?: string;
   plantilla: TipoActaPlantilla;
   activo: boolean;
+  contar_en_croquis?: boolean;
   created_at?: string;
 }
 
@@ -316,6 +317,7 @@ export interface TipoActaResumen {
   nombre: string;
   descripcion?: string;
   activo: boolean;
+  contar_en_croquis?: boolean;
   created_at: string;
 }
 

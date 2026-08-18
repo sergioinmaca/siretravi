@@ -8,6 +8,7 @@ function mapTipoActa(row: Record<string, unknown>): TipoActa {
     descripcion: (row.descripcion as string) || undefined,
     plantilla: row.plantilla as TipoActa['plantilla'],
     activo: row.activo as boolean,
+    contar_en_croquis: (row.contar_en_croquis as boolean) ?? true,
     created_at: row.created_at as string,
   };
 }
@@ -18,6 +19,7 @@ function mapTipoActaResumen(row: Record<string, unknown>): TipoActaResumen {
     nombre: row.nombre as string,
     descripcion: (row.descripcion as string) || undefined,
     activo: row.activo as boolean,
+    contar_en_croquis: (row.contar_en_croquis as boolean) ?? true,
     created_at: row.created_at as string,
   };
 }
@@ -39,7 +41,7 @@ function mapActa(row: Record<string, unknown>): Acta {
 export async function obtenerTiposActa(): Promise<TipoActaResumen[]> {
   const { data, error } = await supabase
     .from('tipo_acta')
-    .select('id, nombre, descripcion, activo, created_at')
+    .select('id, nombre, descripcion, activo, contar_en_croquis, created_at')
     .eq('activo', true)
     .order('nombre', { ascending: true });
 
@@ -76,6 +78,7 @@ export async function crearTipoActa(tipo: Omit<TipoActa, 'id' | 'activo' | 'crea
       nombre: tipo.nombre,
       descripcion: tipo.descripcion || null,
       plantilla: tipo.plantilla,
+      contar_en_croquis: tipo.contar_en_croquis ?? true,
     })
     .select()
     .single();
@@ -94,6 +97,7 @@ export async function actualizarTipoActa(id: string, tipo: Partial<TipoActa>): P
   if (tipo.descripcion !== undefined) payload.descripcion = tipo.descripcion;
   if (tipo.plantilla !== undefined) payload.plantilla = tipo.plantilla;
   if (tipo.activo !== undefined) payload.activo = tipo.activo;
+  if (tipo.contar_en_croquis !== undefined) payload.contar_en_croquis = tipo.contar_en_croquis;
 
   const { error } = await supabase
     .from('tipo_acta')
@@ -179,8 +183,9 @@ export async function eliminarActa(id: string): Promise<boolean> {
 export async function contarActasPorRefugiado(campamentoId: string): Promise<Record<string, number>> {
   const { data, error } = await supabase
     .from('actas')
-    .select('refugiado_id')
-    .eq('campamento_id', campamentoId);
+    .select('refugiado_id, tipo_acta!inner(contar_en_croquis)')
+    .eq('campamento_id', campamentoId)
+    .eq('tipo_acta.contar_en_croquis', true);
 
   if (error || !data) return {};
 

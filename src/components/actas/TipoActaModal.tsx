@@ -55,6 +55,7 @@ export default function TipoActaModal({ isOpen, onClose, onSaved, tipoToEdit }: 
   const isEditing = !!tipoToEdit;
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
+  const [contarEnCroquis, setContarEnCroquis] = useState(true);
   const [campos, setCampos] = useState<TipoActaCampo[]>([campoVacio()]);
   const [contenido, setContenido] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -66,11 +67,13 @@ export default function TipoActaModal({ isOpen, onClose, onSaved, tipoToEdit }: 
     if (tipoToEdit) {
       setNombre(tipoToEdit.nombre);
       setDescripcion(tipoToEdit.descripcion || '');
+      setContarEnCroquis(tipoToEdit.contar_en_croquis ?? true);
       setCampos(tipoToEdit.plantilla.campos.length > 0 ? tipoToEdit.plantilla.campos : [campoVacio()]);
       setContenido(tipoToEdit.plantilla.contenido);
     } else {
       setNombre('');
       setDescripcion('');
+      setContarEnCroquis(true);
       setCampos([campoVacio()]);
       setContenido('');
     }
@@ -127,10 +130,6 @@ export default function TipoActaModal({ isOpen, onClose, onSaved, tipoToEdit }: 
     }
 
     const camposValidos = campos.filter(c => c.etiqueta.trim());
-    if (camposValidos.length === 0) {
-      setErrorMsg('Debe definir al menos un campo en el formulario.');
-      return;
-    }
 
     setIsSubmitting(true);
     setErrorMsg('');
@@ -147,12 +146,14 @@ export default function TipoActaModal({ isOpen, onClose, onSaved, tipoToEdit }: 
           nombre: nombre.trim().toUpperCase(),
           descripcion: descripcion.trim() || undefined,
           plantilla,
+          contar_en_croquis: contarEnCroquis,
         });
       } else {
         await crearTipoActa({
           nombre: nombre.trim().toUpperCase(),
           descripcion: descripcion.trim() || undefined,
           plantilla,
+          contar_en_croquis: contarEnCroquis,
         });
       }
 
@@ -247,6 +248,20 @@ export default function TipoActaModal({ isOpen, onClose, onSaved, tipoToEdit }: 
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-caracas-red/20 focus:border-caracas-red outline-none transition-all"
                     placeholder="Breve descripción del tipo de acta"
                   />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
+                    <input
+                      type="checkbox"
+                      checked={contarEnCroquis}
+                      onChange={e => setContarEnCroquis(e.target.checked)}
+                      className="w-4 h-4 text-caracas-red focus:ring-caracas-red rounded"
+                    />
+                    <span className="font-medium">Contar en el croquis</span>
+                  </label>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Las actas de este tipo colorearán el croquis del módulo Actas (verde/naranja/rojo). Desactívalo para tipos como el acta de compromiso.
+                  </p>
                 </div>
               </div>
             </div>
