@@ -462,15 +462,6 @@ export default function Agenda() {
         }
       }
 
-      if (vista === 'mes' || vista === 'semana') {
-        pdf.addPage();
-        pdf.setFontSize(11);
-        pdf.setFont('helvetica', 'bold');
-        pdf.text(`${campamentoSeleccionado?.nombre || ''}`, m, m + 5);
-        pdf.setFontSize(8);
-        pdf.text(`Agenda ${tituloPeriodo()} - Listado de eventos`, pw - m, m + 5, { align: 'right' });
-      }
-
       const actY = m + 16;
       const DIAS_N = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
       const gap = 1;
@@ -482,15 +473,62 @@ export default function Agenda() {
       const agrup = agruparPorDia(occs);
       const dias = Array.from(agrup.keys()).sort();
 
-      if (dias.length > 0) {
-        const finAct = ph - m;
+      const finAct = ph - m;
+      let colActual = 0;
+      let colYs: number[] = [];
 
+      const nuevaPaginaListado = (continuacion: boolean) => {
+        pdf.addPage();
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFontSize(11);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(`${campamentoSeleccionado?.nombre || ''}`, m, m + 5);
+        pdf.setFontSize(8);
+        pdf.text(
+          `Agenda ${tituloPeriodo()} - Listado de eventos${continuacion ? ' (continuación)' : ''}`,
+          pw - m,
+          m + 5,
+          { align: 'right' }
+        );
+        colActual = 0;
+        colYs = Array(numCols).fill(actY);
         pdf.setDrawColor(200, 200, 200);
         for (let i = 1; i < numCols; i++) {
           pdf.line(colXs[i], actY, colXs[i], finAct);
         }
+      };
 
-        const colYs = Array(numCols).fill(actY);
+      nuevaPaginaListado(false);
+
+      if (dias.length > 0) {
+
+        const estimarAlto = (e: EventoOcurrencia) => {
+          let alto = 0;
+          pdf.setFont('helvetica', 'normal');
+          pdf.setFontSize(8);
+          alto += pdf.splitTextToSize(e.titulo, colW - 2).length * 3.5;
+          if (e.responsable) {
+            pdf.setFontSize(7);
+            alto += pdf.splitTextToSize(e.responsable, colW - 2).length * 3.5;
+          }
+          alto += 5;
+          if (e.descripcion) {
+            pdf.setFont('helvetica', 'italic');
+            pdf.setFontSize(7);
+            alto += pdf.splitTextToSize(e.descripcion, colW - 2).length * 3.5 + 1;
+          }
+          pdf.setFont('helvetica', 'normal');
+          return alto;
+        };
+
+        const dibujarCabeceraDia = (col: number, texto: string) => {
+          pdf.setFontSize(9);
+          pdf.setFont('helvetica', 'bold');
+          pdf.setTextColor(55, 65, 81);
+          pdf.text(texto, colXs[col], colYs[col]);
+          colYs[col] += 4.5;
+          pdf.setFont('helvetica', 'normal');
+        };
 
         const renderEntry = (col: number, e: EventoOcurrencia) => {
           if (colYs[col] > finAct - 2) return;
@@ -548,46 +586,46 @@ export default function Agenda() {
           for (const dateStr of dias) {
             const dia = dayjs(dateStr);
             const col = getCol(dia.day());
-            if (colYs[col] > finAct - 5) break;
             const evts = agrup.get(dateStr) || [];
 
-            pdf.setFontSize(9);
-            pdf.setFont('helvetica', 'bold');
-            pdf.setTextColor(55, 65, 81);
-            pdf.text(`${DIAS_N[col]} ${dia.format('D')}`, colXs[col], colYs[col]);
-            colYs[col] += 4.5;
-
-            pdf.setFont('helvetica', 'normal');
-            for (const e of evts) renderEntry(col, e);
-            colYs[col] += 1;
-          }
-        } else {
-          const total = dias.length;
-          let col = 0;
-          for (let idx = 0; idx < total; idx++) {
             if (colYs[col] > finAct - 5) {
-              col++;
-              if (col >= numCols) break;
+              nuevaPaginaListado(true);
+              dibujarCabeceraDia(col, `${DIAS_N[col]} ${dia.format('D')}`);
             }
-            const dateStr = dias[idx];
-            const evts = agrup.get(dateStr) || [];
-            const dia = dayjs(dateStr);
 
-            pdf.setFontSize(9);
-            pdf.setFont('helvetica', 'bold');
-            pdf.setTextColor(55, 65, 81);
-            pdf.text(`${DIAS_N[getCol(dia.day())]} ${dia.format('D')}`, colXs[col], colYs[col]);
-            colYs[col] += 4.5;
-
-            pdf.setFont('helvetica', 'normal');
             for (const e of evts) {
-              if (colYs[col] > finAct - 2) {
-                col++;
-                if (col >= numCols) break;
+              const paginaVacia = colYs.every((y) => y === actY);
+              if (!paginaVacia && colYs[col] + estimarAlto(e) > finAct - 2) {
+                nuevaPaginaListado(true);
+                dibujarCabeceraDia(col, `${DIAS_N[col]} ${dia.format('D')}`);
               }
               renderEntry(col, e);
             }
             colYs[col] += 1;
+          }
+        } else {
+          let idx = 0;
+          while (idx < dias.length) {
+            const dateStr = dias[idx];
+            const evts = agrup.get(dateStr) || [];
+            const dia = dayjs(dateStr);
+
+            if (colYs[colActual] > finAct - 5) {
+              colActual++;
+              if (colActual >= numCols) nuevaPaginaListado(true);
+            }
+
+            dibujarCabeceraDia(colActual, `${DIAS_N[getCol(dia.day())]} ${dia.format('D')}`);
+
+            for (const e of evts) {
+              if (colYs[colActual] > finAct - 2) {
+                colActual++;
+                if (colActual >= numCols) nuevaPaginaListado(true);
+              }
+              renderEntry(colActual, e);
+            }
+            colYs[colActual] += 1;
+            idx++;
           }
         }
       }
