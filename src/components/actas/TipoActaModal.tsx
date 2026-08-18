@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Save, Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 import type { TipoActa, TipoActaCampo } from '../../types';
 import { crearTipoActa, actualizarTipoActa } from '../../lib/actas';
-import ActaPreview from './ActaPreview';
+import ActaDocumentoPaginado from './ActaDocumentoPaginado';
 
 interface TipoActaModalProps {
   isOpen: boolean;
@@ -434,7 +434,7 @@ export default function TipoActaModal({ isOpen, onClose, onSaved, tipoToEdit }: 
                 <h3 className="font-semibold text-gray-800">Vista Previa</h3>
               </div>
               <div className="p-6">
-                <ActaPreview
+                <ActaDocumentoPaginado
                   contenido={contenido}
                   sistema={previewSistema}
                   valores={previewValores}

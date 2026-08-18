@@ -50,6 +50,12 @@ export default function ActaLecturaModal({ isOpen, onClose, acta, refugiado }: A
           scale: 2,
           useCORS: true,
           logging: false,
+          // Elimina el scale visual del clon para que el texto se mida a su tamaño real (816px)
+          onclone: (doc) => {
+            doc.querySelectorAll<HTMLElement>('[data-acta-escale]').forEach(el => {
+              el.style.transform = 'none';
+            });
+          },
         });
         const imgData = canvas.toDataURL('image/png');
         if (i > 0) pdf.addPage('letter', 'p');

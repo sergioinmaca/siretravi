@@ -22,7 +22,7 @@ interface ActaDocumentoPaginadoProps {
 
 interface Bloque {
   key: string;
-  tipo: 'linea' | 'firma';
+  tipo: 'espacio' | 'linea' | 'firma';
   indice: number;
 }
 
@@ -98,6 +98,10 @@ function TituloPagina({ titulo }: { titulo: string }) {
 }
 
 function renderBloque(bloque: Bloque, lineas: string[], filasFirmas: FirmaConDatos[][]): ReactNode {
+  if (bloque.tipo === 'espacio') {
+    return <div style={{ height: '30px' }} />;
+  }
+
   if (bloque.tipo === 'linea') {
     return renderLinea(lineas[bloque.indice], bloque.indice);
   }
@@ -110,7 +114,7 @@ function renderBloque(bloque: Bloque, lineas: string[], filasFirmas: FirmaConDat
         gridTemplateColumns: fila.length === 2 ? '1fr 1fr' : '1fr',
         gap: '24px',
         marginBottom: bloque.indice < filasFirmas.length - 1 ? '36px' : '0',
-        marginTop: bloque.indice === 0 ? '20px' : '0',
+        marginTop: bloque.indice === 0 ? '45px' : '0',
       }}
     >
       {fila.map(firma => (
@@ -129,10 +133,15 @@ export default function ActaDocumentoPaginado({ contenido, sistema, valores, tit
     [contenido, sistema, valores]
   );
 
-  const lineas = useMemo(
-    () => deducirTitulo(resuelto.texto, tituloFinal).filter(l => !esLineaOmitible(l)),
-    [resuelto.texto, tituloFinal]
-  );
+  const lineas = useMemo(() => {
+    const filtradas = deducirTitulo(resuelto.texto, tituloFinal).filter(l => !esLineaOmitible(l));
+    // Recortar líneas en blanco iniciales y finales (el aire lo controla el código)
+    let inicio = 0;
+    let fin = filtradas.length;
+    while (inicio < fin && filtradas[inicio].trim() === '') inicio++;
+    while (fin > inicio && filtradas[fin - 1].trim() === '') fin--;
+    return filtradas.slice(inicio, fin);
+  }, [resuelto.texto, tituloFinal]);
 
   const filasFirmas = useMemo(() => {
     const filas: FirmaConDatos[][] = [];
@@ -144,6 +153,9 @@ export default function ActaDocumentoPaginado({ contenido, sistema, valores, tit
 
   const bloques = useMemo<Bloque[]>(() => {
     const b: Bloque[] = [];
+    if (lineas.length > 0 || filasFirmas.length > 0) {
+      b.push({ key: 'espacio-titulo', tipo: 'espacio', indice: 0 });
+    }
     lineas.forEach((_, i) => b.push({ key: `linea-${i}`, tipo: 'linea', indice: i }));
     filasFirmas.forEach((_, i) => b.push({ key: `firma-${i}`, tipo: 'firma', indice: i }));
     return b;
@@ -258,6 +270,7 @@ export default function ActaDocumentoPaginado({ contenido, sistema, valores, tit
             >
               {/* Div intermedio con el scale visual (la página capturada no lleva transform) */}
               <div
+                data-acta-escale
                 style={{
                   width: ACTA_PAGE_WIDTH,
                   height: ACTA_PAGE_HEIGHT,

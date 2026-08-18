@@ -8,7 +8,7 @@ import { formatAge } from '../../lib/formatAge';
 import { formatCedula } from '../../lib/formatCedula';
 import { toDateInput } from '../../lib/formatDate';
 import DateInput from '../ui/DateInput';
-import ActaPreview from './ActaPreview';
+import ActaDocumentoPaginado from './ActaDocumentoPaginado';
 import TipoActaModal from './TipoActaModal';
 import type { Refugiado, TipoActa, TipoActaResumen } from '../../types';
 
@@ -477,7 +477,7 @@ export default function LevantarActaModal({ isOpen, onClose, onSaved, tiposActa,
                       <Eye size={18} className="text-gray-500" />
                       <h4 className="font-semibold text-gray-700">Vista Previa del Documento</h4>
                     </div>
-                    <ActaPreview
+                    <ActaDocumentoPaginado
                       contenido={tipoActaCompleto.plantilla.contenido}
                       sistema={sistemaVars}
                       valores={valoresFormulario}

@@ -1,5 +1,12 @@
 import type { ReactNode } from 'react';
 
+// Marcadores invisibles (PUA) usados durante la resolución del contenido:
+// - SENTINEL_NL: representa un salto de línea interno dentro del valor de un campo.
+// - CAMPO_INI / CAMPO_FIN: delimitan una línea de plantilla que es un campo solitario.
+const SENTINEL_NL = '\uE000';
+const CAMPO_INI = '\uE001';
+const CAMPO_FIN = '\uE002';
+
 export const SISTEMA_VARS: Record<string, string> = {
   fecha_actual: 'fecha actual del sistema',
   nombre_campamento: 'nombre del campamento',
@@ -85,27 +92,51 @@ export function resolverContenido(
   sistema: Record<string, string>,
   valores: Record<string, string>
 ): ContenidoResuelto {
-  let texto = contenido;
+  const escaparValor = (valor: string): string =>
+    valor
+      .replace(/\r\n/g, '\n')
+      .replace(/^\n+|\n+$/g, '')
+      .replace(/\n/g, SENTINEL_NL);
 
-  Object.entries(SISTEMA_VARS).forEach(([key]) => {
-    const valor = sistema[key];
-    if (valor) {
-      texto = texto.replaceAll(`{{${key}}}`, valor);
-    }
-  });
+  // Se sustituye línea por línea para poder detectar "campos solitarios"
+  // (una línea que es exactamente {{clave}} de un campo del formulario)
+  const lineas = contenido.split('\n');
+  const texto = lineas
+    .map(linea => {
+      const trimmed = linea.trim();
+      const match = trimmed.match(/^\{\{([a-zA-Z0-9_]+)\}\}$/);
 
-  Object.entries(valores).forEach(([key, valor]) => {
-    if (valor) {
-      texto = texto.replaceAll(`{{${key}}}`, valor);
-    }
-  });
+      if (match && Object.prototype.hasOwnProperty.call(valores, match[1]) && valores[match[1]]) {
+        return `${CAMPO_INI}${escaparValor(valores[match[1]])}${CAMPO_FIN}`;
+      }
+
+      let ln = linea;
+
+      Object.entries(SISTEMA_VARS).forEach(([key]) => {
+        const valor = sistema[key];
+        if (valor) {
+          ln = ln.replaceAll(`{{${key}}}`, escaparValor(valor));
+        }
+      });
+
+      Object.entries(valores).forEach(([key, valor]) => {
+        if (valor) {
+          ln = ln.replaceAll(`{{${key}}}`, escaparValor(valor));
+        }
+      });
+
+      return ln;
+    })
+    .join('\n');
+
+  let textoLimpio = texto;
 
   // Limpiar placeholders no reemplazados
   Object.entries(SISTEMA_VARS).forEach(([key, desc]) => {
-    texto = texto.replaceAll(`{{${key}}}`, `[${desc}]`);
+    textoLimpio = textoLimpio.replaceAll(`{{${key}}}`, `[${desc}]`);
   });
   Object.entries(valores).forEach(([key]) => {
-    texto = texto.replaceAll(`{{${key}}}`, '');
+    textoLimpio = textoLimpio.replaceAll(`{{${key}}}`, '');
   });
 
   // Detectar qué firmas están presentes en la plantilla original
@@ -129,10 +160,10 @@ export function resolverContenido(
 
   // Limpiar residuos de firmas ya reemplazados en el texto
   FIRMA_CONFIG.forEach(fc => {
-    texto = texto.replace(new RegExp(`\\[${SISTEMA_VARS[fc.clave]}\\]`, 'g'), '');
+    textoLimpio = textoLimpio.replace(new RegExp(`\\[${SISTEMA_VARS[fc.clave]}\\]`, 'g'), '');
   });
 
-  return { texto, firmasConDatos };
+  return { texto: textoLimpio, firmasConDatos };
 }
 
 // Filtrar si la primera línea no vacía coincide con el título para evitar duplicación
@@ -178,6 +209,31 @@ export function renderLinea(linea: string, index: number): ReactNode {
     return null;
   }
 
+  // Línea que proviene de un campo solitario del formulario (ej. listado de familiares):
+  // se dibuja en negrita, con tamaño mayor al cuerpo y menor interlineado.
+  if (linea.includes(CAMPO_INI)) {
+    const textoCampo = linea
+      .replaceAll(CAMPO_INI, '')
+      .replaceAll(CAMPO_FIN, '')
+      .replaceAll(SENTINEL_NL, '\n');
+
+    return (
+      <p
+        key={index}
+        className="text-gray-800"
+        style={{
+          fontSize: '17px',
+          fontWeight: 700,
+          lineHeight: '1.3',
+          textAlign: 'justify',
+          whiteSpace: 'pre-wrap',
+        }}
+      >
+        {textoCampo}
+      </p>
+    );
+  }
+
   const isTitle = (
     trimmed === trimmed.toUpperCase() &&
     trimmed.length > 10 &&
@@ -185,11 +241,19 @@ export function renderLinea(linea: string, index: number): ReactNode {
     !trimmed.endsWith(':')
   );
 
+  if (isTitle) {
+    return (
+      <p key={index} className="leading-relaxed font-bold text-gray-900 text-center text-lg mb-4">
+        {linea}
+      </p>
+    );
+  }
+
   return (
     <p
       key={index}
-      className={`leading-relaxed ${isTitle ? 'font-bold text-gray-900 text-center text-lg mb-4' : 'text-gray-800 text-sm'}`}
-      style={{ textIndent: !isTitle && trimmed.length > 30 ? '2em' : '0' }}
+      className="leading-relaxed text-gray-800"
+      style={{ fontSize: '14.67px', textAlign: 'justify', textIndent: '2em' }}
     >
       {linea}
     </p>
@@ -214,7 +278,7 @@ export function FirmaBlock({ etiqueta, datos }: { etiqueta: string; datos: strin
           key={i}
           className="text-center"
           style={{
-            fontSize: '11px',
+            fontSize: '12.67px',
             lineHeight: '1.4',
             color: '#1a1a1a',
             fontWeight: i === 0 ? 600 : 400,
@@ -227,7 +291,7 @@ export function FirmaBlock({ etiqueta, datos }: { etiqueta: string; datos: strin
       <p
         className="text-center"
         style={{
-          fontSize: '11px',
+          fontSize: '12.67px',
           lineHeight: '1.4',
           color: '#1a1a1a',
           fontWeight: 600,
