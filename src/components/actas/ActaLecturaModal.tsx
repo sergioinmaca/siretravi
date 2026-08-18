@@ -5,7 +5,7 @@ import { obtenerTipoActa } from '../../lib/actas';
 import { formatAge } from '../../lib/formatAge';
 import { formatCedula } from '../../lib/formatCedula';
 import { parseDateSafe } from '../../lib/formatDate';
-import ActaPreview from './ActaPreview';
+import ActaDocumentoPaginado from './ActaDocumentoPaginado';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import type { Acta, Refugiado, TipoActa } from '../../types';
@@ -22,7 +22,7 @@ export default function ActaLecturaModal({ isOpen, onClose, acta, refugiado }: A
   const [tipoActa, setTipoActa] = useState<TipoActa | null>(null);
   const [loading, setLoading] = useState(false);
   const [exportando, setExportando] = useState(false);
-  const previewRef = useRef<HTMLDivElement>(null);
+  const docRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isOpen || !acta) return;
@@ -37,19 +37,25 @@ export default function ActaLecturaModal({ isOpen, onClose, acta, refugiado }: A
   }, [isOpen, acta]);
 
   const handleExportarPdf = async () => {
-    if (!previewRef.current || !acta) return;
+    if (!docRef.current || !acta) return;
     setExportando(true);
     try {
-      const canvas = await html2canvas(previewRef.current, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-      });
-      const imgData = canvas.toDataURL('image/png');
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+      const paginas = Array.from(docRef.current.querySelectorAll<HTMLElement>('[data-acta-pagina]'));
+      if (paginas.length === 0) {
+        throw new Error('El documento aún no está listo para exportar.');
+      }
+      const pdf = new jsPDF('p', 'mm', 'letter');
+      for (let i = 0; i < paginas.length; i++) {
+        const canvas = await html2canvas(paginas[i], {
+          scale: 2,
+          useCORS: true,
+          logging: false,
+        });
+        const imgData = canvas.toDataURL('image/png');
+        if (i > 0) pdf.addPage('letter', 'p');
+        // La página ya incluye fondo full-bleed y márgenes internos de 5mm
+        pdf.addImage(imgData, 'PNG', 0, 0, 215.9, 279.4);
+      }
       pdf.save(`Acta_${acta.codigo}.pdf`);
     } catch (err) {
       console.error('Error al exportar PDF:', err);
@@ -86,7 +92,7 @@ export default function ActaLecturaModal({ isOpen, onClose, acta, refugiado }: A
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden animate-fade-in-up">
+      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden animate-fade-in-up">
         <div className="px-8 py-5 border-b border-gray-100 flex items-center justify-between shrink-0 bg-white z-10">
           <div>
             <h2 className="text-2xl font-bold text-gray-800">Lectura de Acta</h2>
@@ -189,13 +195,13 @@ export default function ActaLecturaModal({ isOpen, onClose, acta, refugiado }: A
               </div>
               <h3 className="font-semibold text-gray-800">Contenido del Acta</h3>
             </div>
-            <div className="p-6" ref={previewRef}>
+            <div className="p-6" ref={docRef}>
               {loading ? (
                 <div className="py-8 text-center text-gray-400">
                   <p className="font-medium">Cargando contenido...</p>
                 </div>
               ) : tipoActa ? (
-                <ActaPreview
+                <ActaDocumentoPaginado
                   contenido={tipoActa.plantilla.contenido}
                   sistema={sistemaVars}
                   valores={acta.contenido}
