@@ -14,6 +14,7 @@ import { formatCedula } from '../lib/formatCedula';
 import { obtenerHistoriasClinicas } from '../lib/salud';
 import { esRetirado, filtrarActivos } from '../lib/retiredFilter';
 import { exportarRefugiadosXLSX } from '../lib/exportRefugiadosXLSX';
+import { exportarTablaIntegrantesXLSX } from '../lib/exportTablaIntegrantesXLSX';
 import { countElements } from '../components/constructor/CroquisViewer2';
 import { REPORTES_DISPONIBLES } from '../types';
 import type { HistoriaClinica } from '../types';
@@ -517,6 +518,20 @@ export default function Reportes() {
       await exportarRefugiadosXLSX(activos, familiasDelCampamento, campamentoSeleccionado!.id, nombreCamp, 'integrantes');
     } catch (err) {
       console.error('Error generando XLSX de integrantes:', err);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  // ── Exportar XLSX de Tabla Integrantes ────────────────────────────────────
+  const handleExportTablaIntegrantesXLSX = async () => {
+    setIsGenerating(true);
+    try {
+      const nombreCamp = campamentoSeleccionado?.nombre || 'Campamento';
+      const activos = filtrarActivos(refugiadosDelCampamento);
+      exportarTablaIntegrantesXLSX(activos, familiasDelCampamento, nombreCamp);
+    } catch (err) {
+      console.error('Error generando XLSX de tabla de integrantes:', err);
     } finally {
       setIsGenerating(false);
     }
@@ -1313,6 +1328,28 @@ export default function Reportes() {
             <div className="flex gap-4 mt-6 pt-4 border-t border-slate-50">
               <button
                 onClick={handleExportRefugiadosXLSX}
+                disabled={!campamentoSeleccionado || isGenerating}
+                className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50"
+              >
+                <FileDown size={18} />
+                Exportar XLSX
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Card 6a: Tabla Integrantes */}
+        {tieneAcceso && tienePermisoReporte('tabla_integrantes', campamentoSeleccionado?.id || '') && (
+          <div className="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm hover:shadow-md transition-all flex flex-col justify-between min-h-[220px]">
+            <div>
+              <h3 className="text-lg font-bold text-slate-800 mb-2">Tabla Integrantes</h3>
+              <p className="text-sm text-slate-500 leading-relaxed">
+                Exporta la tabla completa de integrantes activos del campamento actual en formato Excel, con todas las columnas de datos en formato legible.
+              </p>
+            </div>
+            <div className="flex gap-4 mt-6 pt-4 border-t border-slate-50">
+              <button
+                onClick={handleExportTablaIntegrantesXLSX}
                 disabled={!campamentoSeleccionado || isGenerating}
                 className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-3 rounded-xl font-medium text-sm transition-all disabled:opacity-50"
               >
