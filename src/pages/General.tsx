@@ -136,6 +136,14 @@ export default function General() {
     'Sin especificar': '#9CA3AF',
   };
 
+  // Colores para la dona de condición de vivienda tras el sismo
+  const condicionColores: Record<string, string> = {
+    'Pérdida Total/Colapso': '#DC2626',
+    'Daño Estructural grave/Inhabitable': '#F59E0B',
+    'Zona de Alto Riesgo/Desalojo Preventivo': '#EAB308',
+    'Sin especificar': '#9CA3AF',
+  };
+
   // SVG dona – constantes
   const DONA_RADIUS = 70;
   const DONA_CIRCUMFERENCE = 2 * Math.PI * DONA_RADIUS;
@@ -169,6 +177,39 @@ export default function General() {
       return sector;
     });
   }, [tenenciaData, totalJefes, DONA_CIRCUMFERENCE]);
+
+  // Datos para gráfico de dona – Condición de Vivienda tras el Sismo (solo jefes)
+  const condicionData = useMemo(() => {
+    const map = new Map<string, number>();
+    jefesActivos.forEach(j => {
+      const c = j.condicion_vivienda?.trim() || 'Sin especificar';
+      map.set(c, (map.get(c) || 0) + 1);
+    });
+    const categorias = [
+      'Pérdida Total/Colapso',
+      'Daño Estructural grave/Inhabitable',
+      'Zona de Alto Riesgo/Desalojo Preventivo',
+      'Sin especificar',
+    ];
+    return categorias
+      .map(nombre => ({
+        nombre,
+        cantidad: map.get(nombre) || 0,
+      }))
+      .filter(c => c.cantidad > 0);
+  }, [jefesActivos]);
+
+  const condicionSectores = useMemo(() => {
+    if (totalJefes === 0) return [];
+    let offset = 0;
+    return condicionData.map(c => {
+      const pct = c.cantidad / totalJefes;
+      const dash = pct * DONA_CIRCUMFERENCE;
+      const sector = { ...c, pct, dash, offset };
+      offset += dash;
+      return sector;
+    });
+  }, [condicionData, totalJefes, DONA_CIRCUMFERENCE]);
 
   // Datos para gráfico de dona – Situación de Estatus (todos los integrantes del conjunto)
   const totalIntegrantes = refugiadosDelConjunto.length;
@@ -209,6 +250,16 @@ export default function General() {
       const t = j.tenencia_vivienda?.trim() || 'Sin especificar';
       if (!map.has(t)) map.set(t, []);
       map.get(t)!.push(j);
+    });
+    return map;
+  }, [jefesActivos]);
+
+  const jefesPorCondicion = useMemo(() => {
+    const map = new Map<string, typeof jefesActivos>();
+    jefesActivos.forEach(j => {
+      const c = j.condicion_vivienda?.trim() || 'Sin especificar';
+      if (!map.has(c)) map.set(c, []);
+      map.get(c)!.push(j);
     });
     return map;
   }, [jefesActivos]);
@@ -254,6 +305,7 @@ export default function General() {
   // Estado para tooltip
   const [hoveredBar, setHoveredBar] = useState<number | null>(null);
   const [hoveredTenenciaSector, setHoveredTenenciaSector] = useState<string | null>(null);
+  const [hoveredCondicionSector, setHoveredCondicionSector] = useState<string | null>(null);
   const [hoveredEstatusSector, setHoveredEstatusSector] = useState<string | null>(null);
 
   // ── Helpers para cards/charts clickeables ──────────────────────────────────
@@ -655,6 +707,60 @@ export default function General() {
                             onClick={() => abrirLista(`Tenencia: ${c.nombre}`, jefesPorTenencia.get(c.nombre) || [])}
                           >
                             <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: tenenciaColores[c.nombre] || '#9CA3AF' }} />
+                            <span className="text-gray-600 truncate">{c.nombre}</span>
+                          </div>
+                          <span className="font-semibold text-gray-800 tabular-nums shrink-0 ml-2">
+                            {c.cantidad} <span className="text-gray-400 font-normal">({totalJefes > 0 ? ((c.cantidad / totalJefes) * 100).toFixed(1) : '0.0'}%)</span>
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-center py-10 text-gray-400">
+                    <p className="font-medium">No hay jefes de familia registrados.</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Grafico de Dona – Condición de Vivienda tras el Sismo (solo jefes) */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 max-md:bg-transparent max-md:rounded-none max-md:shadow-none max-md:border-0 max-md:px-4 max-md:py-3 max-md:-mx-4">
+                <div className="flex items-center gap-2 mb-6">
+                  <div className="w-1 h-6 bg-orange-600 rounded-full"></div>
+                  <h2 className="text-sm font-bold text-black uppercase tracking-wider">Condición de Vivienda tras el Sismo</h2>
+                </div>
+
+                {condicionData.length > 0 ? (
+                  <div className="flex items-center gap-6">
+                    <div className="relative w-40 h-40 shrink-0">
+                      <svg viewBox="0 0 200 200" className="w-full h-full -rotate-90" onMouseLeave={() => setHoveredCondicionSector(null)}>
+                        <circle cx="100" cy="100" r={DONA_RADIUS + 14} fill="none" stroke="#F3F4F6" strokeWidth="28" />
+                        <circle cx="100" cy="100" r={DONA_RADIUS - 14} fill="#fff" />
+                        {condicionSectores.map(s => (
+                          <path
+                            key={s.nombre}
+                            d={donutSlicePath(s.pct, s.offset)}
+                            fill={condicionColores[s.nombre] || '#9CA3AF'}
+                            opacity={hoveredCondicionSector === null || hoveredCondicionSector === s.nombre ? 1 : 0.4}
+                            style={{ cursor: 'pointer', transition: 'opacity 0.2s ease' }}
+                            onMouseEnter={() => setHoveredCondicionSector(s.nombre)}
+                            onClick={() => abrirLista(`Condición: ${s.nombre}`, jefesPorCondicion.get(s.nombre) || [])}
+                          />
+                        ))}
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ pointerEvents: 'none' }}>
+                        <span className="text-2xl font-bold text-gray-800">{totalJefes}</span>
+                        <span className="text-xs text-black">Familias</span>
+                      </div>
+                    </div>
+                    <div className="flex-1 space-y-2.5 min-w-0">
+                      {condicionData.map(c => (
+                        <div key={c.nombre} className="flex items-center justify-between text-sm">
+                          <div
+                            className="flex items-center gap-2 min-w-0 cursor-pointer hover:opacity-70 transition-opacity"
+                            onClick={() => abrirLista(`Condición: ${c.nombre}`, jefesPorCondicion.get(c.nombre) || [])}
+                          >
+                            <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: condicionColores[c.nombre] || '#9CA3AF' }} />
                             <span className="text-gray-600 truncate">{c.nombre}</span>
                           </div>
                           <span className="font-semibold text-gray-800 tabular-nums shrink-0 ml-2">
