@@ -64,6 +64,12 @@ export default function Reportes() {
     return refugiados.filter(r => r.campamento_id === campamentoSeleccionado.id);
   }, [refugiados, campamentoSeleccionado]);
 
+  // Base del reporte demográfico: excluye integrantes RETIRADOS
+  const refugiadosActivosDelCampamento = useMemo(
+    () => filtrarActivos(refugiadosDelCampamento),
+    [refugiadosDelCampamento]
+  );
+
   useEffect(() => {
     const discapacitados = refugiadosDelCampamento.filter(r => r.discapacidad);
     if (discapacitados.length === 0) {
@@ -89,11 +95,11 @@ export default function Reportes() {
     return familias.filter(f => f.campamento_id === campamentoSeleccionado.id);
   }, [familias, campamentoSeleccionado]);
 
-  // Cálculos demográficos
+  // Cálculos demográficos (solo integrantes activos: excluye RETIRADOS)
   const datosReporte = useMemo(() => {
     const hoy = new Date();
 
-    let totalRefugiados = refugiadosDelCampamento.length;
+    let totalRefugiados = refugiadosActivosDelCampamento.length;
     let masculinos = 0;
     let femeninos = 0;
 
@@ -104,17 +110,7 @@ export default function Reportes() {
     let embarazadas = 0;
     let discapacitados = 0;
 
-    // Brackets NNA
-    let nna_0_2 = 0;
-    let nna_3_6 = 0;
-    let nna_7_12 = 0;
-    let nna_adolescentes = 0;
-    let nna_embarazadas = 0;
-    let nna_discapacidad = 0;
-    let nna_femenina = 0;
-    let nna_masculino = 0;
-
-    refugiadosDelCampamento.forEach(r => {
+    refugiadosActivosDelCampamento.forEach(r => {
       if (r.genero) masculinos++;
       else femeninos++;
 
@@ -126,9 +122,9 @@ export default function Reportes() {
         edad--;
       }
 
-      if (edad <= 12) {
+      if (edad <= 11) {
         ninasNinos++;
-      } else if (edad >= 13 && edad <= 17) {
+      } else if (edad >= 12 && edad <= 17) {
         adolescentes++;
       } else {
         const esAdultoMayor = (r.genero && edad >= 60) || (!r.genero && edad >= 55);
@@ -145,24 +141,6 @@ export default function Reportes() {
       if (!r.genero && r.embarazo) {
         embarazadas++;
       }
-
-      // Demografía NNA (menores de 18 años)
-      if (edad <= 17) {
-        if (r.genero) nna_masculino++;
-        else nna_femenina++;
-
-        if (edad <= 2) nna_0_2++;
-        else if (edad <= 6) nna_3_6++;
-        else if (edad <= 12) nna_7_12++;
-        else if (edad <= 17) nna_adolescentes++;
-
-        if (!r.genero && r.embarazo) {
-          nna_embarazadas++;
-        }
-        if (r.discapacidad) {
-          nna_discapacidad++;
-        }
-      }
     });
 
     // Contar familias por procedencia (basándonos en la procedencia del jefe de familia o el primer miembro)
@@ -171,7 +149,7 @@ export default function Reportes() {
     let familiasMiranda = 0;
 
     familiasDelCampamento.forEach(fam => {
-      const miembros = refugiadosDelCampamento.filter(r => r.familia_id === fam.id);
+      const miembros = refugiadosActivosDelCampamento.filter(r => r.familia_id === fam.id);
       if (miembros.length > 0) {
         const jefe = miembros.find(m => m.es_jefe_familia) || miembros[0];
         const proc = getProcedenciaEstado(jefe?.estado, jefe?.parroquia || '');
@@ -199,6 +177,50 @@ export default function Reportes() {
       familiasCaracas,
       familiasMiranda,
       totalFamilias,
+    };
+  }, [refugiadosActivosDelCampamento, familiasDelCampamento]);
+
+  // Cálculos del reporte de Niños, Niñas y Adolescentes (sin cambios)
+  const datosNNA = useMemo(() => {
+    const hoy = new Date();
+
+    let nna_0_2 = 0;
+    let nna_3_6 = 0;
+    let nna_7_12 = 0;
+    let nna_adolescentes = 0;
+    let nna_embarazadas = 0;
+    let nna_discapacidad = 0;
+    let nna_femenina = 0;
+    let nna_masculino = 0;
+
+    refugiadosDelCampamento.forEach(r => {
+      const nacimiento = new Date(r.fecha_nacimiento);
+      let edad = hoy.getFullYear() - nacimiento.getFullYear();
+      const mes = hoy.getMonth() - nacimiento.getMonth();
+      if (mes < 0 || (mes === 0 && hoy.getDate() < nacimiento.getDate())) {
+        edad--;
+      }
+
+      // Demografía NNA (menores de 18 años)
+      if (edad <= 17) {
+        if (r.genero) nna_masculino++;
+        else nna_femenina++;
+
+        if (edad <= 2) nna_0_2++;
+        else if (edad <= 6) nna_3_6++;
+        else if (edad <= 12) nna_7_12++;
+        else if (edad <= 17) nna_adolescentes++;
+
+        if (!r.genero && r.embarazo) {
+          nna_embarazadas++;
+        }
+        if (r.discapacidad) {
+          nna_discapacidad++;
+        }
+      }
+    });
+
+    return {
       nna_0_2,
       nna_3_6,
       nna_7_12,
@@ -209,7 +231,7 @@ export default function Reportes() {
       nna_masculino,
       totalNNA: nna_femenina + nna_masculino
     };
-  }, [refugiadosDelCampamento, familiasDelCampamento]);
+  }, [refugiadosDelCampamento]);
 
   // ── Datos para Reporte de Discapacitados ─────────────────────────────────
   const discapacitadosReporte = useMemo(() => {
@@ -1073,12 +1095,12 @@ export default function Reportes() {
 
     return (
       <svg width="420" height="280" viewBox="0 0 420 280" className="mx-auto">
-        <circle cx={cx} cy={cy} r={radius} fill="transparent" stroke="#F97316" strokeWidth="56" strokeDasharray={`${femStroke} ${circ}`} />
+        <circle cx={cx} cy={cy} r={radius} fill="transparent" stroke="#EC4899" strokeWidth="56" strokeDasharray={`${femStroke} ${circ}`} />
         <circle cx={cx} cy={cy} r={radius} fill="transparent" stroke="#3B82F6" strokeWidth="56" strokeDasharray={`${mascStroke} ${circ}`} strokeDashoffset={-femStroke} />
 
         {femPct > 0 && (
           <g transform={`translate(${xFem - 20}, ${yFem - 14})`}>
-            <rect width="42" height="28" rx="5" fill="#FFFFFF" stroke="#F97316" strokeWidth="1.5" />
+            <rect width="42" height="28" rx="5" fill="#FFFFFF" stroke="#EC4899" strokeWidth="1.5" />
             <text x="21" y="19" textAnchor="middle" className="text-[14px] font-black fill-slate-800">{femPct}%</text>
           </g>
         )}
@@ -1094,7 +1116,7 @@ export default function Reportes() {
           <rect width="14" height="14" rx="3" fill="#3B82F6" />
           <text x="20" y="12" className="text-[16px] font-bold fill-slate-600">MASCULINOS</text>
 
-          <rect y="30" width="14" height="14" rx="3" fill="#F97316" />
+          <rect y="30" width="14" height="14" rx="3" fill="#EC4899" />
           <text x="20" y="42" className="text-[16px] font-bold fill-slate-600">FEMENINOS</text>
         </g>
       </svg>
@@ -1109,26 +1131,31 @@ export default function Reportes() {
       { key: 'ADOLESCENTES', val: datosReporte.adolescentes, color: '#DBEAFE' },
       { key: 'EMBARAZADAS', val: datosReporte.embarazadas, color: '#93C5FD' },
       { key: 'DISCAPACITADOS', val: datosReporte.discapacitados, color: '#FEF08A' },
-    ].reverse();
+    ]
+      .filter(cat => cat.val > 0)
+      .reverse();
+
+    if (categories.length === 0) {
+      return (
+        <div className="w-[380px] h-[120px] flex items-center justify-center text-slate-400 text-base font-semibold">
+          Sin datos
+        </div>
+      );
+    }
 
     const maxVal = Math.max(...categories.map(c => c.val)) || 1;
 
     return (
-      <div className="w-[380px] h-[210px] flex flex-col justify-between pl-0 py-2 relative">
+      <div className="w-[380px] flex flex-col gap-[13px] pl-0 py-2 relative">
         {categories.map((cat, idx) => {
-          const widthPct = Math.max(8, (cat.val / maxVal) * 82);
+          const widthPct = (cat.val / maxVal) * 82;
           return (
             <div key={idx} className="flex items-center w-full">
               <span className="text-[16px] font-bold text-slate-600 w-[210px] text-left pr-3 ml-[-9px]">
                 {cat.key}
               </span>
               <div className="flex-1 flex items-center ml-[-30px]">
-                {cat.val > 0 && (
-                  <span className="text-[14px] font-black text-slate-800 w-[28px] text-right mr-2 inline-block">{cat.val}</span>
-                )}
-                {cat.val === 0 && (
-                  <span className="text-[14px] font-black text-slate-400 w-[28px] text-right mr-2 inline-block">0</span>
-                )}
+                <span className="text-[14px] font-black text-slate-800 w-[28px] text-right mr-2 inline-block">{cat.val}</span>
                 <div
                   className="h-5 rounded-md transition-all shadow-sm border border-black/5 mt-[13px]"
                   style={{
@@ -1649,13 +1676,13 @@ export default function Reportes() {
 
               {/* Subtitle */}
               <h3 className="text-center text-[13px] font-black text-slate-700 uppercase tracking-wide mt-3 z-10 relative">
-                DISTRIBUCIÓN DE FAMILIAS Y GÉNERO
+                DISTRIBUCIÓN ETARIA Y CARACTERIZACIÓN
               </h3>
 
               {/* Content body */}
               <div className="flex-1 flex items-center justify-between px-16 gap-8 z-10 relative">
                 {/* Tabla demográfica general */}
-                <div className="w-[450px]">
+                <div className="w-[450px] space-y-6">
                   <table className="w-full border-collapse border border-slate-300 text-slate-800">
                     <tbody>
                       <tr className="border-b border-slate-300">
@@ -1682,22 +1709,35 @@ export default function Reportes() {
                           {String(datosReporte.adolescentes).padStart(2, '0')}
                         </td>
                       </tr>
-                      <tr className="border-b border-slate-300">
-                        <td className="p-3 text-base font-bold tracking-wide">EMBARAZADAS</td>
-                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
-                          {String(datosReporte.embarazadas).padStart(2, '0')}
-                        </td>
-                      </tr>
-                      <tr className="border-b border-slate-300">
-                        <td className="p-3 text-base font-bold tracking-wide">DISCAPACITADOS</td>
-                        <td className="p-3 text-lg font-black text-center text-[#C21807] w-24">
-                          {String(datosReporte.discapacitados).padStart(2, '0')}
-                        </td>
-                      </tr>
                       <tr className="bg-slate-100 font-black">
                         <td className="p-3 text-base tracking-wide">TOTAL</td>
                         <td className="p-3 text-lg text-center w-24">
                           {String(datosReporte.totalRefugiados).padStart(2, '0')}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+
+                  {/* Tabla de caracterización (embarazo y discapacidad) */}
+                  <table className="w-full border-collapse border border-slate-300 text-slate-800">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-300">
+                        <th colSpan={2} className="py-1.5 px-1 text-center text-xs font-black tracking-wider text-slate-700">
+                          CARACTERIZACIÓN
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr className="border-b border-slate-300">
+                        <td className="p-2 text-base font-bold tracking-wide">EMBARAZADAS</td>
+                        <td className="p-2 text-lg font-black text-center text-[#C21807] w-24">
+                          {String(datosReporte.embarazadas).padStart(2, '0')}
+                        </td>
+                      </tr>
+                      <tr className="border-b border-slate-300">
+                        <td className="p-2 text-base font-bold tracking-wide">DISCAPACITADOS</td>
+                        <td className="p-2 text-lg font-black text-center text-[#C21807] w-24">
+                          {String(datosReporte.discapacitados).padStart(2, '0')}
                         </td>
                       </tr>
                     </tbody>
@@ -1763,43 +1803,43 @@ export default function Reportes() {
                       <tr className="border-b border-slate-300">
                         <td className="py-[4.5px] px-0.5 text-base font-bold tracking-wide">0-2 AÑOS</td>
                         <td className="py-[4.5px] px-0.5 text-lg font-black text-center text-[#C21807] w-24">
-                          {String(datosReporte.nna_0_2).padStart(2, '0')}
+                          {String(datosNNA.nna_0_2).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="border-b border-slate-300">
                         <td className="py-[4.5px] px-0.5 text-base font-bold tracking-wide">3-6 AÑOS</td>
                         <td className="py-[4.5px] px-0.5 text-lg font-black text-center text-[#C21807] w-24">
-                          {String(datosReporte.nna_3_6).padStart(2, '0')}
+                          {String(datosNNA.nna_3_6).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="border-b border-slate-300">
                         <td className="py-[4.5px] px-0.5 text-base font-bold tracking-wide">7-12 AÑOS</td>
                         <td className="py-[4.5px] px-0.5 text-lg font-black text-center text-[#C21807] w-24">
-                          {String(datosReporte.nna_7_12).padStart(2, '0')}
+                          {String(datosNNA.nna_7_12).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="border-b border-slate-300">
                         <td className="py-[4.5px] px-0.5 text-base font-bold tracking-wide">ADOLESCENTES</td>
                         <td className="py-[4.5px] px-0.5 text-lg font-black text-center text-[#C21807] w-24">
-                          {String(datosReporte.nna_adolescentes).padStart(2, '0')}
+                          {String(datosNNA.nna_adolescentes).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="border-b border-slate-300">
                         <td className="py-[4.5px] px-0.5 text-base font-bold tracking-wide">ADOLESCENTE EMBARAZADA</td>
                         <td className="py-[4.5px] px-0.5 text-lg font-black text-center text-[#C21807] w-24">
-                          {String(datosReporte.nna_embarazadas).padStart(2, '0')}
+                          {String(datosNNA.nna_embarazadas).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="border-b border-slate-300">
                         <td className="py-[4.5px] px-0.5 text-base font-bold tracking-wide">DISCAPACIDAD</td>
                         <td className="py-[4.5px] px-0.5 text-lg font-black text-center text-[#C21807] w-24">
-                          {String(datosReporte.nna_discapacidad).padStart(2, '0')}
+                          {String(datosNNA.nna_discapacidad).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="bg-slate-100 font-black">
                         <td className="py-[4.5px] px-0.5 text-base tracking-wide">TOTAL</td>
                         <td className="py-[4.5px] px-0.5 text-lg text-center w-24">
-                          {String(datosReporte.totalNNA).padStart(2, '0')}
+                          {String(datosNNA.totalNNA).padStart(2, '0')}
                         </td>
                       </tr>
                     </tbody>
@@ -1811,13 +1851,13 @@ export default function Reportes() {
                       <tr className="border-b border-slate-300">
                         <td className="py-[4.5px] px-0.5 text-base font-bold text-left tracking-wide">FEMENINA</td>
                         <td className="py-[4.5px] px-0.5 text-lg font-black text-center text-[#C21807] w-24">
-                          {String(datosReporte.nna_femenina).padStart(2, '0')}
+                          {String(datosNNA.nna_femenina).padStart(2, '0')}
                         </td>
                       </tr>
                       <tr className="bg-slate-50">
                         <td className="py-[4.5px] px-0.5 text-base font-bold text-left tracking-wide">MASCULINO</td>
                         <td className="py-[4.5px] px-0.5 text-lg font-black text-center text-[#C21807] w-24">
-                          {String(datosReporte.nna_masculino).padStart(2, '0')}
+                          {String(datosNNA.nna_masculino).padStart(2, '0')}
                         </td>
                       </tr>
                     </tbody>
