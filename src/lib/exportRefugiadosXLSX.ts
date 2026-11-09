@@ -4,6 +4,8 @@ import { formatCedula } from './formatCedula';
 import { obtenerHistoriasClinicas } from './salud';
 import type { Refugiado, Familia } from '../types';
 
+const siNo = (v: boolean | undefined | null): string => (v ? 'Sí' : 'No');
+
 export async function exportarRefugiadosXLSX(
   refugiados: Refugiado[],
   familias: Familia[],
@@ -27,6 +29,7 @@ export async function exportarRefugiadosXLSX(
   });
 
   const sheetName = prefijo === 'retirados' ? 'Retirados' : 'Integrantes';
+  const esRetirados = prefijo === 'retirados';
 
   const data = [...refugiados]
     .sort((a, b) => {
@@ -66,6 +69,10 @@ export async function exportarRefugiadosXLSX(
         'Teléfono': r.telefono || '—',
         'Parentesco': r.parentesco || '—',
         'Observaciones': historiasMap[r.id] || '',
+        ...(!esRetirados ? {
+          'Registro Captahuella': siNo(r.registro_captahuella),
+          'Registro Único de Vivienda': siNo(r.registro_unico_vivienda),
+        } : {}),
       };
     });
 
@@ -85,6 +92,9 @@ export async function exportarRefugiadosXLSX(
     { wch: 20 },
     { wch: 55 },
   ];
+  if (!esRetirados) {
+    colWidths.push({ wch: 20 }, { wch: 24 });
+  }
   ws['!cols'] = colWidths;
 
   const wb = XLSX.utils.book_new();
