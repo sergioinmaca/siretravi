@@ -72,6 +72,7 @@ export async function exportarRefugiadosXLSX(
         ...(!esRetirados ? {
           'Registro Captahuella': siNo(r.registro_captahuella),
           'Registro Único de Vivienda': siNo(r.registro_unico_vivienda),
+          'Observaciones Generales': r.observaciones_generales || '',
         } : {}),
       };
     });
@@ -93,7 +94,7 @@ export async function exportarRefugiadosXLSX(
     { wch: 55 },
   ];
   if (!esRetirados) {
-    colWidths.push({ wch: 20 }, { wch: 24 });
+    colWidths.push({ wch: 20 }, { wch: 24 }, { wch: 32 });
   }
   ws['!cols'] = colWidths;
 
